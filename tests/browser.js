@@ -47,6 +47,27 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     check(!overflow, `${viewport.width}px: route ${route} overflows horizontally`);
   }
 
+  // nothing at the foot of a screen may sit under the fixed tab bar
+  for (const route of ["create", "home", "settings", "rules"]) {
+    await page.evaluate((r) => { location.hash = `#/${r}`; }, route);
+    await page.waitForTimeout(80);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(80);
+    const clearance = await page.evaluate(() => {
+      const nav = document.querySelector(".tabbar").getBoundingClientRect();
+      const controls = [...document.querySelectorAll("#screen .btn, #screen button, #screen input, #screen select")];
+      const worst = controls.reduce((acc, c) => {
+        const r = c.getBoundingClientRect();
+        if (r.height === 0) return acc;
+        return Math.min(acc, nav.top - r.bottom);
+      }, Infinity);
+      return { worst, controls: controls.length };
+    });
+    if (clearance.controls) {
+      check(clearance.worst >= 0, `${route} at ${viewport.width}px: a control is ${Math.abs(Math.round(clearance.worst))}px under the tab bar`);
+    }
+  }
+
   // rules page is an accordion, collapsed by default, and every panel carries an explainer
   await page.evaluate(() => { location.hash = "#/rules"; });
   await page.waitForTimeout(80);

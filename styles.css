@@ -25,6 +25,7 @@
   --r: 2px;                 /* almost no rounding — stamped metal, not glass */
   --gap: 12px;
   --tap: 44px;
+  --nav-h: 56px;
   --shadow: 0 1px 0 rgba(0,0,0,.18);
 }
 
@@ -81,7 +82,8 @@ body {
   color: var(--ink);
   font: 15px/1.5 var(--font);
   -webkit-text-size-adjust: 100%;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  /* clear the fixed tab bar plus a gap, so the last control is never half-hidden */
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
   overflow-x: hidden;
 }
 
@@ -143,7 +145,7 @@ a { color: inherit; }
 .vital.is-neuro .vital-value { color: var(--neuro); }
 
 /* ---------------------------------------------------------------- screen */
-.screen { padding: var(--gap) 14px 24px; max-width: 720px; margin: 0 auto; }
+.screen { padding: var(--gap) 14px 28px; max-width: 720px; margin: 0 auto; }
 .screen:focus { outline: none; }
 
 .card {
