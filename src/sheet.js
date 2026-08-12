@@ -118,7 +118,9 @@ function build(ch, rerender) {
     field("Dream", ch.dream, (v) => patch((c) => { c.dream = v; })),
     field("Flaw", ch.flaw, (v) => patch((c) => { c.flaw = v; })),
     field("Goal", ch.goal, (v) => patch((c) => { c.goal = v; })),
-    field("Threat", ch.threat, (v) => patch((c) => { c.threat = v; }))));
+    ch.goalWords?.length ? el("p", { class: "faint" }, ch.goalWords.join(" · ")) : null,
+    field("Threat", ch.threat, (v) => patch((c) => { c.threat = v; })),
+    ch.threatWords?.length ? el("p", { class: "faint" }, ch.threatWords.join(" · ")) : null));
 
   // --- conditions
   wrap.append(conditionsCard(ch, patch));

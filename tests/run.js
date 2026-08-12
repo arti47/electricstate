@@ -402,7 +402,7 @@ const names = await import("../data-names.js");
 const wizardMod = await import("../src/wizard.js");
 
 await test("house d100 tables are exactly 100 unique rows", () => {
-  for (const key of ["FIRST_NAMES", "SURNAMES", "SONGS", "DESCRIPTORS"]) {
+  for (const key of ["FIRST_NAMES", "SURNAMES", "SONGS", "DESCRIPTORS", "GOAL_SEEDS", "THREAT_SEEDS"]) {
     assert.equal(names[key].length, 100, `${key} has ${names[key].length}`);
     assert.equal(new Set(names[key]).size, 100, `${key} has duplicates`);
   }
@@ -422,6 +422,17 @@ await test("d100 covers the whole table and stays in range", () => {
     seen.add(core.fromD100(names.SURNAMES));
   }
   assert.equal(seen.size, 100, "every row should be reachable");
+});
+
+await test("goal and threat seeds roll three distinct words from their own table", () => {
+  for (const table of [names.GOAL_SEEDS, names.THREAT_SEEDS]) {
+    for (let i = 0; i < 100; i++) {
+      const words = wizardMod.rollDescriptors(names.SEED_ROLLS, table);
+      assert.equal(words.length, 3);
+      assert.equal(new Set(words).size, 3);
+      for (const w of words) assert.ok(table.includes(w), `${w} is not in its own table`);
+    }
+  }
 });
 
 await test("rolling descriptors returns three distinct words", () => {

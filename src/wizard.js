@@ -5,7 +5,8 @@ import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { SHARED_ITEMS } from "../data-tables.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
-import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTORS, DESCRIPTOR_ROLLS } from "../data-names.js";
+import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTORS, DESCRIPTOR_ROLLS,
+         GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, confirmModal } from "./ui.js";
@@ -312,10 +313,16 @@ const casterBlurb = (id) => {
 function stepJourney(rerender) {
   const wrap = el("div", {},
     el("p", { class: "muted" }, "Your Goal is specific and should echo your Dream. Your Threat is whatever stands in its way."));
-  wrap.append(el("div", { class: "field" }, el("label", {}, "Personal Goal"),
-    el("input", { value: draft.goal, oninput: (e) => { draft.goal = e.target.value; } })));
-  wrap.append(el("div", { class: "field" }, el("label", {}, "Personal Threat"),
-    el("input", { value: draft.threat, oninput: (e) => { draft.threat = e.target.value; } })));
+  wrap.append(seedField({
+    label: "Personal Goal", key: "goal", wordsKey: "goalWords", table: GOAL_SEEDS,
+    hint: "Three seeds: an act, a thing, a condition. Write one specific objective out of them.",
+    rerender
+  }));
+  wrap.append(seedField({
+    label: "Personal Threat", key: "threat", wordsKey: "threatWords", table: THREAT_SEEDS,
+    hint: "Three seeds: who or what, how it reaches you, what it wants.",
+    rerender
+  }));
 
   const journey = getJourney();
   wrap.append(el("div", { class: "card" },
@@ -327,6 +334,21 @@ function stepJourney(rerender) {
       : el("div", {}, el("p", { class: "faint" }, "No Journey yet. The group shares one Destination, one vehicle and three items."),
           el("a", { class: "btn", href: "#/journey" }, "Set up the Journey"))));
   return wrap;
+}
+
+/** A free-text field with a d100 seed roller beneath it. */
+function seedField({ label, key, wordsKey, table, hint, rerender }) {
+  const input = el("input", { value: draft[key] || "", oninput: (e) => { draft[key] = e.target.value; } });
+  const words = draft[wordsKey] || [];
+  return el("div", { class: "field" },
+    el("label", {}, label),
+    input,
+    el("div", { class: "card-row", style: "margin-top:6px" },
+      el("span", { class: "faint" }, words.length ? words.join(" · ") : hint),
+      el("button", {
+        class: "btn", "aria-label": `Roll seeds for ${label}`,
+        onclick: () => { draft[wordsKey] = rollDescriptors(SEED_ROLLS, table); rerender(); }
+      }, "Roll 3 words")));
 }
 
 // ------------------------------------------------------------------- step: review
@@ -411,6 +433,7 @@ function finish() {
     attributes: filledAttributes(), talents: draft.talents,
     dream: draft.dream, flaw: draft.flaw, song: draft.song, description: draft.description,
     descriptorWords: draft.descriptorWords || [],
+    goalWords: draft.goalWords || [], threatWords: draft.threatWords || [],
     neurocaster: draft.neurocaster, personalItem: draft.personalItem,
     goal: draft.goal, threat: draft.threat,
     inventory: { items: draft.personalItem ? [{ name: draft.personalItem }] : [], cash: draft.cash || 0 },

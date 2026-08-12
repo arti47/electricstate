@@ -1,5 +1,6 @@
 // HOUSE AID — not from the rulebook.
-// Three d100 tables for the creation wizard: names, songs and description words.
+// The house d100 tables for the creation wizard: names, songs, description words,
+// and seed words for the personal Goal and personal Threat.
 // The book publishes no such tables; these exist to unblock a blank page.
 // Name pairs follow the book's own pre-made convention (Cade/Courtney, Nancy/Pascal),
 // so read whichever half fits your Traveler, or mix them.
@@ -115,5 +116,54 @@ export const DESCRIPTORS = [
 ];
 
 export const DESCRIPTOR_ROLLS = 3;   // roll three, keep them distinct
+
+// ----------------------------------------------------------- d100 goal seeds
+// The book gives no Goal table (it points at one that was never printed — ruling A17).
+// Roll three and build a specific objective out of them: an act, a thing, a person.
+export const GOAL_SEEDS = [
+  "deliver", "bury", "reunite", "confess", "return", "retrieve", "destroy", "witness",
+  "warn", "cure", "record", "atone", "inherit", "escort", "sell", "buy back", "unplug",
+  "prove", "disprove", "finish", "abandon", "rebuild", "release", "forgive", "avenge",
+  "find", "outlive", "outrun", "outbid", "join", "leave", "refuse", "surrender",
+  "a grave", "a letter", "a child", "a sibling", "a parent", "a lover", "a rival",
+  "a stranger", "a corpse", "a recording", "a photograph", "a map", "a key", "a drone",
+  "a neurocaster", "a car", "a house", "a farm", "a bar", "a church", "a clinic",
+  "a laboratory", "a bunker", "a tower", "a wreck", "a border", "a coastline", "a desert",
+  "a city", "a hometown", "a memory", "a promise", "a debt", "a diagnosis", "a name",
+  "a confession", "a signal", "a frequency", "a rumour", "a cure",
+  "a formula", "a password", "a body", "before winter", "before the drought", "before they die",
+  "before the trial", "before the wedding", "before the funeral", "before the network falls",
+  "one last time", "for money", "for love", "for spite", "for nothing", "out of guilt",
+  "out of duty", "out of habit", "in secret", "in the open", "with witnesses", "alone",
+  "against orders", "with the wrong people", "too late", "too early", "at any cost"
+];
+
+// --------------------------------------------------------- d100 threat seeds
+// A personal Threat opposes the Goal. Roll three: who or what, how it reaches you, what it wants.
+export const THREAT_SEEDS = [
+  "a bounty hunter", "an old partner", "a former squadmate", "an ex-lover", "a sibling",
+  "a parent", "a child grown up", "a jilted employer", "a creditor", "a landlord",
+  "a sheriff", "a highway patrol unit", "a militia", "a biker gang", "a cult",
+  "a cult leader", "a corporate agent", "a Sentre fixer", "a rival scientist", "a journalist",
+  "a private investigator", "a drone growth", "an intercerebral intelligence", "a robot",
+  "a rogue system", "a swarm of scavenger drones", "a hitchhiker", "a doctor", "a nurse",
+  "a preacher", "a mayor", "a smuggler", "a dealer", "an addict", "a witness",
+  "a debt", "a warrant", "a blood feud", "a broken contract", "a stolen prototype",
+  "a false confession", "a photograph", "a recording", "a rumour", "blackmail",
+  "a diagnosis", "an addiction", "withdrawal", "a disease", "an infected wound",
+  "grief", "guilt", "shame", "a phobia", "flashbacks", "sleeplessness", "paranoia",
+  "a promise you broke", "a lie you told", "a body you left", "a fire you started",
+  "follows the car", "waits at the destination", "is already in the group", "arrives by radio",
+  "arrives by letter", "arrives in a neuroscape", "appears in dreams", "wears your face",
+  "knows your name", "has your photograph", "has the money", "has the evidence",
+  "has hostages", "has the law", "has the network", "wants you dead", "wants you back",
+  "wants you to confess", "wants what you carry", "wants the drone", "wants the child",
+  "wants an apology", "wants nothing you can give", "will not explain", "will not stop",
+  "will trade", "will lie first", "will take a hostage", "will burn it down",
+  "gets closer each Stop", "is patient", "is desperate", "is dying", "is mistaken",
+  "was right about you", "is protecting someone", "is owed something", "is not real", "already won once"
+];
+
+export const SEED_ROLLS = 3;
 
 export default { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTORS, HOUSE_AID };

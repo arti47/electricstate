@@ -92,6 +92,12 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.locator('#screen button:has-text("D6")').nth(1).click();  // flaw
   await page.click('#screen button:has-text("Next")');
   await page.click('#screen button:has-text("Next")');
+  // journey step: roll Goal and Threat seeds
+  await page.click('#screen button[aria-label="Roll seeds for Personal Goal"]');
+  await page.click('#screen button[aria-label="Roll seeds for Personal Threat"]');
+  await page.waitForTimeout(60);
+  const seeded = await page.evaluate(() => document.querySelectorAll("#screen .field .faint").length);
+  check(seeded >= 2, "goal and threat seed words did not render");
   await page.click('#screen button:has-text("Next")');
   await page.click('#screen button:has-text("Create Traveler")');
   await page.waitForTimeout(120);
