@@ -50,3 +50,21 @@ Pacing: activate when players stall, get confused, or want to skip ahead — nev
 
 ## Neuroscapes in play
 Only frame a scene inside a neuroscape when a Traveler explores or interacts with avatars — pure information/hacking rolls need no scene. Keep them short; the other players are idle. Generate with three D6 rolls: **Type** (major global → deserted local with a bad reputation), **Theme** (Ancient Rome, Heaven, beach party, space station, Stone Age, deep sea), **Mood** (euphoria, mystery, chill, indulgence, nostalgia, surreal).
+
+## Kicker examples (p. 115)
+
+- Gangsters raid the Traveler's community and burn it to the ground.
+- A sibling missing for months makes contact asking for help.
+- The Traveler finds a corpse in a car loaded with bags of neurine.
+- A revolutionary leader tells the Traveler it is time to strike back.
+
+## Why stick together? (D6, p. 115)
+
+| D6 | Reason |
+|---|---|
+| 1 | To split gas money. |
+| 2 | You were all stranded together at a bus station. |
+| 3 | It is the only car available where the Journey starts. |
+| 4 | A relative or friend asked if the others could come along as a favor. |
+| 5 | Only a fool travels this road alone and without guns. |
+| 6 | One of you owns the car and the others are hitchhikers. |

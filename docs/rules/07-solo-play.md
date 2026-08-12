@@ -40,3 +40,34 @@ Draw one card to judge whether an element helps or harms, and how much.
 - **Traveler events** D6: 1 a Traveler confronts their Flaw, 2 a Threat catches up, 3 a Traveler pursues their Dream, 4 a conversation raises Tension, 5 a conversation lowers Tension, 6 a Traveler wanders off.
 
 Tension between Travelers is tracked by judgment: bad conversations raise it, good ones reduce it.
+
+## NPC generation decks (pp. 214–215)
+
+Draw cards to build an NPC live: **personality type**, **emotional state**, **motive** (suit),
+**method** (suit), **quirk** (D66, p. 151), **predisposition** (Tilt). Use only the tables you
+need; redraw anything that contradicts an established element.
+
+| Card | Personality type | Emotional state |
+|---|---|---|
+| 2 | Survivor | Angry |
+| 3 | Visionary | Obsessed |
+| 4 | Leader | Cautious |
+| 5 | Pragmatist | Fearful |
+| 6 | Reactionary | Placatory |
+| 7 | Observer | Curious |
+| 8 | Schemer | Nostalgic |
+| 9 | Zealot | Excited |
+| 10 | Recluse | Anxious |
+| Jack | Paranoid | Crazed |
+| Queen | Addict | Joyful |
+| King | Megalomaniac | Confused |
+| Ace | Sociopath | Craving |
+
+Personality type is the default fallback — when in doubt, draw that alone.
+
+## Mapping locations in solo play
+
+No physical map. Mark the current location on paper, circle it, and draw lines to connected
+locations as they are discovered — a mind map rather than a floor plan. Dotted lines mark
+locations or NPCs merely heard about. Establish 3–4 locations visible from the Blocker to
+open the Stop, then generate more from the p. 126 table as needed. Each location can be a scene.

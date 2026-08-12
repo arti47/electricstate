@@ -123,7 +123,7 @@ neurine, Bliss).
 | A12 | Whether the **GM screen** should expose Threat Hope. | Threats have no Hope by rule; GM screen omits the field entirely rather than showing a null. |
 | A13 | **Solo Stop Threat Countdown (p. 213) is a D66 table whose ranges stop at 56** — results 61–66 are unassigned in the printed table. | Treat 61–66 as re-roll. Flag in the UI as a house aid, not a printed rule. |
 | A14 | **Drone Pilot** breaks several core economies: no gear, no cash, damage resolved as a drone (Hull) rather than Health, no eating, **no Bliss tracking**, and global neuroscapes only. | Implement as a first-class archetype variant, not a cosmetic flag: the sheet swaps the Health track for a drone Hull track, hides gear/cash/hunger surfaces, disables Bliss accrual, and restricts neuroscape access. Highest-complexity item in Phase 1–2. |
-| A17 | The **personal Goal examples table** referenced on p. 114 is not on p. 114 — that spread carries only Journey Length, Keep a Record and Random Tables. It must sit on the facing page (115). | Outstanding gap; request p. 115. Until then the wizard's Goal step offers free text plus the per-archetype solo Goals from Ch. 8 as suggestions. |
+| A17 | The **personal Goal examples table** referenced on p. 114 ("choose or roll on the adjacent table") does not exist on p. 112, 114 or 115, and is absent from the transcript and the summary. | Treat as a layout/editing error in the printed book. The wizard's Goal step uses free text, the per-archetype Goal suggestions from Ch. 8 (p. 207), and the Kicker examples from p. 115. Labelled a house aid, not a printed table. |
 | A16 | The p. 122 sidebar calls the first Threat category **Armed Threats**; Chapter 6 calls it **Violent Threats**. | Same category; canonicalize to *Violent*, alias *Armed*. |
 | A15 | Book is internally inconsistent on **beer**: gear list says once per **Day**, liquor once per **Shift**, both against a global 1-Hope-per-Shift cap. | Per-item cadence and the global cap both enforced; the stricter binds (A4 generalized). |
 
@@ -186,7 +186,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-35 NPC motive/method draws; predisposition rule
 - [ ] T-36 Conversation subjects; Traveler events; personal Threats; Destinations; 1990s vehicles; per-archetype solo Goals/Threats
 - [ ] T-48 Solo Threat generation: type D6 + sub-type D6 tables
-- [ ] T-49 Solo NPC personality types (13, card-indexed) and emotional states (13, card-indexed)
+- [ ] T-49 Solo NPC personality types (13) and emotional states (13), card-indexed — personality from page image, emotional states verified across transcript + summary; plus solo mind-map location procedure
 - [ ] T-50 Solo Stop Threat Countdown D66 (p. 213, see A13); start-of-Stop Shift draw (suit → Morning/Day/Evening/Night)
 
 ### `data-gm.js` (GM tables; folded into `data.js` if small)
@@ -197,7 +197,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-41 Electric State elements D66 (36); '90s nostalgia D66 (36) — source: `docs/rules/12-generator-tables.md`
 - [ ] T-42 Countdown element menu; Countdown design principles
 - [ ] T-43 Neuroscape generator (type/theme/mood)
-- [ ] T-44 Journey scaffolding: length table (sourced), Kicker examples, "why stick together" D6 — **personal Goal table still missing, see A17**
+- [ ] T-44 Journey scaffolding: length table, Kicker examples (4), "why stick together" D6 — all sourced; no printed Goal table exists (A17)
 
 ---
 
