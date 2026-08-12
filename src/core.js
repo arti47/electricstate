@@ -1,6 +1,6 @@
 // Foundational constants, DOM helpers and raw dice. No imports.
 
-export const CACHE_VERSION = "es-v7";
+export const CACHE_VERSION = "es-v8";
 export const STORAGE_KEY = "electricState.v1";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -38,6 +38,9 @@ export const d66 = () => d6() * 10 + d6();
 /** Index of a D66 result within a 36-entry table stored in D66_ORDER sequence. */
 export const d66Index = (roll) => (Math.floor(roll / 10) - 1) * 6 + ((roll % 10) - 1);
 export const roll2d6 = () => d6() + d6();
+/** d100, returned 1-100. Tables are stored as 100-entry arrays indexed by roll - 1. */
+export const d100 = () => 1 + Math.floor(Math.random() * 100);
+export const fromD100 = (table) => table[d100() - 1];
 
 /** "2d6", "d6", "3d6" → number. */
 export function rollNotation(notation) {

@@ -79,6 +79,14 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.locator("#screen .card .btn-row .btn").first().click();
   if (allowance === "2") await page.locator("#screen .card .btn-row .btn").nth(1).click();
   await page.click('#screen button:has-text("Next")');
+  await page.click('#screen button[aria-label="Roll a name"]');
+  await page.waitForTimeout(60);
+  const rolledName = await page.inputValue("#screen input >> nth=0");
+  check(/\S+\s\S+/.test(rolledName), `name roll produced "${rolledName}"`);
+  await page.click('#screen button:has-text("Roll 3 words")');
+  await page.waitForTimeout(60);
+  const words = await page.textContent("#screen");
+  check(/ · /.test(words), "descriptor roll produced no words");
   await page.fill("#screen input >> nth=0", "Test Traveler");
   await page.locator('#screen button:has-text("D6")').nth(0).click();  // dream
   await page.locator('#screen button:has-text("D6")').nth(1).click();  // flaw

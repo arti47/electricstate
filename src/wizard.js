@@ -1,10 +1,11 @@
 // Creation wizard (Phase 1). Follows the book's 17-step order, grouped into screens.
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
-import { el, clamp, d6, rollNotation, uid } from "./core.js";
+import { el, clamp, d6, d100, fromD100, rollNotation, uid } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { SHARED_ITEMS } from "../data-tables.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
+import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTORS, DESCRIPTOR_ROLLS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, confirmModal } from "./ui.js";
@@ -185,6 +186,14 @@ function toggleTalent(id, allowed, rerender) {
   rerender();
 }
 
+/** Three distinct descriptor words, re-rolling collisions. */
+export function rollDescriptors(count = DESCRIPTOR_ROLLS, table = DESCRIPTORS) {
+  const picked = new Set();
+  let guard = 0;
+  while (picked.size < Math.min(count, table.length) && guard++ < 500) picked.add(fromD100(table));
+  return [...picked];
+}
+
 export function describeTalent(t) {
   const e = t.effect || {};
   if (e.kind === "dice") return `+${e.bonus} dice${e.attr ? ` to ${e.attr}` : ""}${e.when ? ` when ${e.when}` : ""}.`;
@@ -200,13 +209,43 @@ function stepIdentity(rerender) {
     el("label", {}, label),
     el("input", { value: draft[key] || "", placeholder: placeholder || "", oninput: (e) => { draft[key] = e.target.value; } }));
 
-  wrap.append(field("Name", "name", "A name that fits 1997"));
+  // Name — two d100 tables. Pairs follow the book's own pre-made convention.
+  const nameInput = el("input", {
+    value: draft.name || "", placeholder: "A name that fits 1997",
+    oninput: (e) => { draft.name = e.target.value; }
+  });
+  wrap.append(el("div", { class: "field" },
+    el("label", {}, "Name"),
+    el("div", { class: "card-row" }, nameInput,
+      el("button", {
+        class: "btn", "aria-label": "Roll a name",
+        onclick: () => { draft.name = `${fromD100(FIRST_NAMES)} ${fromD100(SURNAMES)}`; rerender(); }
+      }, "D100")),
+    el("p", { class: "faint" }, "Rolls a paired first name and a surname. Keep whichever half of the pair suits your Traveler, or use both.")));
+
   wrap.append(rollableField("Dream", "dream", arch?.dreams, rerender));
   wrap.append(rollableField("Flaw", "flaw", arch?.flaws, rerender));
-  wrap.append(field("Favorite '90s song", "song", "No mechanical effect"));
+
+  // Song — d100 of the decade. No mechanical effect, by the book.
+  const songInput = el("input", { value: draft.song || "", oninput: (e) => { draft.song = e.target.value; } });
+  wrap.append(el("div", { class: "field" },
+    el("label", {}, "Favorite '90s song"),
+    el("div", { class: "card-row" }, songInput,
+      el("button", {
+        class: "btn", "aria-label": "Roll a song",
+        onclick: () => { draft.song = fromD100(SONGS); rerender(); }
+      }, "D100"))));
+
+  // Description — three distinct words to write around.
+  const descBox = el("textarea", { rows: 3, oninput: (e) => { draft.description = e.target.value; } }, draft.description || "");
   wrap.append(el("div", { class: "field" },
     el("label", {}, "Description"),
-    el("textarea", { rows: 3, oninput: (e) => { draft.description = e.target.value; } }, draft.description || "")));
+    descBox,
+    el("div", { class: "card-row", style: "margin-top:6px" },
+      el("span", { class: "faint" }, draft.descriptorWords?.length ? draft.descriptorWords.join(" · ") : "Three words to build a picture from"),
+      el("button", {
+        class: "btn", onclick: () => { draft.descriptorWords = rollDescriptors(); rerender(); }
+      }, "Roll 3 words"))));
   return wrap;
 }
 
@@ -371,6 +410,7 @@ function finish() {
     id: draft.id, name: draft.name.trim(), archetype: draft.archetype,
     attributes: filledAttributes(), talents: draft.talents,
     dream: draft.dream, flaw: draft.flaw, song: draft.song, description: draft.description,
+    descriptorWords: draft.descriptorWords || [],
     neurocaster: draft.neurocaster, personalItem: draft.personalItem,
     goal: draft.goal, threat: draft.threat,
     inventory: { items: draft.personalItem ? [{ name: draft.personalItem }] : [], cash: draft.cash || 0 },

@@ -40,6 +40,15 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Advancement is a **session-debrief** flow (1d6 vs attribute); overcoming the Flaw grants 3 rolls then permanently locks improvement.
 - Blocked data: weapons, consumer drones and vehicle stat tables cannot be recovered from the transcript (see docs/TRANSCRIPT-ISSUES.md). No UI is built against them until the source pages arrive.
 
+## House aids (not book content)
+- `data-names.js` holds three **d100 tables the book does not print**: paired first names,
+  surnames, favourite '90s songs, and description words. Flagged `HOUSE_AID = true` and labelled
+  as such in the UI. Name pairs follow the book's own pregen convention (`Cade/Courtney`).
+- Description rolls three distinct words as writing prompts; they are stored on the character as
+  `descriptorWords` and shown under the name on the sheet.
+- Any future invented content goes in its own file with the same flag — never mixed into the
+  extracted data files.
+
 ## Conventions
 - Cite the transcript by line number (`docs/source/core-rulebook-transcript.md:5150`), not by book page — book page numbers survive in the text but are unreliable anchors.
 - When a rules file and the transcript disagree, the transcript wins; fix the rules file.

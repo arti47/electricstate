@@ -71,7 +71,8 @@ function build(ch, rerender) {
     el("div", { class: "card-row" },
       el("h1", { style: "margin:0" }, ch.name || "Unnamed"),
       el("a", { class: "btn", href: "#/home" }, "Back")),
-    el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")));
+    el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
+    ch.descriptorWords?.length ? el("p", { class: "faint" }, ch.descriptorWords.join(" · ")) : null);
 
   // --- vitals steppers
   wrap.append(el("div", { class: "card" },

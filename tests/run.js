@@ -398,6 +398,41 @@ await test("injuries needing surgery never tick down on their own", () => {
   assert.equal(after.find((c) => c.id === "b").heal, 3, "surgery-flagged injuries wait");
 });
 
+const names = await import("../data-names.js");
+const wizardMod = await import("../src/wizard.js");
+
+await test("house d100 tables are exactly 100 unique rows", () => {
+  for (const key of ["FIRST_NAMES", "SURNAMES", "SONGS", "DESCRIPTORS"]) {
+    assert.equal(names[key].length, 100, `${key} has ${names[key].length}`);
+    assert.equal(new Set(names[key]).size, 100, `${key} has duplicates`);
+  }
+  assert.ok(names.HOUSE_AID, "these tables must be flagged as a house aid, not book content");
+});
+
+await test("first names are paired the way the book prints its pregens", () => {
+  const unpaired = names.FIRST_NAMES.filter((n) => !n.includes("/"));
+  assert.equal(unpaired.length, 0, `unpaired entries: ${unpaired.slice(0, 3)}`);
+});
+
+await test("d100 covers the whole table and stays in range", () => {
+  const seen = new Set();
+  for (let i = 0; i < 20000; i++) {
+    const roll = core.d100();
+    assert.ok(roll >= 1 && roll <= 100);
+    seen.add(core.fromD100(names.SURNAMES));
+  }
+  assert.equal(seen.size, 100, "every row should be reachable");
+});
+
+await test("rolling descriptors returns three distinct words", () => {
+  for (let i = 0; i < 200; i++) {
+    const words = wizardMod.rollDescriptors();
+    assert.equal(words.length, 3);
+    assert.equal(new Set(words).size, 3, "words must not repeat");
+    for (const w of words) assert.ok(names.DESCRIPTORS.includes(w));
+  }
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);
