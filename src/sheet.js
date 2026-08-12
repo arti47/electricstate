@@ -254,8 +254,17 @@ function neurocasterCard(ch, patch) {
   }
   card.append(el("p", { class: "faint" },
     model.realWorldPenalty === -1 ? "Only −1 die to real-world actions while worn." : "−2 dice to real-world actions while worn."));
-  if (busted) card.append(el("p", { class: "faint", style: "color:var(--danger)" },
-    "Busted: if you were inside a neuroscape, your Hope drops to zero and you roll for mental trauma."));
+  if (busted) {
+    card.append(el("p", { class: "faint", style: "color:var(--danger)" },
+      "Busted: if you were inside a neuroscape, your Hope drops to zero and you roll for mental trauma."));
+    card.append(el("button", {
+      class: "btn btn-block", onclick: async () => {
+        const { repairDialog } = await import("./roller.js");
+        const attr = ["processor", "network", "graphics"].find((k) => state[k] <= 0);
+        await repairDialog(ch, { kind: "caster", attr, name: `${model.name} ${attr}`, max: model[attr] }, rerender);
+      }
+    }, "Repair the neurocaster"));
+  }
   return card;
 }
 
@@ -272,6 +281,14 @@ function inventoryCard(ch, patch) {
       el("div", { class: "card-row" },
         el("span", {}, item.name, busted ? el("span", { class: "faint", style: "color:var(--danger)" }, " · Busted") : null),
         el("button", { class: "btn", onclick: () => patch((c) => { c.inventory.items.splice(i, 1); }) }, "Drop")),
+      item.bonus != null && item.bonus <= 0
+        ? el("button", {
+            class: "btn", onclick: async () => {
+              const { repairDialog } = await import("./roller.js");
+              await repairDialog(ch, { kind: "item", index: i, name: item.name, max: item.maxBonus ?? 1 }, rerender);
+            }
+          }, "Repair")
+        : null,
       item.bonus != null
         ? stepper("Gear bonus", item.bonus, item.maxBonus ?? item.bonus,
             (v) => patch((c) => { c.inventory.items[i].bonus = Math.max(0, v); }), "gear")

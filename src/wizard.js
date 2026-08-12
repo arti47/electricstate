@@ -630,7 +630,8 @@ function buildJourney(rerender) {
         el("button", {
           class: "btn", onclick: () => {
             const item = SHARED_ITEMS.find((i) => i.roll === +pick.value);
-            if (item) save({ sharedItems: [...(j.sharedItems || []), item] });
+            if (!item) { showToast("Choose an item first."); return; }
+            save({ sharedItems: [...(j.sharedItems || []), item] });
           }
         }, "Add"),
         el("button", {

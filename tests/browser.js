@@ -290,7 +290,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(/Blocker/.test(await page.textContent("#screen")), "solo Stop generator produced nothing");
 
   // a Countdown event must land on the screen, not just in a modal that closes
-  await page.click('#screen button:has-text("Countdown event")');
+  await page.click('#screen button:has-text("Stop Countdown")');
   await page.waitForTimeout(100);
   const modalText = (await page.textContent(".modal")) || "";
   const eventLine = modalText.replace("Stop CountdownGood", "").trim();

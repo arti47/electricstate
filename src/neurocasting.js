@@ -1,7 +1,7 @@
 // Neurocasting — this game's "powers" subsystem (Phase 4).
 // Difficulty is a number of successful rolls, each costing a Stretch and each failure a Bliss.
 import { el, rollDice, countSixes, clamp, uid } from "./core.js";
-import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIRED_BONUS } from "../data.js";
+import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIRED_BONUS, DRONES } from "../data.js";
 import { maxHope, tracksBliss } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent } from "./rules.js";
@@ -13,7 +13,9 @@ const TASK_KINDS = [
   { id: "findInformation", label: "Find information", table: INFO_DIFFICULTY, gear: "processor", attr: "wits", talent: "dataMiner" },
   { id: "hackSystem", label: "Hack a system", table: HACK_DIFFICULTY, gear: "network", attr: "wits", talent: "hacker" },
   { id: "avatarSocial", label: "Persuade an avatar", table: null, gear: "graphics", attr: "empathy", talent: "gamer" },
-  { id: "avatarCombat", label: "Fight an avatar", table: null, gear: "graphics", attr: "wits", talent: "gamer" }
+  { id: "avatarCombat", label: "Fight an avatar", table: null, gear: "graphics", attr: "wits", talent: "gamer" },
+  { id: "avatarManipulation", label: "Rewrite what an avatar believes", table: null, gear: "graphics", attr: "empathy", talent: "gamer", difficultyRange: [2, 4], perRoll: "shift" },
+  { id: "droneControl", label: "Pilot a drone", table: null, gear: "network", attr: "wits", talent: "droneOperator", drone: true }
 ];
 
 export const casterState = (ch) => {
@@ -115,6 +117,23 @@ function build(rerender) {
     if (session.kind === "hackSystem") {
       card.append(el("p", { class: "faint" }, "Add 1 to take control rather than merely disable it, and another to hold it for a Shift."));
     }
+  } else if (spec.id === "avatarManipulation") {
+    card.append(el("div", { class: "field" }, el("label", {}, "Scope of the change"),
+      el("select", { onchange: (e) => { session.difficulty = +e.target.value; session.progress = 0; session.rolls = []; rerender(); } },
+        ...[2, 3, 4].map((n) => el("option", { value: n, selected: session.difficulty === n }, `${n} successful rolls`)))));
+    card.append(el("p", { class: "faint" }, "One roll per Shift. Convinces an avatar their core beliefs are wrong — non-human entities do this to people too."));
+    if (session.difficulty < 2) session.difficulty = 2;
+  } else if (spec.id === "droneControl") {
+    const drone = el("select", { "aria-label": "Drone",
+      onchange: (e) => { session.droneId = e.target.value; rerender(); } },
+      ...DRONES.map((d) => el("option", { value: d.id, selected: session.droneId === d.id }, d.name)));
+    card.append(el("div", { class: "field" }, el("label", {}, "Drone"), drone));
+    const d = DRONES.find((x) => x.id === (session.droneId || DRONES[0].id));
+    card.append(el("p", { class: "faint" },
+      `Strength ${d.strength} · Agility ${d.agility} · Hull ${d.hull} · Armor ${d.armor} · damage ${d.damage} (${d.min}–${d.max}).`),
+      el("p", { class: "faint" },
+        "The drone's Strength and Agility replace yours; your Wits and Empathy stay your own; every roll gains Network as gear dice. Every failed roll still adds Bliss, which is how pilots stop being able to unplug."));
+    session.difficulty = 1;
   } else {
     card.append(el("p", { class: "faint" }, session.kind === "avatarCombat"
       ? `Close combat at Engaged range, but rolled on Wits with Graphics as gear dice.`

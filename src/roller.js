@@ -2,7 +2,7 @@
 // Pure resolution functions live at the top so the harness can test them without a DOM.
 import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6 } from "./core.js";
 import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
-         BODY_ARMOR, COVER, NEUROCASTERS, TASER_RULE, TRAUMATIC_EVENTS } from "../data.js";
+         BODY_ARMOR, COVER, NEUROCASTERS, TASER_RULE, TRAUMATIC_EVENTS, RANGES } from "../data.js";
 import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss } from "./derived.js";
 import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
@@ -171,9 +171,39 @@ function build(rerender) {
         })))));
   }
 
+  // weapon: sets the gear dice, the range penalty and the base damage in one place
+  const weapons = WEAPONS.filter((w) => !w.explosive);
+  const weaponSelect = el("select", { "aria-label": "Weapon",
+    onchange: (e) => { pending.weaponId = e.target.value || null; pending.result = null; rerender(); } },
+    el("option", { value: "" }, "No weapon"),
+    ...weapons.map((w) => el("option", { value: w.id, selected: pending.weaponId === w.id }, w.name)));
+  const rangeSelect = el("select", { "aria-label": "Range",
+    onchange: (e) => { pending.range = e.target.value; pending.result = null; rerender(); } },
+    ...RANGES.map((r) => el("option", { value: r.id, selected: (pending.range || "engaged") === r.id }, r.label)));
+
+  const chosen = pending.weaponId ? findWeapon(pending.weaponId) : null;
+  const rangeMod = chosen ? rangePenalty(chosen, pending.range || "engaged") : 0;
+  const weaponCard = el("div", { class: "card" }, el("h3", {}, "Weapon"),
+    el("div", { class: "field" }, weaponSelect),
+    chosen ? el("div", { class: "field" }, el("label", {}, "Range to the target"), rangeSelect) : null);
+
+  if (chosen) {
+    weaponCard.append(el("p", { class: "faint" },
+      `${chosen.gearBonusSource === "neurocasterNetwork" ? "Gear dice from your neurocaster's Network" : `+${chosen.bonus || 0} gear dice`}` +
+      ` · damage ${chosen.damage ?? (chosen.special === "stun" ? "stun only" : `blast ${chosen.blastPower}`)}` +
+      ` · ${chosen.min} to ${chosen.max}`));
+    if (rangeMod === null) weaponCard.append(el("p", { style: "color:var(--danger)" }, "Out of range — this weapon cannot reach that far."));
+    else if (rangeMod < 0) weaponCard.append(el("p", { class: "faint" }, `${rangeMod} dice for firing inside its minimum range.`));
+    if (chosen.fullAuto) weaponCard.append(toggleRow("Full auto", "fullAuto", "On a hit you may fire again, up to three bursts. Empties the magazine.", rerender));
+    weaponCard.append(toggleRow("Ambush", "ambush", "An unaware target cannot fight back or dodge. Sneaking into close combat costs 3 dice.", rerender));
+    if (chosen.special === "stun") weaponCard.append(el("p", { class: "faint" }, "No damage: the target rolls Strength at −2 dice or loses their next turn."));
+  }
+  wrap.append(weaponCard);
+
   // gear + modifier
   wrap.append(el("div", { class: "card" },
     numberRow("Gear dice", pending.gear, (v) => { pending.gear = Math.max(0, v); pending.result = null; rerender(); }),
+    numberRow("Helpers", pending.helpers || 0, (v) => { pending.helpers = clamp(v, 0, 3); pending.result = null; rerender(); }),
     numberRow("Modifier", pending.modifier, (v) => { pending.modifier = v; pending.result = null; rerender(); })));
 
   // opposed
@@ -189,11 +219,13 @@ function build(rerender) {
   const mods = conditionModifiers(ch, { attr: pending.attr });
   const talentDice = pending.talents.reduce((sum, id) => sum + (findTalent(id)?.effect.bonus || 0), 0);
   const tension = pending.opposedId ? tensionToward(ch, pending.opposedId) : 0;
+  const weaponGear = chosen && chosen.gearBonusSource !== "neurocasterNetwork" ? (chosen.bonus || 0) : 0;
+  const ambushMod = pending.ambush && (pending.range || "engaged") === "engaged" ? -3 : 0;
   const pool = buildPool({
     attributeValue: ch.attributes[pending.attr],
     talentBonus: talentDice + tension,
-    gearBonus: pending.gear,
-    modifier: pending.modifier + mods.mod
+    gearBonus: pending.gear + weaponGear,
+    modifier: pending.modifier + mods.mod + (rangeMod || 0) + ambushMod + (pending.helpers || 0)
   });
 
   wrap.append(el("div", { class: "card" },
@@ -201,7 +233,10 @@ function build(rerender) {
       el("strong", {}, `${pool.base} base + ${pool.gear} gear`),
       el("span", { class: "faint" }, `${pool.base + pool.gear} dice`)),
     mods.notes.length ? el("div", { class: "faint" }, "Conditions: " + mods.notes.join(", ")) : null,
-    tension ? el("div", { class: "faint" }, `Tension +${tension}`) : null));
+    tension ? el("div", { class: "faint" }, `Tension +${tension}`) : null,
+    rangeMod ? el("div", { class: "faint" }, `Range ${rangeMod}`) : null,
+    pending.helpers ? el("div", { class: "faint" }, `${pending.helpers} helping (+${pending.helpers}) — helping costs their turn in combat`) : null,
+    ambushMod ? el("div", { class: "faint" }, `Ambush ${ambushMod}`) : null));
 
   const legality = pushLegality(ch);
   wrap.append(el("div", { class: "btn-row" },
@@ -214,8 +249,19 @@ function build(rerender) {
   wrap.append(el("div", { class: "btn-row", style: "margin-top:16px" },
     el("a", { class: "btn", href: "#/log" }, "Roll log"),
     el("a", { class: "btn", href: "#/neuro" }, "Neuroscape"),
-    el("a", { class: "btn", href: "#/combat" }, "Combat")));
+    el("a", { class: "btn", href: "#/combat" }, "Combat"),
+    el("a", { class: "btn", href: "#/hazards" }, "Hazards"),
+    el("a", { class: "btn", href: "#/driving" }, "Driving")));
   return wrap;
+}
+
+function toggleRow(label, key, blurb, rerender) {
+  return el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:6px 0" },
+    el("span", {}, el("strong", {}, label), el("div", { class: "faint" }, blurb)),
+    el("input", {
+      type: "checkbox", style: "width:auto;min-height:auto", checked: !!pending[key],
+      onchange: (e) => { pending[key] = e.target.checked; pending.result = null; rerender(); }
+    }));
 }
 
 function numberRow(label, value, onChange) {
@@ -607,6 +653,51 @@ export async function surgeryDialog(patient, condition, onDone) {
     onDone?.((c) => { c.state.health = 0; });
     showToast("The operation fails — the patient is Incapacitated.", "danger");
   }
+}
+
+// ==================================================================== repairs
+/** Repairs need tools, a Shift and a Wits roll; each 6 restores a point of the bonus. */
+export async function repairDialog(ch, ref, onDone) {
+  const helpers = listCharacters();
+  const who = el("select", { "aria-label": "Who repairs it" }, ...helpers.map((c) => el("option", { value: c.id }, c.name)));
+  const toolMap = { caster: "toolsNeurocaster", item: "toolsGeneral" };
+  const go = await modal({
+    title: `Repair ${ref.name}`,
+    body: el("div", {},
+      el("p", { class: "faint" }, "A Shift of work and a Wits roll. Each 6 restores one point of the gear bonus. The right tools add gear dice."),
+      el("div", { class: "field" }, el("label", {}, "Who repairs it"), who)),
+    actions: [{ label: "Repair", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!go) return;
+
+  const mechanic = getCharacter(who.value);
+  const tools = (mechanic.inventory?.items || []).find((i) => i.gearId === toolMap[ref.kind] || i.gearId === "toolsGeneral");
+  const toolDice = tools?.bonus || 0;
+  const talentDice = (mechanic.talents || []).includes(ref.kind === "caster" ? "electronics" : "mechanic") ? 2 : 0;
+  const dice = rollDice(Math.max(1, mechanic.attributes.wits + talentDice));
+  const gear = rollDice(toolDice);
+  const restored = countSixes(dice) + countSixes(gear);
+
+  if (restored) {
+    const next = structuredClone(getCharacter(ch.id));
+    if (ref.kind === "caster") {
+      const model = NEUROCASTERS.find((n) => n.id === next.neurocaster);
+      const caster = next.state.caster || { processor: model.processor, network: model.network, graphics: model.graphics };
+      caster[ref.attr] = Math.min(ref.max, caster[ref.attr] + restored);
+      next.state.caster = caster;
+    } else {
+      const item = next.inventory.items[ref.index];
+      if (item) item.bonus = Math.min(ref.max, (item.bonus || 0) + restored);
+    }
+    saveCharacter(next);
+  }
+  logRoll({ by: mechanic.name, label: `Repair — ${ref.name}`, dice: [...dice, ...gear], outcome: restored ? `+${restored}` : "no progress" });
+  await modal({
+    title: restored ? `Restored ${restored}` : "No progress",
+    body: el("p", { class: "mono faint" }, [...dice, ...gear].join(" ")),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+  onDone?.();
 }
 
 export function resetRoller() { pending = null; }

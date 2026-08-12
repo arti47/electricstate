@@ -227,7 +227,8 @@ function build(rerender) {
     el("button", { class: "btn", onclick: () => fire("stretch", opts, rerender) }, "End Stretch"),
     el("button", { class: "btn btn-primary", onclick: () => fire("shift", opts, rerender) }, "End Shift"),
     el("button", { class: "btn", onclick: () => fire("day", opts, rerender) }, "End Day"),
-    el("button", { class: "btn", onclick: () => debrief(rerender) }, "End Session")));
+    el("button", { class: "btn", onclick: () => debrief(rerender) }, "End Session"),
+    el("button", { class: "btn", onclick: () => epilogue(rerender) }, "End the Journey")));
 
   // Tension → Hope
   if (chars.length > 1) {
@@ -268,6 +269,23 @@ async function summary(title, notes, rerender) {
   if (undo && undoLast()) showToast("Reverted.");
   listCharacters().forEach(() => {});
   renderVitals(null);
+  rerender();
+}
+
+/** End of the Journey: each player rolls three base dice, each one a life event. */
+async function epilogue(rerender) {
+  const chars = listCharacters();
+  if (!chars.length) { showToast("No Travelers."); return; }
+  const body = el("div", {},
+    el("p", { class: "faint" }, "Three dice each. A high result is fortune, wealth or happiness; a low one is not. Place them in any order, decide how much time passes between them, and tell them round the table."));
+  for (const ch of chars) {
+    const dice = rollDice(3);
+    logRoll({ by: ch.name, label: "Epilogue", dice, outcome: dice.join(" ") });
+    body.append(el("div", { class: "card" },
+      el("div", { class: "card-row" }, el("strong", {}, ch.name || "Unnamed"), el("span", { class: "mono" }, dice.join(" "))),
+      el("div", { class: "faint" }, dice.map((d) => (d >= 5 ? "good fortune" : d >= 3 ? "mixed" : "hard times")).join(" · "))));
+  }
+  await modal({ title: "The road ends", body, actions: [{ label: "Tell it", value: true, class: "btn-primary" }] });
   rerender();
 }
 

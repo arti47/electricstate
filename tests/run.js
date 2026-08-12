@@ -1,6 +1,7 @@
 // Headless regression harness. Data-layer and rules invariants run without a browser;
 // browser smoke tests attach once playwright-core is installed (npm i).
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 const results = [];
 const test = async (name, fn) => {
@@ -509,6 +510,32 @@ await test("kickers are finished events, and the book's four examples survive", 
 await test("the book's own D6 destination table is still available", () => {
   assert.equal(solo.DESTINATIONS.length, 6);
   assert.ok(solo.DESTINATIONS.every((d) => typeof d === "string" && d.length > 5));
+});
+
+const hazards = await import("../src/hazards.js");
+
+await test("hazard rolls turn every 6 into a point of damage", () => {
+  assert.equal(hazards.mitigate(4, [6, 6, 2]).damage, 2);
+  assert.equal(hazards.mitigate(1, [6, 6]).damage, 0, "damage never goes below zero");
+  const roll = hazards.hazardRoll(8);
+  assert.equal(roll.dice.length, 8);
+  assert.equal(roll.damage, roll.dice.filter((d) => d === 6).length);
+});
+
+await test("falling is half the height, rounded down", () => {
+  assert.equal(hazards.fallingDamage(4), 2);
+  assert.equal(hazards.fallingDamage(5), 2);
+  assert.equal(hazards.fallingDamage(11), 5);
+});
+
+await test("every subsystem the book defines has a screen", () => {
+  // Guards against a rules system existing in data but never reaching the player.
+  const routes = readFileSync(new URL("../src/router.js", import.meta.url), "utf8");
+  for (const path of ["home", "dice", "rules", "tutorial", "solo", "gm", "settings", "log",
+                      "create", "journey", "tension", "time", "neuro", "combat", "hazards",
+                      "driving", "sheet", "injury"]) {
+    assert.ok(routes.includes(`path: "${path}"`), `no route for ${path}`);
+  }
 });
 
 const failed = results.filter((r) => r[0] === "FAIL");

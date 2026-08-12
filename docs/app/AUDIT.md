@@ -46,3 +46,52 @@ what the template warns to expect.
 - Bottom nav marks the active tab with `aria-current="page"`.
 - Colour never carries meaning alone — danger states also carry text.
 - Reduced-motion honoured; layout verified at 360 and 390px with no horizontal overflow.
+
+---
+
+# Second audit — completeness and controls
+
+Two questions this time: does every system in the book reach the player, and does every
+control actually do something. Both were answered mechanically rather than by reading.
+
+## Method
+
+`tests/audit.js` seeds two Travelers and a Journey, visits all 18 routes, and clicks every
+visible button in isolation — resetting storage and re-rendering between clicks — while
+watching for page errors, console errors, and buttons that change nothing at all (no render,
+no modal, no toast, no state write, no navigation). It is a separate harness from `npm test`
+because it takes minutes rather than seconds.
+
+## Findings
+
+| # | Finding | Fix |
+|---|---|---|
+| 1 | **Add (shared items)** did nothing when no item was selected — a silent no-op. | Now says "Choose an item first." |
+| 2 | **Hazards had no surface at all.** Explosions, fire, falling and disease were in the data layer and reachable only by hand. | New `#/hazards` screen: Blast Power, Intensity, falling by height, and the daily opposed disease roll, each applying damage and offering the Agility mitigation the rules allow. |
+| 3 | **Vehicle handling had no surface.** Stunts, the three accident tables, ramming, component damage and chase obstacles were extracted but unreachable — in a game about a road trip. | New `#/driving` screen covering all five. |
+| 4 | **Weapons were not selectable when rolling.** Range bands, minimum-range penalties, full auto and ambush existed as data only. | The dice screen now has a weapon picker that applies its gear dice, the −2 per band inside minimum range, out-of-range refusal, ambush at −3 into close combat, and the taser's stun rule. |
+| 5 | **Helpers were not modelled.** The book allows up to three, each +1 die. | A Helpers control, capped at three, noting that helping costs the helper's turn in combat. |
+| 6 | **Busted gear could never be repaired** — the rules for repair existed but nothing invoked them. | Repair buttons on Busted gear and on a Busted neurocaster: Wits roll, tool dice, each 6 restoring a point. |
+| 7 | **Drone piloting was missing** from neurocasting, despite being how the Drone Pilot archetype exists. | Added as a task: drone Strength and Agility replace the operator's, Wits and Empathy stay theirs, Network supplies gear dice, and failures still accrue Bliss. |
+| 8 | **Avatar manipulation** (2–4 successes, one per Shift) was in the data and not in the task list. | Added with its scope picker. |
+| 9 | **The Journey had no ending.** The book closes with three dice per Traveler, each a life event. | End the Journey on the Time screen rolls and reads them. |
+
+## Solo sequencing
+
+The solo screen was a flat row of six buttons in no particular order. It now follows the
+sequence of play, numbered, with each phase saying what it is for:
+
+1. **Before you set out** — Journey, Travelers, the book's D6 destination, personal Threat, vehicle
+2. **On the road** — minor encounter, and the card draw for what time you arrive
+3. **Arriving at a Stop** — generate the Stop, then the Threat behind it, then more locations
+4. **Playing the Stop** — draw a card, Tilt, NPC, conversation, Traveler event
+5. **Turning the screw** — Stop Countdown, personal Threat step
+6. **Ending the Stop** — Time, and the reshuffle
+
+Three solo generators were also unreachable before this pass: **minor encounters**, the
+**start-of-Stop Shift draw**, and direct **conversation** and **Traveler event** rolls, all of
+which previously only fired if a face card happened to land on them.
+
+## Result
+
+Button audit: every control on all 18 routes responds. `npm test` at 53 invariants.

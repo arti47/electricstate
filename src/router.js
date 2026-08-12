@@ -11,6 +11,7 @@ import { lifecycleScreen } from "./lifecycle.js";
 import { neuroScreen } from "./neurocasting.js";
 import { combatScreen } from "./combat.js";
 import { tutorialScreen } from "./tutorial.js";
+import { hazardScreen, vehicleScreen } from "./hazards.js";
 
 const ROUTES = [
   { path: "home", tab: "home", render: homeScreen },
@@ -21,6 +22,8 @@ const ROUTES = [
   { path: "time", tab: "home", render: lifecycleScreen },
   { path: "neuro", tab: "dice", render: neuroScreen },
   { path: "combat", tab: "dice", render: combatScreen },
+  { path: "hazards", tab: "dice", render: hazardScreen },
+  { path: "driving", tab: "dice", render: vehicleScreen },
   { path: "solo", tab: "solo", render: soloScreen, gate: () => Settings.solo() },
   { path: "gm", tab: "gm", render: gmScreen, gate: () => Settings.gmScreen() },
   { path: "settings", tab: "settings", render: settingsScreen },

@@ -4,7 +4,7 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
          NPC_MOTIVE, NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS,
          THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
          PERSONAL_THREAT_COUNTDOWN, START_SHIFT_BY_SUIT, DESTINATIONS, SOLO_PERSONAL_THREATS,
-         NINETIES_VEHICLES, SOLO_UNSTICK } from "../data-solo.js";
+         NINETIES_VEHICLES, SOLO_UNSTICK, SOLO_PREP_STEPS, SOLO_ARCHETYPE_HOOKS } from "../data-solo.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney, listCharacters } from "./store.js";
@@ -117,56 +117,133 @@ function logEvent(kind, text, card = null) {
 function build(rerender) {
   const s = state();
   const wrap = el("div", {}, el("h1", {}, "Solo"));
-  wrap.append(explain('Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing.'));
+  wrap.append(explain("Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing."));
 
-  wrap.append(el("div", { class: "card" },
-    el("div", { class: "card-row" },
-      el("strong", {}, `${s.deck.length} cards left`),
-      el("button", { class: "btn", onclick: () => { write({ deck: freshDeck() }); showToast("Deck reshuffled."); rerender(); } }, "Reshuffle")),
-    el("p", { class: "faint" }, "Draw when you need input or momentum. Face cards fire events — the deck running down is the pacing.")));
+  const phase = (title, blurb, ...kids) =>
+    el("div", { class: "card" }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
+  const row = (...kids) => el("div", { class: "btn-row" }, ...kids.filter(Boolean));
+  const act = (label, fn, primary = false) =>
+    el("button", { class: "btn" + (primary ? " btn-primary" : ""), onclick: fn }, label);
 
-  wrap.append(el("div", { class: "btn-row" },
-    el("button", { class: "btn btn-primary", onclick: () => draw(rerender) }, "Draw a card"),
-    el("button", { class: "btn", onclick: () => tilt(rerender) }, "Tilt"),
-    el("button", { class: "btn", onclick: () => npc(rerender) }, "Generate an NPC")));
+  // ---------------------------------------------------------------- 1 prepare
+  wrap.append(phase("1 · Before you set out",
+    "Start, destination, route and vehicle. Leave the Stops unplanned — you generate each one as you arrive.",
+    row(
+      el("a", { class: "btn", href: "#/journey" }, "The Journey"),
+      el("a", { class: "btn", href: "#/home" }, "Travelers"),
+      act("Destination (book D6)", async () => {
+        const d = DESTINATIONS[d6() - 1];
+        logEvent("Destination", d); rerender();
+        await modal({ title: "Destination", body: el("p", {}, d), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }),
+      act("Personal Threat", async () => {
+        const t = SOLO_PERSONAL_THREATS[d6() - 1];
+        logEvent("Personal Threat", t); rerender();
+        await modal({ title: "Personal Threat", body: el("p", {}, t), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }),
+      act("Vehicle", async () => {
+        const v = NINETIES_VEHICLES[d6() - 1];
+        logEvent("Vehicle", v); rerender();
+        await modal({ title: "Vehicle", body: el("p", {}, v), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      })),
+    el("details", { class: "explain" }, el("summary", {}, "The prep checklist"),
+      el("ol", {}, ...SOLO_PREP_STEPS.map((x) => el("li", { class: "faint" }, x))))));
 
-  wrap.append(el("div", { class: "btn-row", style: "margin-top:8px" },
-    el("button", {
-      class: "btn", onclick: () => {
+  // ------------------------------------------------------------- 2 on the road
+  wrap.append(phase("2 · On the road",
+    "Between Stops. Encounters can be driven past — they are mood, not obligation.",
+    row(
+      act("Minor encounter", () => encounter(rerender), true),
+      act("Arrive at what time?", async () => {
+        const { card, deck } = drawFrom(state().deck);
+        if (!card) { showToast("The deck is spent — reshuffle."); return; }
+        const shift = START_SHIFT_BY_SUIT[card.suit];
+        write({ deck });
+        logEvent("Arrival", `${shift}`, card); rerender();
+        await modal({ title: `Arrive in the ${shift}`, body: el("p", {}, `${card.rank}${SUIT_GLYPH[card.suit]} — you reach the Stop in the ${shift.toLowerCase()}.`), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }))));
+
+  // ---------------------------------------------------------------- 3 the Stop
+  wrap.append(phase("3 · Arriving at a Stop",
+    "Roll the setting, the Blocker and the conflict, then the Threat behind it.",
+    row(
+      act("Generate a Stop", () => {
         const stop = generateStop();
         write({ stop });
         logEvent("New Stop", `${stop.terrain} · ${stop.blocker}`);
         rerender();
-      }
-    }, "Generate a Stop"),
-    el("button", {
-      class: "btn", onclick: () => {
+      }, true),
+      act("Generate a Threat", () => {
         const threat = generateThreat();
         write({ threat });
         logEvent("New Threat", threat.sub ? `${threat.type} — ${threat.sub}` : threat.type);
         rerender();
-      }
-    }, "Generate a Threat"),
-    el("button", {
-      class: "btn", onclick: async () => {
-        const r = rollStopCountdown();
-        logEvent("Stop Countdown", r.event);
-        rerender();
-        await modal({ title: "Stop Countdown", body: el("p", {}, r.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
-      }
-    }, "Countdown event")));
+      }),
+      act("Another location", async () => {
+        const place = d66Pick(LOCATIONS);
+        logEvent("Location", place); rerender();
+        await modal({ title: "Location", body: el("p", {}, place), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }))));
 
   if (s.stop) wrap.append(stopCard(s.stop));
   if (s.threat) wrap.append(el("div", { class: "card" }, el("h3", {}, "Threat"),
     el("p", {}, s.threat.sub ? `${s.threat.type} — ${s.threat.sub}` : s.threat.type),
     s.threat.note ? el("p", { class: "faint" }, s.threat.note) : null));
 
+  // ------------------------------------------------------------------- 4 play
+  wrap.append(phase("4 · Playing the Stop",
+    `Draw when you need input. Face cards fire events by suit. ${s.deck.length} cards left — do not reshuffle until it is spent.`,
+    row(
+      act("Draw a card", () => draw(rerender), true),
+      act("Tilt", () => tilt(rerender)),
+      act("Generate an NPC", () => npc(rerender)),
+      act("Conversation", async () => {
+        const subject = CONVERSATION_SUBJECTS[d6() - 1];
+        const { card, deck } = drawFrom(state().deck);
+        if (!card) { showToast("The deck is spent — reshuffle."); return; }
+        const read = readTilt(card);
+        write({ deck });
+        logEvent("Conversation", `${subject} — ${read.label}`, card); rerender();
+        await modal({ title: "Conversation", body: el("div", {}, el("p", {}, `Subject: ${subject}`), el("p", { class: "faint" }, `How it goes: ${read.label}`)), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }),
+      act("Traveler event", async () => {
+        const ev = TRAVELER_EVENTS[d6() - 1];
+        logEvent("Traveler event", ev.event); rerender();
+        await modal({ title: "Traveler event", body: el("p", {}, ev.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }))));
+
+  // -------------------------------------------------------------- 5 escalate
+  wrap.append(phase("5 · Turning the screw",
+    "When the players stall, or a face card tells you to, move a Countdown forward.",
+    row(
+      act("Stop Countdown", async () => {
+        const r = rollStopCountdown();
+        logEvent("Stop Countdown", r.event);
+        rerender();
+        await modal({ title: "Stop Countdown", body: el("p", {}, r.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }, true),
+      act("Personal Threat step", async () => {
+        const fired = (state().events || []).filter((e) => e.kind === "Personal Threat Countdown").length;
+        const stepData = PERSONAL_THREAT_COUNTDOWN[Math.min(2, fired)];
+        logEvent("Personal Threat Countdown", `Step ${stepData.step}: ${stepData.event}`);
+        rerender();
+        await modal({ title: `Personal Threat — step ${stepData.step} of 3`, body: el("p", {}, stepData.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      }))));
+
+  // ------------------------------------------------------------ 6 the session
+  wrap.append(phase("6 · Ending the Stop",
+    "Time passes on the Time screen — Shifts, Days and the session debrief run the same as at a table.",
+    row(
+      el("a", { class: "btn", href: "#/time" }, "Time"),
+      act(`Reshuffle (${s.deck.length} left)`, () => { write({ deck: freshDeck() }); showToast("Deck reshuffled."); rerender(); }))));
+
+  // ------------------------------------------------------------------- record
   if ((s.events || []).length) {
     const log = el("div", { class: "card" },
       el("div", { class: "card-row" },
         el("h3", { style: "margin:0" }, "What has happened"),
         el("button", { class: "btn", onclick: () => { write({ events: [] }); rerender(); } }, "Clear")));
-    for (const e of s.events.slice(0, 12)) {
+    for (const e of s.events.slice(0, 14)) {
       log.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
         el("div", { class: "card-row" },
           el("strong", {}, e.kind),
@@ -176,19 +253,23 @@ function build(rerender) {
     wrap.append(log);
   }
 
-  if (s.history.length) {
-    const log = el("div", { class: "card" }, el("h3", {}, "Draws"));
-    for (const h of s.history.slice(0, 12)) {
-      log.append(el("div", { class: "card-row", style: "padding:4px 0" },
-        el("span", { class: "mono" }, `${h.rank}${SUIT_GLYPH[h.suit]}`),
-        el("span", { class: "faint" }, h.note)));
-    }
-    wrap.append(log);
-  }
-
-  wrap.append(el("div", { class: "card" }, el("h3", {}, "When you are stuck"),
+  wrap.append(el("details", { class: "explain" }, el("summary", {}, "When you are stuck"),
     el("ul", { class: "list" }, ...SOLO_UNSTICK.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
   return wrap;
+}
+
+async function encounter(rerender) {
+  const { card, deck } = drawFrom(state().deck);
+  if (!card) { showToast("The deck is spent — reshuffle."); return; }
+  const text = MINOR_ENCOUNTERS[card.rank];
+  write({ deck });
+  logEvent("Minor encounter", text, card);
+  rerender();
+  await modal({
+    title: `${card.rank}${SUIT_GLYPH[card.suit]} — encounter`,
+    body: el("div", {}, el("p", {}, text), el("p", { class: "faint" }, "Unlike a Stop, you can drive past this one.")),
+    actions: [{ label: "Good", value: true, class: "btn-primary" }]
+  });
 }
 
 function stopCard(stop) {
