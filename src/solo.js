@@ -101,12 +101,18 @@ export function soloScreen() {
 
 const state = () => {
   const j = getJourney() || {};
-  return j.solo || { deck: freshDeck(), history: [], stop: null, threat: null };
+  return j.solo || { deck: freshDeck(), history: [], events: [], stop: null, threat: null };
 };
 const write = (patch) => {
   const j = getJourney() || {};
   saveJourney({ ...j, solo: { ...state(), ...patch } });
 };
+
+/** Records an event on the Journey so it survives the modal and the screen refresh. */
+function logEvent(kind, text, card = null) {
+  const s = state();
+  write({ events: [{ id: uid(), kind, text, card, at: Date.now() }, ...(s.events || [])].slice(0, 30) });
+}
 
 function build(rerender) {
   const s = state();
@@ -125,11 +131,27 @@ function build(rerender) {
     el("button", { class: "btn", onclick: () => npc(rerender) }, "Generate an NPC")));
 
   wrap.append(el("div", { class: "btn-row", style: "margin-top:8px" },
-    el("button", { class: "btn", onclick: () => { write({ stop: generateStop() }); rerender(); } }, "Generate a Stop"),
-    el("button", { class: "btn", onclick: () => { write({ threat: generateThreat() }); rerender(); } }, "Generate a Threat"),
+    el("button", {
+      class: "btn", onclick: () => {
+        const stop = generateStop();
+        write({ stop });
+        logEvent("New Stop", `${stop.terrain} · ${stop.blocker}`);
+        rerender();
+      }
+    }, "Generate a Stop"),
+    el("button", {
+      class: "btn", onclick: () => {
+        const threat = generateThreat();
+        write({ threat });
+        logEvent("New Threat", threat.sub ? `${threat.type} — ${threat.sub}` : threat.type);
+        rerender();
+      }
+    }, "Generate a Threat"),
     el("button", {
       class: "btn", onclick: async () => {
         const r = rollStopCountdown();
+        logEvent("Stop Countdown", r.event);
+        rerender();
         await modal({ title: "Stop Countdown", body: el("p", {}, r.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }
     }, "Countdown event")));
@@ -138,6 +160,21 @@ function build(rerender) {
   if (s.threat) wrap.append(el("div", { class: "card" }, el("h3", {}, "Threat"),
     el("p", {}, s.threat.sub ? `${s.threat.type} — ${s.threat.sub}` : s.threat.type),
     s.threat.note ? el("p", { class: "faint" }, s.threat.note) : null));
+
+  if ((s.events || []).length) {
+    const log = el("div", { class: "card" },
+      el("div", { class: "card-row" },
+        el("h3", { style: "margin:0" }, "What has happened"),
+        el("button", { class: "btn", onclick: () => { write({ events: [] }); rerender(); } }, "Clear")));
+    for (const e of s.events.slice(0, 12)) {
+      log.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+        el("div", { class: "card-row" },
+          el("strong", {}, e.kind),
+          e.card ? el("span", { class: "mono faint" }, `${e.card.rank}${SUIT_GLYPH[e.card.suit]}`) : null),
+        el("div", { class: "faint" }, e.text)));
+    }
+    wrap.append(log);
+  }
 
   if (s.history.length) {
     const log = el("div", { class: "card" }, el("h3", {}, "Draws"));
@@ -188,6 +225,7 @@ async function draw(rerender) {
   }
 
   write({ deck, history: [{ suit: card.suit, rank: card.rank, note }, ...s.history].slice(0, 40) });
+  if (event) logEvent(event.label, extra || note, card);
 
   await modal({
     title: `${card.rank}${SUIT_GLYPH[card.suit]}`,
@@ -207,6 +245,7 @@ async function tilt(rerender) {
   if (!card) { showToast("The deck is spent — reshuffle."); return; }
   const read = readTilt(card);
   write({ deck, history: [{ suit: card.suit, rank: card.rank, note: `Tilt: ${read.label}` }, ...s.history].slice(0, 40) });
+  logEvent("Tilt", read.label, card);
   await modal({
     title: `Tilt — ${card.rank}${SUIT_GLYPH[card.suit]}`,
     body: el("p", {}, read.label),
@@ -227,6 +266,7 @@ async function npc(rerender) {
   }
   const person = generateNPC(cards);
   write({ deck, history: [{ suit: cards[0].suit, rank: cards[0].rank, note: `NPC: ${person.personality}, ${person.emotion}` }, ...s.history].slice(0, 40) });
+  logEvent("NPC", `${person.personality}, ${person.emotion.toLowerCase()} · wants ${person.motive.toLowerCase()} · by ${person.method.toLowerCase()} · ${person.quirk} · ${person.predisposition.label}`, cards[0]);
 
   await modal({
     title: "An NPC",

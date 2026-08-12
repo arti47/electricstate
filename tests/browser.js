@@ -268,6 +268,23 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(80);
   check(/Blocker/.test(await page.textContent("#screen")), "solo Stop generator produced nothing");
 
+  // a Countdown event must land on the screen, not just in a modal that closes
+  await page.click('#screen button:has-text("Countdown event")');
+  await page.waitForTimeout(100);
+  const modalText = (await page.textContent(".modal")) || "";
+  const eventLine = modalText.replace("Stop CountdownGood", "").trim();
+  await page.click('.modal button:has-text("Good")');
+  await page.waitForTimeout(100);
+  const soloText = await page.textContent("#screen");
+  check(/What has happened/.test(soloText), "solo screen has no event log");
+  check(soloText.includes(eventLine.slice(0, 20)), `countdown result "${eventLine.slice(0, 30)}" was not recorded on the screen`);
+
+  // and it survives a reload, because it is Journey state
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/solo"; });
+  await page.waitForTimeout(100);
+  check(/What has happened/.test(await page.textContent("#screen")), "solo events did not persist across a reload");
+
   // gm: roll up a Stop
   await page.evaluate(() => { location.hash = "#/gm"; });
   await page.waitForTimeout(80);
