@@ -10,6 +10,7 @@ import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } f
 import { Settings } from "./settings.js";
 import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { getCombat, findCombatant, defencePool, damageCombatant } from "./combat.js";
 
 // ============================================================ pure resolution
 
@@ -169,6 +170,19 @@ function build(rerender) {
             pending.result = null; rerender();
           }
         })))));
+  }
+
+  // target: when combat is running, attacks resolve against a real combatant
+  const combat = getCombat();
+  if (combat?.active) {
+    const targets = combat.combatants.filter((c) => c.id !== ch.id);
+    wrap.append(el("div", { class: "field" }, el("label", {}, "Target"),
+      el("select", { onchange: (e) => { pending.targetId = e.target.value || null; rerender(); } },
+        el("option", { value: "" }, "No target"),
+        ...targets.map((c) => el("option", { value: c.id, selected: pending.targetId === c.id },
+          `${c.name}${c.kind === "threat" ? ` — ${c.health ?? "?"} hp` : ""}`)))));
+  } else if (pending.targetId) {
+    pending.targetId = null;
   }
 
   // weapon: sets the gear dice, the range penalty and the base damage in one place
@@ -387,16 +401,26 @@ function writeLog(ch, pool, result, pushed) {
  * A reaction makes it opposed and costs their next turn.
  */
 export async function opposedDialog(attacker, attackerSixes, onDone) {
+  const target = pending.targetId ? findCombatant(pending.targetId) : null;
+  const defaultKind = (pending.range || "engaged") === "engaged" ? "close" : "ranged";
+
   const kindSelect = el("select", { "aria-label": "Kind of attack" },
-    el("option", { value: "close" }, "Close combat — they can fight back"),
-    el("option", { value: "ranged" }, "Ranged — they can dodge"));
-  const dicePool = el("input", { type: "number", value: "4", min: "1", "aria-label": "Defender's dice" });
+    el("option", { value: "close", selected: defaultKind === "close" }, "Close combat — they can fight back"),
+    el("option", { value: "ranged", selected: defaultKind === "ranged" }, "Ranged — they can dodge"));
+  const dicePool = el("input", {
+    type: "number", min: "1", "aria-label": "Defender's dice",
+    value: String(target ? defencePool(target, defaultKind) : 4)
+  });
+  kindSelect.addEventListener("change", () => {
+    if (target) dicePool.value = String(defencePool(target, kindSelect.value));
+  });
   const damage = el("input", { type: "number", value: String(findWeapon(pending.weaponId)?.damage ?? 1), min: "0", "aria-label": "Base damage" });
 
   const go = await modal({
     title: `You rolled ${attackerSixes}`,
     body: el("div", {},
       el("p", { class: "faint" }, "A defender who reacts turns this into an opposed roll and forfeits their next turn — but it covers every attack until then."),
+      target ? el("p", {}, el("strong", {}, target.name), el("span", { class: "faint" }, " is defending — their dice are filled in below.")) : null,
       el("div", { class: "field" }, el("label", {}, "Kind of attack"), kindSelect),
       el("div", { class: "field" }, el("label", {}, "Defender's dice"), dicePool),
       el("div", { class: "field" }, el("label", {}, "Base damage"), damage)),
@@ -440,6 +464,16 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
     next.state.health = clamp(next.state.health - outcome.damage, 0, maxHealth(next));
     saveCharacter(next);
     renderVitals(next);
+  }
+
+  // A hit on a tracked combatant lands on them, wherever their health lives.
+  if (outcome.winner === "attacker" && outcome.damage && target) {
+    const result = damageCombatant(target.id, outcome.damage);
+    if (result) {
+      showToast(`${result.name}: ${result.health} left${result.health === 0 ? " — down" : ""}`,
+        result.health === 0 ? "danger" : "");
+      if (result.kind === "traveler") renderVitals(getCharacter(target.id));
+    }
   }
   onDone?.();
 }
@@ -569,6 +603,7 @@ export async function rallyDialog(target, onDone) {
 
 // ================================================================ damage flow
 export async function damageDialog(ch, onDone) {
+  const combatTarget = pending?.targetId ? findCombatant(pending.targetId) : null;
   const amount = el("input", { type: "number", value: "1", min: "0", "aria-label": "Damage" });
   const armor = el("select", { "aria-label": "Armor or cover" },
     el("option", { value: "0" }, "None"),
@@ -587,6 +622,20 @@ export async function damageDialog(ch, onDone) {
   const raw = Math.max(0, Number(amount.value) || 0);
   const level = Number(armor.value) || 0;
   const soaked = level ? soak(raw, level) : { damage: raw, stopped: 0, dice: [] };
+
+  // If a combatant is targeted and it is not this character, the damage lands on them.
+  if (combatTarget && combatTarget.id !== ch.id) {
+    const result = damageCombatant(combatTarget.id, soaked.damage);
+    logRoll({ by: ch.name, label: "Damage", dice: soaked.dice, outcome: `${soaked.damage} to ${result?.name ?? "target"}` });
+    await modal({
+      title: `${soaked.damage} to ${result?.name ?? "the target"}`,
+      body: el("p", {}, result ? `${result.health} left${result.health === 0 ? " — down." : "."}` : "Applied."),
+      actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    });
+    onDone?.();
+    return;
+  }
+
   const hMax = maxHealth(ch);
 
   const next = structuredClone(ch);
@@ -837,6 +886,13 @@ export async function repairDroneBody(ch, onDone) {
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
   onDone?.();
+}
+
+/** Called from the combat tracker: pick a target, then send the player to the dice. */
+export function setTarget(id) {
+  pending = pending || { charId: null, attr: "strength", gear: 0, modifier: 0, talents: [], opposedId: null, result: null, weaponId: null };
+  pending.targetId = id;
+  pending.result = null;
 }
 
 export function resetRoller() { pending = null; }

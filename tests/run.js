@@ -558,6 +558,41 @@ await test("resting does not repair a Drone Pilot", () => {
   assert.ok(notes.some((n) => /repair/i.test(n)), "the Shift summary should say why");
 });
 
+await test("combat defence pools come from the combatant, not a guess", () => {
+  store.resetAll();
+  const ch = makeChar({ name: "Def", attributes: { strength: 5, agility: 2, wits: 3, empathy: 3 } });
+  store.saveJourney({
+    combat: { active: true, round: 1, combatants: [
+      { id: ch.id, kind: "traveler", name: "Def" },
+      { id: "t1", kind: "threat", name: "Gang Member", threatId: "gangMember", health: 4 }
+    ] }
+  });
+  assert.equal(combatMod.defencePool(combatMod.findCombatant(ch.id), "close"), 5, "a Traveler defends with their own Strength");
+  assert.equal(combatMod.defencePool(combatMod.findCombatant(ch.id), "ranged"), 2, "and dodges on Agility");
+  assert.equal(combatMod.defencePool(combatMod.findCombatant("t1"), "close"), 3, "a Threat defends with its stat block");
+});
+
+await test("damage lands wherever the combatant's health lives", () => {
+  store.resetAll();
+  const ch = makeChar({ name: "Def" });
+  store.saveJourney({
+    combat: { active: true, round: 1, combatants: [
+      { id: ch.id, kind: "traveler", name: "Def" },
+      { id: "t1", kind: "threat", name: "Gang Member", threatId: "gangMember", health: 4 }
+    ] }
+  });
+  const threatHit = combatMod.damageCombatant("t1", 3);
+  assert.equal(threatHit.health, 1, "a Threat's health lives on the combat card");
+  assert.equal(combatMod.findCombatant("t1").health, 1);
+
+  const before = store.getCharacter(ch.id).state.health;
+  const travelerHit = combatMod.damageCombatant(ch.id, 2);
+  assert.equal(travelerHit.health, before - 2, "a Traveler's health lives on their sheet");
+  assert.equal(store.getCharacter(ch.id).state.health, before - 2);
+
+  assert.equal(combatMod.damageCombatant("t1", 99).health, 0, "health never goes negative");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

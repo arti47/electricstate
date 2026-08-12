@@ -27,7 +27,8 @@ const tasks = () => getJourney()?.tasks || [];
 const writeTasks = (list) => { const j = getJourney() || {}; saveJourney({ ...j, tasks: list }); };
 
 // ------------------------------------------------------------------- combat
-const combat = () => getJourney()?.combat || null;
+export const getCombat = () => getJourney()?.combat || null;
+const combat = getCombat;
 const writeCombat = (c) => { const j = getJourney() || {}; saveJourney({ ...j, combat: c }); };
 
 export function startCombat(side = "attackers") {
@@ -40,6 +41,40 @@ export function startCombat(side = "attackers") {
 }
 
 export function endCombat() { writeCombat(null); }
+
+export const findCombatant = (id) => (getCombat()?.combatants || []).find((c) => c.id === id) || null;
+
+/** Defence pool for a combatant: their own attribute if a Traveler, the block's if a Threat. */
+export function defencePool(combatant, kind = "close") {
+  if (!combatant) return 4;
+  if (combatant.kind === "traveler") {
+    const ch = getCharacter(combatant.id);
+    return ch ? ch.attributes[kind === "close" ? "strength" : "agility"] : 4;
+  }
+  const threat = THREATS.find((t) => t.id === combatant.threatId);
+  if (!threat) return 4;
+  return (kind === "close" ? threat.strength : threat.agility) ?? 4;
+}
+
+/** Damage a combatant wherever their health actually lives. */
+export function damageCombatant(id, amount) {
+  const c = getCombat();
+  const combatant = findCombatant(id);
+  if (!combatant) return null;
+
+  if (combatant.kind === "traveler") {
+    const ch = getCharacter(combatant.id);
+    if (!ch) return null;
+    const next = structuredClone(ch);
+    next.state.health = clamp(next.state.health - amount, 0, maxHealth(next));
+    saveCharacter(next);
+    return { name: combatant.name, health: next.state.health, kind: "traveler" };
+  }
+
+  const health = Math.max(0, (combatant.health ?? 0) - amount);
+  writeCombat({ ...c, combatants: c.combatants.map((x) => (x.id === id ? { ...x, health } : x)) });
+  return { name: combatant.name, health, kind: "threat" };
+}
 
 export function rollInitiative() {
   const a = d6(), b = d6();
@@ -144,6 +179,13 @@ function combatantCard(combatant, c, rerender) {
   card.append(el("div", { class: "btn-row", style: "margin-top:8px" },
     el("button", { class: "btn" + (combatant.acted ? "" : " btn-primary"), onclick: () => update({ acted: !combatant.acted }) },
       combatant.acted ? "Undo turn" : "Took their turn"),
+    el("button", {
+      class: "btn", onclick: async () => {
+        const { setTarget } = await import("./roller.js");
+        setTarget(combatant.id);
+        location.hash = "#/dice";
+      }
+    }, "Attack this"),
     ch ? el("a", { class: "btn", href: `#/sheet/${ch.id}` }, "Sheet") : null,
     !ch ? el("button", {
       class: "btn", onclick: async () => {

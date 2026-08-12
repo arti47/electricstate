@@ -125,3 +125,19 @@ by resting.
 | 17 | `damageAs` and `damageModel` disagreed in the data layer ("drone" against "hull"). | Canonicalized to `hull`, with the page citation. |
 
 That completes the archetype's four exception rules: no gear, no cash, no Bliss, no flesh.
+
+## Fifth pass — the tracker and the roller were separate apps
+
+Combat held initiative, zones and turn order; the roller made attacks. Neither knew the other
+existed, so an attack meant reading a stat block off the combat card and typing the defender's
+pool into the roller by hand, then applying the damage manually.
+
+| # | Finding | Fix |
+|---|---|---|
+| 18 | The roller had **no notion of a target**. | When combat is running, the dice screen lists the combatants as targets, showing a Threat's remaining health. |
+| 19 | The opposed dialog asked the attacker to **type the defender's dice**. | The pool now comes from the target: a Traveler defends on their own Strength or Agility, a Threat on its stat block, and switching between close and ranged re-reads the right attribute. |
+| 20 | A hit **did not reduce anyone**. | Damage now lands wherever that combatant's health actually lives — the sheet for a Traveler, the combat card for a Threat — and reports what is left. |
+| 21 | No route **from a combatant into an attack**. | Attack this on a combatant card selects it and opens the dice screen. |
+
+Range also feeds the reaction: attacking at Engaged defaults the dialog to close combat, which
+is what the target may fight back against, while anything further defaults to a dodge.
