@@ -7,6 +7,14 @@ project `CLAUDE.md` (repo root) at Stage C start.
 
 Status: **awaiting Stage B sign-off.** No application code yet.
 
+**Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
+`docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
+re-extracted into `docs/rules/09-stat-tables.md`. The summary is **corroboration only, never
+authority** — it is already known to be wrong in at least one place (it prices the hand grenade
+as non-commercial; the source page shows no price) and mislabels the solo encounter table as D6
+when it is card-drawn. Extraction rule: take the value from the transcript, cross-check the
+summary, and request a page image only where the two disagree or both are unreadable.
+
 ---
 
 ## 1. Checkpoint — System Profile digest
@@ -113,6 +121,9 @@ neurine, Bliss).
 | A10 | Serious injury **healing times** start when? | Start at stabilization; injuries flagged *requires surgery* do not tick down until successful surgery. |
 | A11 | Improvement after **overcoming the Flaw** is locked "you cannot improve your Traveler further" — does the session debrief still occur? | Debrief still runs for narrative and Tension purposes; the improvement roll is disabled with an explanatory note. |
 | A12 | Whether the **GM screen** should expose Threat Hope. | Threats have no Hope by rule; GM screen omits the field entirely rather than showing a null. |
+| A13 | **Solo Stop Threat Countdown (p. 213) is a D66 table whose ranges stop at 56** — results 61–66 are unassigned in the printed table. | Treat 61–66 as re-roll. Flag in the UI as a house aid, not a printed rule. |
+| A14 | **Drone Pilot** breaks several core economies: no gear, no cash, damage resolved as a drone (Hull) rather than Health, no eating, **no Bliss tracking**, and global neuroscapes only. | Implement as a first-class archetype variant, not a cosmetic flag: the sheet swaps the Health track for a drone Hull track, hides gear/cash/hunger surfaces, disables Bliss accrual, and restricts neuroscape access. Highest-complexity item in Phase 1–2. |
+| A15 | Book is internally inconsistent on **beer**: gear list says once per **Day**, liquor once per **Shift**, both against a global 1-Hope-per-Shift cap. | Per-item cadence and the global cap both enforced; the stricter binds (A4 generalized). |
 
 ---
 
@@ -153,6 +164,9 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
 - [ ] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
 - [ ] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
+- [ ] T-45 Vehicle combat: stunts, road/boat/air accident tables (D6 each), ramming formula, component damage (D6), chase procedure + obstacle D66 (transcript 7375–7700)
+- [ ] T-46 Gear price list p. 109 (~35 items: bonus, cost, use limits, Hope cadence) — transcript 7878–8060, cross-checked against the secondary summary
+- [ ] T-47 Drone Pilot archetype exception rules (no gear/cash, Hull damage model, no Bliss, global-only neuroscapes, sleep but no food)
 
 ### `data-monsters.js` / `data-npcs.js`
 - [ ] T-28 Threat stat blocks from Ch. 6 with talents, gear, example Countdowns
@@ -168,6 +182,9 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-34 Tilt table (suit valence × rank degree)
 - [ ] T-35 NPC motive/method draws; predisposition rule
 - [ ] T-36 Conversation subjects; Traveler events; personal Threats; Destinations; 1990s vehicles; per-archetype solo Goals/Threats
+- [ ] T-48 Solo Threat generation: type D6 + sub-type D6 tables
+- [ ] T-49 Solo NPC personality types (13, card-indexed) and emotional states (13, card-indexed)
+- [ ] T-50 Solo Stop Threat Countdown D66 (p. 213, see A13); start-of-Stop Shift draw (suit → Morning/Day/Evening/Night)
 
 ### `data-gm.js` (GM tables; folded into `data.js` if small)
 - [ ] T-37 Stop setting generators (terrain, population, communications, size, prosperity, weather)

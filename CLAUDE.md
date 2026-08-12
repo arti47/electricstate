@@ -13,7 +13,8 @@ as the project's canonical living spec.
 
 ## Layout
 ```
-docs/source/core-rulebook-transcript.md   raw PDF transcription, 17.5k lines — read-only source of truth
+docs/source/core-rulebook-transcript.md   raw PDF transcription, 17.5k lines — PRIMARY source of truth
+docs/source/secondary-summary.md          third-party digest of the same book — corroboration only, known errors
 docs/rules/                               distilled reference, one file per subsystem (convenience index, not authority)
 docs/TRANSCRIPT-ISSUES.md                 known extraction defects + chapter line offsets
 docs/app/RPG-APP-TEMPLATE.md              build instructions template (v2) — LOCKED architecture
@@ -42,6 +43,7 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 ## Conventions
 - Cite the transcript by line number (`docs/source/core-rulebook-transcript.md:5150`), not by book page — book page numbers survive in the text but are unreliable anchors.
 - When a rules file and the transcript disagree, the transcript wins; fix the rules file.
+- **Source precedence**: page images (`docs/rules/09-stat-tables.md`) > transcript > secondary summary. The summary corroborates; it never decides. Where transcript and summary disagree, request the page image rather than picking one.
 - Don't reconstruct the weapons, drone or vehicle stat tables from the transcript alone — the columns are de-interleaved and rows cannot be recovered reliably (see docs/TRANSCRIPT-ISSUES.md). Get those values from the PDF or the official character sheet.
 - Rules files are terse reference, not prose retelling. Keep tables as tables.
 - Content here is copyrighted material transcribed for personal use; keep it in this repo and don't publish it.
