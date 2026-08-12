@@ -68,16 +68,6 @@ export function rulesScreen() {
   return wrap;
 }
 
-export function diceScreen() {
-  return el("div", {},
-    el("h1", {}, "Dice"),
-    el("div", { class: "empty card" },
-      el("p", {}, "The dice engine lands in Phase 3. It will roll pools, run the push economy and record every roll here."),
-      el("p", { class: "faint" }, Settings.manualDice()
-        ? "Manual entry is on: you will be able to type results from physical dice."
-        : "Manual entry is off. Turn it on in Settings to type in physical dice results.")));
-}
-
 export function soloScreen() {
   return el("div", {}, el("h1", {}, "Solo"),
     el("div", { class: "empty card" }, el("p", {}, "The card oracle, tilts and NPC decks arrive in Phase 6.")));

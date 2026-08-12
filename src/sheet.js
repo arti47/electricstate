@@ -134,6 +134,13 @@ function build(ch, rerender) {
     el("h3", {}, "Notes"),
     el("textarea", { rows: 4, "aria-label": "Notes", onchange: (e) => patch((c) => { c.notes = e.target.value; }) }, ch.notes || "")));
 
+  wrap.append(el("div", { class: "btn-row", style: "margin:16px 0" },
+    el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll dice"),
+    el("button", { class: "btn", onclick: async () => { const { damageDialog } = await import("./roller.js"); damageDialog(ch, rerender); } }, "Take damage"),
+    ch.state.health === 0 && !ch.state.stabilized && !ch.state.dead
+      ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
+      : null));
+
   wrap.append(el("button", {
     class: "btn btn-danger btn-block",
     onclick: async () => {

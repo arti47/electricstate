@@ -1,7 +1,8 @@
 // Hash routing + conditional tab gating.
 import { $, $$, el } from "./core.js";
 import { Settings } from "./settings.js";
-import { homeScreen, rulesScreen, diceScreen, soloScreen, gmScreen, settingsScreen, rollLogScreen } from "./screens.js";
+import { homeScreen, rulesScreen, soloScreen, gmScreen, settingsScreen, rollLogScreen } from "./screens.js";
+import { diceScreen } from "./roller.js";
 import { wizardScreen, journeyScreen, tensionScreen } from "./wizard.js";
 import { sheetScreen, injuryScreen, clearVitals } from "./sheet.js";
 

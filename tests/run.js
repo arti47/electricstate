@@ -127,6 +127,63 @@ await test("dice helpers behave", () => {
   assert.equal(core.countOnes([6, 6, 1, 3]), 1);
 });
 
+const roller = await import("../src/roller.js");
+
+await test("pushing keeps 1s and 6s and re-rolls the rest", () => {
+  const start = { base: [1, 6, 3, 4], gear: [2, 1], pushed: false };
+  const pushed = roller.resolvePush(start, { base: [5, 2], gear: [1] });
+  assert.deepEqual(pushed.base, [1, 6, 5, 2]);
+  assert.deepEqual(pushed.gear, [1, 1]);
+  assert.equal(pushed.hopeLost, 1, "one base 1 costs one Hope");
+  assert.equal(pushed.gearDamage, 2, "all dice count after the push, kept 1s included");
+  assert.throws(() => roller.resolvePush(pushed), /only be pushed once/);
+});
+
+await test("opposed rolls bank the margin beyond what was needed", () => {
+  assert.deepEqual(roller.resolveOpposed(3, 1, { baseDamage: 2 }), { winner: "attacker", damage: 3, extra: 1 });
+  assert.equal(roller.resolveOpposed(2, 2, { kind: "ranged" }).winner, "tie");
+  assert.equal(roller.resolveOpposed(2, 2, { kind: "ranged" }).damage, 0);
+  const lost = roller.resolveOpposed(1, 3, { baseDamage: 2, kind: "close" });
+  assert.equal(lost.winner, "defender");
+  assert.equal(lost.damage, 3, "a defender who wins close combat hurts the attacker");
+  assert.equal(roller.resolveOpposed(1, 3, { kind: "ranged" }).damage, 0, "a dodged ranged attack simply misses");
+});
+
+await test("armor and cover cancel one point per 6", () => {
+  assert.deepEqual(roller.soak(4, 3, [6, 6, 2]), { dice: [6, 6, 2], stopped: 2, damage: 2 });
+  assert.equal(roller.soak(1, 6, [6, 6, 6, 6, 6, 6]).damage, 0, "damage never goes below zero");
+});
+
+await test("death rolls accumulate to three either way", () => {
+  let s1 = { successes: 0, failures: 0 };
+  s1 = roller.deathRollStep(s1, [6, 2, 3, 4]);
+  assert.equal(s1.outcome, "continue");
+  s1 = roller.deathRollStep(s1, [6, 6, 1, 2]);
+  assert.equal(s1.outcome, "stabilized", "cumulative sixes reach three");
+
+  let s2 = { successes: 0, failures: 0 };
+  for (let i = 0; i < 3; i++) s2 = roller.deathRollStep(s2, [1, 2, 3, 4]);
+  assert.equal(s2.outcome, "dead");
+});
+
+await test("instant kill triggers at twice maximum Health", () => {
+  assert.ok(roller.isInstantKill(8, 4));
+  assert.ok(!roller.isInstantKill(7, 4));
+});
+
+await test("Drama queen doubles the Tension bonus", () => {
+  const plain = { tension: { x: 2 }, talents: [] };
+  const queen = { tension: { x: 2 }, talents: ["dramaQueen"] };
+  assert.equal(roller.tensionToward(plain, "x"), 2);
+  assert.equal(roller.tensionToward(queen, "x"), 4);
+});
+
+await test("only dice talents matching the attribute are offered", () => {
+  const ch = { talents: ["athlete", "charmer", "tough"] };
+  const agility = roller.applicableTalents(ch, "agility").map((t) => t.id);
+  assert.deepEqual(agility, ["athlete"], "Tough is not a dice talent; Charmer is Empathy");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

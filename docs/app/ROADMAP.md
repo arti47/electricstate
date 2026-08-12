@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **Stage C, Phase 2 complete.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
+Status: **Stage C, Phase 3 complete — First Session Playable.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -230,17 +230,17 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] P2.6 JSON export/import in Settings
 
 ### Phase 3 — Dice engine
-- [ ] P3.1 Pool builder: attribute + talent + gear + situational, with push (base vs gear die semantics) and Busted resolution
-- [ ] P3.2 Opposed sequence incl. combat reaction choice, tie rules, margin→damage
-- [ ] P3.3 Tension dice auto-injected on Traveler-vs-Traveler rolls
-- [ ] P3.4 Condition/injury/trauma modifiers auto-applied (incl. trauma rules that rewrite push legality)
-- [ ] P3.5 Damage applier: armor/cover dice, Incapacitation, guided death rolls, instant kill
-- [ ] P3.6 Hope loss flow: traumatic event resist roll, freeze, Breakdown, rally
-- [ ] P3.7 Talent automation — every dice-effect talent is tap-to-use, never merely displayed
-- [ ] P3.8 Roll log (capped ~100, `aria-live`, re-derivable inputs), local first
-- [ ] P3.9 Rules-citation links from every automated surface into the rules library
+- [x] P3.1 Pool builder: attribute + talent + gear + situational, with push (base vs gear die semantics) and Busted resolution
+- [x] P3.2 Opposed sequence incl. combat reaction choice, tie rules, margin→damage
+- [x] P3.3 Tension dice auto-injected on Traveler-vs-Traveler rolls
+- [x] P3.4 Condition/injury/trauma modifiers auto-applied (incl. trauma rules that rewrite push legality)
+- [x] P3.5 Damage applier: armor/cover dice, Incapacitation, guided death rolls, instant kill
+- [x] P3.6 Hope loss flow: traumatic event resist roll, freeze, Breakdown, rally
+- [x] P3.7 Talent automation — every dice-effect talent is tap-to-use, never merely displayed
+- [x] P3.8 Roll log (capped ~100, `aria-live`, re-derivable inputs), local first
+- [x] P3.9 Rules-citation links from every automated surface into the rules library
 
-### 🏁 Milestone — First Session Playable
+### 🏁 Milestone — First Session Playable — **reached**
 Create Traveler → live sheet → roll tests and combat → track Health/Hope/Bliss/Tension end to end.
 
 ### Phase 4 — In-play systems

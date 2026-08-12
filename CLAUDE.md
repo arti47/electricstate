@@ -82,4 +82,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Header design note: Permanent Bliss renders inside the Bliss tile (`4 ⌊2⌋`) because by rule it is
   the irreducible floor of Bliss, not a parallel track. Tension is deliberately off the header —
   it is pairwise and needs names to mean anything.
-- Next: Phase 3 dice engine.
+- **Phase 3 complete — First Session Playable.** Dice engine: pool builder (attribute + tap-to-use
+  talents + gear + modifiers + auto-applied condition dice), push economy with base-vs-gear die
+  semantics, trauma push legality (cannotPush / mustPush enforced), Tension dice auto-injected in
+  PvP, damage applier with armor and cover soak, instant kill, guided death rolls, roll log.
+- Manual dice entry is two-stage: enter the initial dice, then only the re-rolled ones, so Hope
+  loss and gear degradation stay accurate instead of being trusted from a total.
+- Verification: `npm test` = 21 data/rules/engine invariants + browser smoke (wizard walk, sheet
+  clamping, injury apply, dice roll, log write).
+- Next: Phase 4 in-play systems (lifecycle engine, rests, progress tracker, advancement, combat).

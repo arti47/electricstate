@@ -150,6 +150,22 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   });
   check(withInjury === 1, `injury not applied (${withInjury} conditions)`);
 
+  // dice engine: roll, then confirm the log recorded it
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(80);
+  await page.click('#screen button:has-text("Roll")');
+  await page.waitForTimeout(80);
+  const resultText = await page.textContent("#screen");
+  check(/success|Failure/.test(resultText), "dice screen showed no result");
+
+  const logged = await page.evaluate(() => JSON.parse(localStorage.getItem("electricState.v1")).rollLog.length);
+  check(logged >= 1, "roll was not written to the log");
+
+  await page.evaluate(() => { location.hash = "#/log"; });
+  await page.waitForTimeout(60);
+  const logText = await page.textContent("#screen");
+  check(/success/.test(logText), "roll log did not render the entry");
+
   check(errors.length === 0, `${viewport.width}px: console errors: ${errors.join(" | ")}`);
   await page.close();
 }
