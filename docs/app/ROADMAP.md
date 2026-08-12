@@ -49,13 +49,13 @@ marked **ABSENT** and their template features are dropped, not invented.
 | Talents | ~50 | Ch. 3 |
 | Neurocaster models | 5 | Ch. 4 |
 | Shared items | 34 (D66) | Ch. 3 |
-| Weapons | ~30 | Ch. 4 — **BLOCKED, see §4** |
+| Weapons | 22 | Ch. 4 p. 81 |
 | Body armor / cover | 3 / 5 | Ch. 4 |
 | Explosives, fires, diseases | 5 / 3 / 3 | Ch. 4 |
 | Serious injuries | 18 | Ch. 4 |
 | Mental traumas | 18 | Ch. 4 |
-| Consumer drones | 6 | Ch. 4 — **BLOCKED** |
-| Vehicles | 19 | Ch. 4 — **BLOCKED** |
+| Consumer drones | 6 | Ch. 4 p. 99 |
+| Vehicles | 19 | Ch. 4 p. 101 |
 | Vehicle traits | 12 | Ch. 4 |
 | Neuroscape task difficulties | 6 info + 8 hacking | Ch. 4 |
 | Threat stat blocks | ~10 | Ch. 6 |
@@ -101,7 +101,7 @@ neurine, Bliss).
 
 | # | Issue | Proposed ruling |
 |---|---|---|
-| A1 | **Weapon / drone / vehicle stat tables unrecoverable** from the transcript (PDF de-interleaved the columns; see `docs/TRANSCRIPT-ISSUES.md`). | Blocker for ledger T-12/T-19/T-21. Request the source pages; until supplied, build the schema and leave the tables empty rather than guess. No UI is built against them (§9.1). |
+| A1 | ~~**Weapon / drone / vehicle stat tables unrecoverable** from the transcript~~ — **RESOLVED**: source pages 81/99/101 supplied as images and re-extracted to `docs/rules/09-stat-tables.md`. | T-12, T-21, T-22 unblocked; that file is canonical for those values. |
 | A2 | Ch. 3 defines **10 archetypes**; Ch. 8's solo Goal list includes an 11th, **Journalist**, absent from Ch. 3. | Treat 10 as canonical for creation; expose the Journalist Goal/Threat text only inside the solo generator, flagged as a Ch. 8 extra. |
 | A3 | Talent names differ between chapters — Ch. 6 Threat blocks cite **"Knifeman"**, Ch. 3 lists **"Blade fighter"**. | Same talent; canonicalize to *Blade fighter* and alias Knifeman in the data layer. |
 | A4 | Hope recovery via gear is capped at 1/Shift, but several items say "once per day". | Enforce both: per-item daily limit **and** the global 1/Shift ceiling; the stricter binds. |
@@ -137,7 +137,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-09 Zones, range bands, minimum/maximum range penalties
 - [ ] T-10 Initiative, action economy, reaction rules, free actions
 - [ ] T-11 Cover Armor Levels; body armor (level, Agility modifier, price)
-- [ ] T-12 **Weapons** — name, type, gear bonus, base Damage, min/max range, price, flags (single-shot, full auto, explosive, neurocaster-only) — **BLOCKED by A1**
+- [ ] T-12 **Weapons** (22) — name, gear bonus, base Damage, min/max range, price, flags (full auto, explosive, neurocaster-only, taser stun rule) — source: `docs/rules/09-stat-tables.md`
 - [ ] T-13 Full-auto, single-shot, ambush, firearms-in-close-combat rules
 - [ ] T-14 Damage, Incapacitation, death-roll, rally, stabilize, instant-kill rules
 - [ ] T-15 Serious Injuries D66 (18) with effect descriptors, healing dice, surgery flags
@@ -146,8 +146,8 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-18 Hazards: explosions/Blast Power, fire/Intensity, cold, disease/Virulence, falling, hunger/thirst, sleep deprivation
 - [ ] T-19 Neurocaster models (5) — Processor/Network/Graphics/cost, GO exception — *partially recoverable; verify against source*
 - [ ] T-20 Neurocasting: Bliss rules, wired/wireless, information Difficulty table, hacking Difficulty table, avatar social/combat/manipulation, dual-realm rule
-- [ ] T-21 **Drones** — consumer models (Str, Agi, Hull, Armor, Damage, min/max range), robots, drone growths — **BLOCKED by A1**
-- [ ] T-22 **Vehicles** — passengers, maneuverability, speed, Hull, Armor, cost — **BLOCKED by A1**; vehicle traits D66 (12) are recoverable
+- [ ] T-21 **Drones** — consumer models (6: Str, Agi, Hull, Armor, Damage, min/max range, cost), robots, drone growths — source: `docs/rules/09-stat-tables.md`
+- [ ] T-22 **Vehicles** (19: passengers, maneuverability, speed, Hull, Armor, cost, rarity tier, horse riding exception) — source: `docs/rules/09-stat-tables.md`; plus vehicle traits D66 (12)
 - [ ] T-23 Fuel/travel model (tank size, range, Shift-based travel)
 - [ ] T-24 Gear catalog: shared items D66 (34) with mechanical effects and use limits; tool sets; repair rules
 - [ ] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
@@ -253,7 +253,7 @@ Create Traveler → live sheet → roll tests and combat → track Health/Hope/B
 ## 7. Open Stage B questions
 
 Answered one at a time before Stage C:
-1. Source for the blocked stat tables (A1).
+1. ~~Source for the blocked stat tables (A1)~~ — resolved.
 2. Usage mode — full shared campaign / local-first with sync later (default) / single-device.
 3. Seat at the table — GM / player / rotates.
 4. Dice input — digital-only / digital + manual entry / manual-first.

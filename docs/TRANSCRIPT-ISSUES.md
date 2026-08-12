@@ -10,6 +10,10 @@ or re-deriving data from it:
    alone without the original layout. Same problem, less severely, in the consumer-drone table
    (~line 6870), the vehicle table (~line 7000) and several D66 tables where the D66 index column
    and the entry column are separated.
+   **Resolved for the three worst cases** — weapons (p. 81), consumer drones (p. 99) and
+   vehicles (p. 101) were re-extracted from supplied page images into
+   [`rules/09-stat-tables.md`](rules/09-stat-tables.md), which is canonical for those values.
+   D66 tables remain to be checked row by row as they are extracted.
 2. **Custom dice glyphs are dropped.** The success symbol (6) and the Hope/gear-damage symbol (1)
    were non-text glyphs, so sentences read "Once you have rolled a total of three ,". Substitute
    "6" and "1" from context.

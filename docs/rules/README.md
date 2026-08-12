@@ -15,6 +15,7 @@ Year Zero Engine variant, d6 dice pool, success = 6.
 | [06-threats.md](06-threats.md) | Ch 6 — Threat anatomy and archetypes |
 | [07-solo-play.md](07-solo-play.md) | Ch 8 — card-driven soloing |
 | [08-setting.md](08-setting.md) | Ch 2 — Pacifica, corporations, nations |
+| [09-stat-tables.md](09-stat-tables.md) | Ch 4 — weapons, consumer drones, vehicles (re-extracted from page images) |
 
 Chapter 7 (*Into the Dust*, pre-made Journey, transcript lines 11361–15026) is
 scenario content and is not distilled here.
