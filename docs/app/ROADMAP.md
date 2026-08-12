@@ -161,10 +161,10 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] T-20 Neurocasting: Bliss rules, wired/wireless, information Difficulty table, hacking Difficulty table, avatar social/combat/manipulation, dual-realm rule
 - [x] T-21 **Drones** — consumer models (6: Str, Agi, Hull, Armor, Damage, min/max range, cost), robots, drone growths — source: `docs/rules/09-stat-tables.md`
 - [x] T-22 **Vehicles** (19: passengers, maneuverability, speed, Hull, Armor, cost, rarity tier, horse riding exception) — source: `docs/rules/09-stat-tables.md`; plus vehicle traits D66 (12)
-- [ ] T-23 Fuel/travel model (tank size, range, Shift-based travel)
+- [x] T-23 Fuel/travel model (tank size, range, Shift-based travel)
 - [ ] T-24 Shared items D66 (36) with mechanical effects and use limits — source: `docs/rules/11-gear-tables.md` (transcript version is misordered, do not use)
 - [ ] T-51 Common Services (7): lodging and meal costs, surgery-for-cash at $1,000 — source: `docs/rules/11-gear-tables.md`
-- [ ] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
+- [x] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
 - [ ] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
 - [ ] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
 - [ ] T-45 Vehicle combat: stunts, road/boat/air accident tables (D6 each), ramming formula, component damage (D6), chase procedure + obstacle D66 (transcript 7375–7700)
@@ -207,7 +207,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] P0.1 Scaffold LOCKED file set: `index.html`, `styles.css`, `src/*` per §6.1, `manifest.json`, `service-worker.js`, `icon.svg`, `firebase-config.js` (placeholder + `FIREBASE_ENABLED=false`), `database.rules.json`, `tests/`, `package.json`, README
 - [ ] P0.2 Theme tokens (light/dark, system-default + toggle), phone-first shell, bottom-nav router, `ui.js` modal/toast primitives
 - [ ] P0.3 `store.js` localStorage persistence + normalization/migration path
-- [x] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
+- [ ] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
 - [ ] P0.5 **Data sub-phase B** — T-19…T-27 (neuronics, gear, recovery, advancement, rules library)
 - [ ] P0.6 **Data sub-phase C** — T-28…T-44 (threats, pregens, solo, GM tables)
 - [ ] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
