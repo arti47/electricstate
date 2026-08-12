@@ -48,6 +48,52 @@ extraction defects. This page image is canonical.
 | 65 | Kids Drone "Kid Kosmo" | Consumer drone. |
 | 66 | Classic Gaming Drone "Wally Wayne" | Consumer drone. |
 
+## Gear (p. 109)
+
+| Gear | Bonus | Cost | Comment |
+|---|---|---|---|
+| Tools, general | +1 | $25 | Any repairs. |
+| Tools, vehicle | +2 | $50 | Vehicle repairs. |
+| Tools, weapon | +2 | $100 | Weapon repairs. |
+| Tools, neurocaster | +2 | $50 | Neurocaster repairs. |
+| First aid kit | +3 | $25 | Stabilize an Incapacitated person; requires the Medic talent. **Five uses.** |
+| Surgical instruments | +2 | $100 | Gear bonus to surgery. |
+| Pack of cigarettes | — | $2 | Once per Shift: +1 Hope, –1 Health. **Four uses.** |
+| Bottle of beer | — | $2 | Once per **Day**: +1 Hope. One use. |
+| Bottle of hard liquor | — | $5 | Once per Shift: +1 Hope, –1 Health. **Three uses.** |
+| Pack of chewing gum | +1 | $1 | Empathy bonus when trying to be cool. Three uses. |
+| Binoculars | +2 | $100 | Wits rolls to spot at a distance. |
+| Neurine | — | $20 | Once per Shift: +1 Hope. **Roll Wits after each use — on a failure you become addicted and can only recover Hope this way.** One use. Also known as "dream glint." |
+| Food, canned | — | $5 | Daily food need for one person. One use. |
+| Clothes, outdoor | — | $50 | Keeps one person warm; without adequate clothes you suffer cold. |
+| Clothes, fine | +1 | $200 | Empathy bonus when trying to impress. |
+| Sleeping bag | — | $25 | One person sleeps outdoors, preventing sleep deprivation. |
+| Shades | +1 | $20 | Empathy bonus when trying to be cool. |
+| Musical instrument | +2 | $100 | Empathy bonus; requires a Stretch and the Musician talent. |
+| Dog, pet | — | $100 | Once per day, spend a Stretch to recover 1 Hope. |
+| Dog, guard | — | $250 | Attacks on command (action). Strength 5, Agility 4, Health 9, bite Damage 2. |
+| Book, fiction | — | $10 | Once per day, spend a Stretch reading to recover 1 Hope. |
+| Book, religious | — | $10 | Once per day, spend a Stretch reading to recover 1 Hope. |
+| Book, medical | +1 | $30 | Bonus to surgery rolls. |
+| Book, non-fiction | +1 | $20 | Wits bonus when the subject is relevant. |
+| Newspaper | +1 | $0.50 | Bonus to one Wits roll on current events. |
+| Walkman | — | $45 | Once per day, spend a Stretch listening to recover 1 Hope. |
+| Spare part | — | $100 | Needed to repair an inoperable vehicle. |
+| Camera | — | $200 | Needs film. |
+| Pain reliever | — | $3 | Heals 1 Health once per day if not Incapacitated. **Ten uses.** |
+| Crowbar | +2 | $10 | Strength bonus to break things; also a weapon (base Damage 1). |
+| Tent | — | $75 | Four people sleep outdoors, preventing sleep deprivation. |
+| Walkie-Talkies | — | $50 | Communication up to about one mile. |
+| Gasoline (gallon) | — | $1 | A typical car runs about 20 miles per gallon. |
+| Jerrycan | — | $20 | Holds 5 gallons of gasoline. |
+| Vanadium Redox battery | — | $50 \* | Powers drones, neurocasters and other electronics. |
+
+\* Not commercially available.
+
+**Hope-item cadences differ per item** — cigarettes and liquor are per Shift with a Health
+cost, beer/dog/books/Walkman are per day, neurine is per Shift with an addiction check. All
+sit under the global ceiling of 1 Hope per Shift from gear.
+
 ## Common Neurocasters (p. 92)
 
 | Name | Processor | Network | Graphics | Cost |

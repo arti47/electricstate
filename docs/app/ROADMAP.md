@@ -123,6 +123,7 @@ neurine, Bliss).
 | A12 | Whether the **GM screen** should expose Threat Hope. | Threats have no Hope by rule; GM screen omits the field entirely rather than showing a null. |
 | A13 | **Solo Stop Threat Countdown (p. 213) is a D66 table whose ranges stop at 56** — results 61–66 are unassigned in the printed table. | Treat 61–66 as re-roll. Flag in the UI as a house aid, not a printed rule. |
 | A14 | **Drone Pilot** breaks several core economies: no gear, no cash, damage resolved as a drone (Hull) rather than Health, no eating, **no Bliss tracking**, and global neuroscapes only. | Implement as a first-class archetype variant, not a cosmetic flag: the sheet swaps the Health track for a drone Hull track, hides gear/cash/hunger surfaces, disables Bliss accrual, and restricts neuroscape access. Highest-complexity item in Phase 1–2. |
+| A16 | The p. 122 sidebar calls the first Threat category **Armed Threats**; Chapter 6 calls it **Violent Threats**. | Same category; canonicalize to *Violent*, alias *Armed*. |
 | A15 | Book is internally inconsistent on **beer**: gear list says once per **Day**, liquor once per **Shift**, both against a global 1-Hope-per-Shift cap. | Per-item cadence and the global cap both enforced; the stricter binds (A4 generalized). |
 
 ---
@@ -166,7 +167,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
 - [ ] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
 - [ ] T-45 Vehicle combat: stunts, road/boat/air accident tables (D6 each), ramming formula, component damage (D6), chase procedure + obstacle D66 (transcript 7375–7700)
-- [ ] T-46 Gear price list p. 109 (~35 items: bonus, cost, use limits, Hope cadence) — transcript 7878–8060, cross-checked against the secondary summary
+- [ ] T-46 Gear price list p. 109 (35 items: bonus, cost, use limits, per-item Hope cadence, neurine addiction check) — source: `docs/rules/11-gear-tables.md`
 - [ ] T-47 Drone Pilot archetype exception rules (no gear/cash, Hull damage model, no Bliss, global-only neuroscapes, sleep but no food)
 
 ### `data-monsters.js` / `data-npcs.js`
@@ -188,11 +189,11 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-50 Solo Stop Threat Countdown D66 (p. 213, see A13); start-of-Stop Shift draw (suit → Morning/Day/Evening/Night)
 
 ### `data-gm.js` (GM tables; folded into `data.js` if small)
-- [ ] T-37 Stop setting generators (terrain, population, communications, size, prosperity, weather)
-- [ ] T-38 Blockers D66; Needs D6
-- [ ] T-39 Conflict generator (parties ×2, subject)
-- [ ] T-40 Locations D66
-- [ ] T-41 Electric State mood D66; '90s nostalgia D66
+- [ ] T-37 Stop setting generators (terrain, population, communications, size, prosperity, weather) — transcript, verified clean
+- [ ] T-38 Blockers D66 (36); Needs D6 — source: `docs/rules/12-generator-tables.md`
+- [ ] T-39 Conflict generator (36 parties, 36 subjects) — source: `docs/rules/12-generator-tables.md`
+- [ ] T-40 Locations D66 (36) — source: `docs/rules/12-generator-tables.md`
+- [ ] T-41 Electric State elements D66 (36); '90s nostalgia D66 (36) — source: `docs/rules/12-generator-tables.md`
 - [ ] T-42 Countdown element menu; Countdown design principles
 - [ ] T-43 Neuroscape generator (type/theme/mood)
 - [ ] T-44 Journey scaffolding: length table, Goal table, Kicker examples, "why stick together" D6

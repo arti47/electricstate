@@ -17,7 +17,8 @@ Year Zero Engine variant, d6 dice pool, success = 6.
 | [08-setting.md](08-setting.md) | Ch 2 — Pacifica, corporations, nations |
 | [09-stat-tables.md](09-stat-tables.md) | Ch 4 — weapons, consumer drones, vehicles (from page images) |
 | [10-injury-trauma-tables.md](10-injury-trauma-tables.md) | Ch 4 — serious injuries D66, mental trauma D66 (from page images) |
-| [11-gear-tables.md](11-gear-tables.md) | Ch 3–4 — shared items D66, neurocasters, common services (from page images) |
+| [11-gear-tables.md](11-gear-tables.md) | Ch 3–4 — gear price list, shared items D66, neurocasters, common services (from page images) |
+| [12-generator-tables.md](12-generator-tables.md) | Ch 5 — Electric State elements, '90s nostalgia, blockers, needs, conflicts, locations (from page images) |
 
 Chapter 7 (*Into the Dust*, pre-made Journey, transcript lines 11361–15026) is
 scenario content and is not distilled here.
