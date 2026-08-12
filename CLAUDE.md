@@ -52,12 +52,19 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Feature branch: `claude/document-study-review-cd12ud`, merged to `main` after each unit of work.
 - Push with `git push -u origin <branch>`.
 
+## Product decisions (Stage B)
+- Usage mode: **local-first**, Firebase architected day one, built after First Session Playable.
+- Dice input: **digital + manual entry** — every roll can be tapped or typed in from physical dice.
+- Theme: follow system, in-app override. Layout: phone-first.
+- Phase 6 order: solo tab before GM screen (default; reversible).
+
 ## Build status (Stage C)
 - **Phase 0 — Foundations**, data layer first.
 - Data files live at repo root per the LOCKED file structure: `data.js` (core), `data-tables.js`
   (injuries, traumas, shared items, gear, services), `data-gm.js` (Stop generators),
   `data-solo.js` (Chapter 8), `data-npcs.js` (Threats), `data-pregens.js`.
-- Ledger: 49 of 51 items extracted. Outstanding: T-27 rules-library entries, T-45 vehicle combat/chases.
+- Ledger: **51 of 51 extracted — data layer complete.** Files: data.js, data-tables.js, data-gm.js,
+  data-solo.js, data-npcs.js, data-pregens.js, data-vehicles.js, data-library.js.
 - Known book erratum: the Carbone pregen sheet prints Hope 4 where the formula gives 5. Rules
   outrank printed derived values; see `PREGEN_ERRATA` in data-pregens.js.
 - Not built yet: `index.html`, `styles.css`, `src/*`, PWA shell. Nothing renders.

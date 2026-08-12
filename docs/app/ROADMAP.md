@@ -167,8 +167,8 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] T-51 Common Services (7): lodging and meal costs, surgery-for-cash at $1,000 — source: `docs/rules/11-gear-tables.md`
 - [x] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
 - [x] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
-- [ ] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
-- [ ] T-45 Vehicle combat: stunts, road/boat/air accident tables (D6 each), ramming formula, component damage (D6), chase procedure + obstacle D66 (transcript 7375–7700)
+- [x] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
+- [x] T-45 Vehicle combat: stunts, road/boat/air accident tables (D6 each), ramming formula, component damage (D6), chase procedure + obstacle D66 (transcript 7375–7700)
 - [x] T-46 Gear price list p. 109 (35 items: bonus, cost, use limits, per-item Hope cadence, neurine addiction check) — source: `docs/rules/11-gear-tables.md`
 - [x] T-47 Drone Pilot archetype exception rules (no gear/cash, Hull damage model, no Bliss, global-only neuroscapes, sleep but no food)
 
@@ -210,7 +210,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] P0.3 `store.js` localStorage persistence + normalization/migration path
 - [x] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
 - [x] P0.5 **Data sub-phase B** — T-19…T-27 (neuronics, gear, recovery, advancement, rules library)
-- [ ] P0.6 **Data sub-phase C** — T-28…T-44 (threats, pregens, solo, GM tables)
+- [x] P0.6 **Data sub-phase C** — T-28…T-44 (threats, pregens, solo, GM tables)
 - [ ] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
 
 ### Phase 1 — Creation wizards
