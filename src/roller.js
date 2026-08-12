@@ -339,6 +339,7 @@ function resultCard(ch, pool, legality, rerender) {
 
   card.append(el("div", { class: "btn-row", style: "margin-top:12px" },
     el("button", { class: "btn", onclick: () => { pending.result = null; rerender(); } }, "Clear"),
+    el("button", { class: "btn", onclick: () => opposedDialog(ch, total, rerender) }, "They fight back"),
     el("button", { class: "btn", onclick: () => damageDialog(ch, rerender) }, "Apply damage")));
   return card;
 }
@@ -378,6 +379,69 @@ function writeLog(ch, pool, result, pushed) {
       (pushed && result.hopeLost ? ` · −${result.hopeLost} Hope` : "") +
       (pushed && result.gearDamage ? ` · gear −${result.gearDamage}` : "")
   });
+}
+
+// ============================================================ opposed resolution
+/**
+ * The defender declares before dice: take the hit / stand tall, or fight back / dodge.
+ * A reaction makes it opposed and costs their next turn.
+ */
+export async function opposedDialog(attacker, attackerSixes, onDone) {
+  const kindSelect = el("select", { "aria-label": "Kind of attack" },
+    el("option", { value: "close" }, "Close combat — they can fight back"),
+    el("option", { value: "ranged" }, "Ranged — they can dodge"));
+  const dicePool = el("input", { type: "number", value: "4", min: "1", "aria-label": "Defender's dice" });
+  const damage = el("input", { type: "number", value: String(findWeapon(pending.weaponId)?.damage ?? 1), min: "0", "aria-label": "Base damage" });
+
+  const go = await modal({
+    title: `You rolled ${attackerSixes}`,
+    body: el("div", {},
+      el("p", { class: "faint" }, "A defender who reacts turns this into an opposed roll and forfeits their next turn — but it covers every attack until then."),
+      el("div", { class: "field" }, el("label", {}, "Kind of attack"), kindSelect),
+      el("div", { class: "field" }, el("label", {}, "Defender's dice"), dicePool),
+      el("div", { class: "field" }, el("label", {}, "Base damage"), damage)),
+    actions: [{ label: "They react", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!go) return;
+
+  const defenderDice = rollDice(Math.max(1, Number(dicePool.value) || 1));
+  const defenderSixes = countSixes(defenderDice);
+  const outcome = resolveOpposed(attackerSixes, defenderSixes, {
+    baseDamage: Math.max(0, Number(damage.value) || 0),
+    kind: kindSelect.value
+  });
+
+  logRoll({
+    by: attacker.name, label: `Opposed (${kindSelect.value})`, dice: defenderDice,
+    outcome: `${attackerSixes} vs ${defenderSixes} — ${outcome.winner}${outcome.damage ? `, ${outcome.damage} damage` : ""}`
+  });
+
+  const readings = {
+    attacker: `You get through for ${outcome.damage} damage.`,
+    tie: kindSelect.value === "close"
+      ? "Tooth and nail — neither of you gets the upper hand, and nobody is hurt."
+      : "Even — the shot misses.",
+    defender: kindSelect.value === "close"
+      ? `They turn it around: you take ${outcome.damage} damage from their weapon.`
+      : "They get clear. The shot misses."
+  };
+
+  await modal({
+    title: `${attackerSixes} against ${defenderSixes}`,
+    body: el("div", {},
+      el("p", { class: "mono faint" }, defenderDice.join(" ")),
+      el("p", {}, readings[outcome.winner]),
+      el("p", { class: "faint" }, "Reacting costs them their next turn, but covers every attack until then.")),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+
+  if (outcome.winner === "defender" && outcome.damage) {
+    const next = structuredClone(getCharacter(attacker.id));
+    next.state.health = clamp(next.state.health - outcome.damage, 0, maxHealth(next));
+    saveCharacter(next);
+    renderVitals(next);
+  }
+  onDone?.();
 }
 
 // ============================================================ traumatic events
@@ -698,6 +762,25 @@ export async function repairDialog(ch, ref, onDone) {
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
   onDone?.();
+}
+
+/** Forcing someone out of the Electric State: Hope to zero, and a mental trauma. */
+export async function forcedDisconnect(ch) {
+  const sure = await confirmModal("Pull the helmet off?",
+    "They cannot leave on their own. Forcing them out drops their Hope to zero and inflicts a mental trauma — but the alternative is dying of thirst in there.", "Pull them out");
+  if (!sure) return;
+
+  const next = structuredClone(getCharacter(ch.id));
+  next.state.hope = 0;
+  saveCharacter(next);
+  renderVitals(next);
+  logRoll({ by: ch.name, label: "Forced disconnect", dice: [], outcome: "Hope to zero, roll for trauma" });
+  await modal({
+    title: "They are out",
+    body: el("p", {}, "Hope is gone and a Breakdown with it. Roll a mental trauma on the injury screen."),
+    actions: [{ label: "Roll trauma", value: true, class: "btn-primary" }]
+  });
+  location.hash = `#/injury/${ch.id}`;
 }
 
 export function resetRoller() { pending = null; }

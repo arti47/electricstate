@@ -1,5 +1,5 @@
 // Network-first for the app shell so updates land fast; cache is the offline fallback.
-const CACHE_VERSION = "es-v18";
+const CACHE_VERSION = "es-v19";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.json", "./icon.svg",
   "./data.js", "./data-tables.js", "./data-gm.js", "./data-solo.js",

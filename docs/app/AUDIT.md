@@ -95,3 +95,17 @@ which previously only fired if a face card happened to land on them.
 ## Result
 
 Button audit: every control on all 18 routes responds. `npm test` at 53 invariants.
+
+## Third pass — sequencing gaps closed
+
+Re-reading the engine against the book after the completeness fixes turned up four more
+procedures that existed as pure functions with nothing calling them:
+
+| # | Finding | Fix |
+|---|---|---|
+| 10 | **The defender's reaction was never asked for.** `resolveOpposed` was tested but unreachable: every attack resolved as if the target stood still. | "They fight back" on a roll result: pick close or ranged, the defender's pool and the base damage, and it resolves the reaction — including a close-combat defender who wins turning the damage back on the attacker. |
+| 11 | **Mental trauma could never be shaken.** The book allows one Wits or Empathy roll a week; nothing advanced a week. | "A week passes" on the Time screen rolls for each carried trauma. |
+| 12 | **Nobody could be pulled out of the Electric State.** The lose condition was surfaced but had no resolution. | The status note now carries the action: Hope to zero, and it routes straight to the trauma roll. |
+| 13 | Weapon damage did not reach the opposed maths. | The opposed dialog defaults its base damage from the selected weapon. |
+
+Button audit after all three passes: every control on all 18 routes responds. 53 invariants.

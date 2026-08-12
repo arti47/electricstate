@@ -228,6 +228,7 @@ function build(rerender) {
     el("button", { class: "btn btn-primary", onclick: () => fire("shift", opts, rerender) }, "End Shift"),
     el("button", { class: "btn", onclick: () => fire("day", opts, rerender) }, "End Day"),
     el("button", { class: "btn", onclick: () => debrief(rerender) }, "End Session"),
+    el("button", { class: "btn", onclick: () => weekPasses(rerender) }, "A week passes"),
     el("button", { class: "btn", onclick: () => epilogue(rerender) }, "End the Journey")));
 
   // Tension → Hope
@@ -270,6 +271,32 @@ async function summary(title, notes, rerender) {
   listCharacters().forEach(() => {});
   renderVitals(null);
   rerender();
+}
+
+/** Mental trauma allows one Wits or Empathy roll a week to shake it. */
+async function weekPasses(rerender) {
+  snapshot();
+  const notes = [];
+  for (const raw of listCharacters()) {
+    const ch = structuredClone(raw);
+    const traumas = (ch.conditions || []).filter((c) => c.kind === "trauma");
+    if (!traumas.length) continue;
+    for (const trauma of traumas) {
+      const attr = ch.attributes.wits >= ch.attributes.empathy ? "wits" : "empathy";
+      const dice = rollDice(ch.attributes[attr]);
+      const ok = countSixes(dice) > 0;
+      logRoll({ by: ch.name, label: `Recover from ${trauma.name}`, dice, outcome: ok ? "recovered" : "still with them" });
+      if (ok) {
+        ch.conditions = ch.conditions.filter((c) => c.id !== trauma.id);
+        notes.push(`${ch.name} shakes off ${trauma.name}.`);
+      } else {
+        notes.push(`${ch.name} is still living with ${trauma.name}.`);
+      }
+    }
+    saveCharacter(ch);
+  }
+  if (!notes.length) notes.push("Nobody is carrying a mental trauma.");
+  await summary("A week passes", notes, rerender);
 }
 
 /** End of the Journey: each player rolls three base dice, each one a life event. */

@@ -179,11 +179,20 @@ function statusNotes(ch, hMax, pMax) {
   if (ch.state.health === 0) notes.push(["Incapacitated", "You can crawl and mumble. No attribute rolls, no talents. Death rolls each turn until stabilized.", "deathRoll"]);
   if (ch.state.hope === 0) notes.push(["Breakdown", "You can talk, move and flee, but cannot roll attributes or use talents until rallied.", "breakdown"]);
   if (tracksBliss(ch) && ch.state.bliss >= ch.state.hope && ch.state.hope > 0)
-    notes.push(["Lost in the Electric State", "Bliss has caught your Hope. You cannot leave a neuroscape on your own.", "bliss"]);
+    notes.push(["Lost in the Electric State", "Bliss has caught your Hope. You cannot leave a neuroscape on your own — someone must pull the helmet off, and that costs everything.", "bliss", "pullOut"]);
   if (!notes.length) return null;
   return el("div", { style: "margin-top:8px" },
-    ...notes.map(([title, text, ruleId]) => el("div", { class: "card", style: "border-left:3px solid var(--danger)" },
-      el("strong", {}, title), el("p", { class: "faint" }, text), ruleLink(ruleId))));
+    ...notes.map(([title, text, ruleId, action]) => el("div", { class: "card", style: "border-left:3px solid var(--danger)" },
+      el("strong", {}, title), el("p", { class: "faint" }, text), ruleLink(ruleId),
+      action === "pullOut"
+        ? el("button", {
+            class: "btn btn-danger btn-block", style: "margin-top:8px",
+            onclick: async () => {
+              const { forcedDisconnect } = await import("./roller.js");
+              await forcedDisconnect(ch);
+            }
+          }, "Someone pulls the helmet off")
+        : null)));
 }
 
 export function ruleLink(id) {
