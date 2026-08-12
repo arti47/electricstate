@@ -37,6 +37,8 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **Bliss ≥ current Hope** is the neuronic lose condition — a comparison of two tracked numbers, surfaced in the persistent header.
 - **Neurocasting is the "powers" subsystem**: Difficulty 1–3 = N successful rolls, gear bonus drawn from the neurocaster attribute matching the task, Bliss on each pre-push failure.
 - **Dual-realm turns**: a character acts either in the real world or the neuroscape each round and is inert in the other.
+- **Drone Pilot takes damage as a drone**: Hull zero disconnects the operator and the drone needs
+  repairing — no death rolls, no serious injuries, no healing by rest. Mental trauma still applies.
 - Advancement is a **session-debrief** flow (1d6 vs attribute); overcoming the Flaw grants 3 rolls then permanently locks improvement.
 - Blocked data: weapons, consumer drones and vehicle stat tables cannot be recovered from the transcript (see docs/TRANSCRIPT-ISSUES.md). No UI is built against them until the source pages arrive.
 

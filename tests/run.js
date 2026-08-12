@@ -538,6 +538,26 @@ await test("every subsystem the book defines has a screen", () => {
   }
 });
 
+await test("a Drone Pilot takes damage as a drone, not a human", () => {
+  const drone = { archetype: "dronePilot", state: {}, talents: [] };
+  const human = { archetype: "veteran", state: {}, talents: [] };
+  assert.equal(derived.damageModel(drone), "hull");
+  assert.equal(derived.damageModel(human), "health");
+  assert.equal(derived.healsByResting(drone), false, "rest cannot mend a machine");
+  assert.equal(derived.healsByResting(human), true);
+  assert.equal(derived.tracksBliss(drone), false);
+  assert.equal(derived.needsFood(drone), false);
+});
+
+await test("resting does not repair a Drone Pilot", () => {
+  store.resetAll();
+  const ch = makeChar({ archetype: "dronePilot" });
+  store.saveCharacter({ ...ch, state: { ...ch.state, health: 1 } });
+  const notes = lifecycle.advanceTime("shift", { resting: true, fed: true });
+  assert.equal(store.getCharacter(ch.id).state.health, 1, "a drone gains nothing from rest");
+  assert.ok(notes.some((n) => /repair/i.test(n)), "the Shift summary should say why");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

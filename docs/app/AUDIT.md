@@ -109,3 +109,19 @@ procedures that existed as pure functions with nothing calling them:
 | 13 | Weapon damage did not reach the opposed maths. | The opposed dialog defaults its base damage from the selected weapon. |
 
 Button audit after all three passes: every control on all 18 routes responds. 53 invariants.
+
+## Fourth pass — the Drone Pilot's damage model
+
+The archetype says plainly: *"your game stats are created normally, but you suffer damage
+like a drone (page 98), not a human."* The app was relabelling the Health track "Hull" and
+otherwise treating the Drone Pilot as flesh — death rolls at zero, serious injuries, healing
+by resting.
+
+| # | Finding | Fix |
+|---|---|---|
+| 14 | Hull zero started **death rolls**. Drone rules disconnect the operator instead; the pilot's body is elsewhere and never at risk. | Hull zero now disconnects and marks the drone unusable. Death rolls are unreachable for this archetype. |
+| 15 | **Serious injuries** were offered to a machine — broken ribs, infected wounds, teeth knocked out. | The injury screen tells a Drone Pilot it has no flesh to break. Mental trauma still applies: the mind is still a mind. |
+| 16 | **Resting healed the drone** at a point per Shift. | Rest does nothing; the Shift summary says so. A wrecked drone is repaired with a Wits roll and tools, each 6 restoring a point of Hull, which is what page 108 asks for. |
+| 17 | `damageAs` and `damageModel` disagreed in the data layer ("drone" against "hull"). | Canonicalized to `hull`, with the page citation. |
+
+That completes the archetype's four exception rules: no gear, no cash, no Bliss, no flesh.

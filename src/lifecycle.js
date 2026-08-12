@@ -2,7 +2,7 @@
 // The app owns the boundaries: each one fires a bundle, shows what it did, and can be undone once.
 import { el, d6, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, ATTRIBUTES, TALENTS, TENSION } from "../data.js";
-import { maxHealth, maxHope, tracksBliss, needsFood } from "./derived.js";
+import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, exportJSON, importJSON } from "./store.js";
 import { talent as findTalent } from "./rules.js";
 import { showToast, modal, confirmModal, explain } from "./ui.js";
@@ -53,7 +53,9 @@ export function advanceTime(unit, options = {}) {
 
       const blocked = (ch.conditions || []).some((c) => c.kind === "disease") ||
         ch.state.flags.hungry || ch.state.flags.cold;
-      if (options.resting && ch.state.health > 0 && ch.state.health < hMax && !blocked) {
+      if (!healsByResting(ch) && ch.state.health < hMax) {
+        notes.push(`${name} is a drone — rest does nothing. It needs repairing.`);
+      } else if (options.resting && ch.state.health > 0 && ch.state.health < hMax && !blocked) {
         const rate = options.nurse ? RECOVERY.healthPerShiftWithNurse : RECOVERY.healthPerShift;
         ch.state.health = clamp(ch.state.health + rate, 0, hMax);
         notes.push(`${name} heals ${rate} Health.`);

@@ -489,7 +489,7 @@ export const ADVANCEMENT = {
 export const DRONE_PILOT_RULES = {
   archetype: "dronePilot",
   statsCreatedNormally: true,
-  damageAs: "drone",
+  damageAs: "hull",            // Hull zero disconnects the operator; no death rolls (p.70, p.98)
   noGear: true, noCash: true,
   needsFood: false, needsSleep: true,
   tracksBliss: false,

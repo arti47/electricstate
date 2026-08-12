@@ -92,7 +92,7 @@ function build(ch, rerender) {
             c.state.bliss = Math.max(c.state.bliss, c.state.permanentBliss);
           }), "bliss")
       : null,
-    statusNotes(ch, hMax, pMax)));
+    statusNotes(ch, hMax, pMax, rerender)));
 
   // --- attributes
   const attrGrid = el("div", { class: "card" }, el("h3", {}, "Attributes"));
@@ -147,7 +147,7 @@ function build(ch, rerender) {
     ch.state.health === 0 || ch.state.hope === 0
       ? el("button", { class: "btn", onclick: async () => { const { rallyDialog } = await import("./roller.js"); await rallyDialog(ch, rerender); } }, "Rally")
       : null,
-    ch.state.health === 0 && !ch.state.stabilized && !ch.state.dead
+    ch.state.health === 0 && !ch.state.stabilized && !ch.state.dead && !isDronePilot(ch)
       ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
       : null));
 
@@ -174,9 +174,13 @@ function stepper(label, value, max, onChange, kind) {
       el("button", { class: "btn", "aria-label": `Raise ${label}`, onclick: () => onChange(v + 1) }, "+")));
 }
 
-function statusNotes(ch, hMax, pMax) {
+function statusNotes(ch, hMax, pMax, rerender) {
   const notes = [];
-  if (ch.state.health === 0) notes.push(["Incapacitated", "You can crawl and mumble. No attribute rolls, no talents. Death rolls each turn until stabilized.", "deathRoll"]);
+  if (ch.state.health === 0 && isDronePilot(ch)) {
+    notes.push(["Disconnected", "The drone's Hull is gone, so you were thrown out of it. Your body is elsewhere, so there are no death rolls — but the drone is dead metal until someone repairs it.", "drones", "repairDrone"]);
+  } else if (ch.state.health === 0) {
+    notes.push(["Incapacitated", "You can crawl and mumble. No attribute rolls, no talents. Death rolls each turn until stabilized.", "deathRoll"]);
+  }
   if (ch.state.hope === 0) notes.push(["Breakdown", "You can talk, move and flee, but cannot roll attributes or use talents until rallied.", "breakdown"]);
   if (tracksBliss(ch) && ch.state.bliss >= ch.state.hope && ch.state.hope > 0)
     notes.push(["Lost in the Electric State", "Bliss has caught your Hope. You cannot leave a neuroscape on your own — someone must pull the helmet off, and that costs everything.", "bliss", "pullOut"]);
@@ -184,6 +188,15 @@ function statusNotes(ch, hMax, pMax) {
   return el("div", { style: "margin-top:8px" },
     ...notes.map(([title, text, ruleId, action]) => el("div", { class: "card", style: "border-left:3px solid var(--danger)" },
       el("strong", {}, title), el("p", { class: "faint" }, text), ruleLink(ruleId),
+      action === "repairDrone"
+        ? el("button", {
+            class: "btn btn-block", style: "margin-top:8px",
+            onclick: async () => {
+              const { repairDroneBody } = await import("./roller.js");
+              await repairDroneBody(ch, rerender);
+            }
+          }, "Repair the drone")
+        : null,
       action === "pullOut"
         ? el("button", {
             class: "btn btn-danger btn-block", style: "margin-top:8px",
@@ -392,7 +405,12 @@ export function injuryScreen(id) {
       location.hash = `#/sheet/${id}`;
     };
 
-    wrap.append(el("div", { class: "card" },
+    if (isDronePilot(ch)) {
+      wrap.append(el("div", { class: "card" },
+        el("h3", {}, "Serious injury"),
+        el("p", { class: "faint" }, "You are a drone: no broken ribs, no infected wounds. A wrecked Hull is repaired, not healed."),
+        el("a", { class: "btn", href: `#/sheet/${id}` }, "Back to the sheet")));
+    } else wrap.append(el("div", { class: "card" },
       el("h3", {}, "Serious injury"),
       el("p", { class: "faint" }, "Rolled after surviving Incapacitation. 11–36 means no lasting harm."),
       el("div", { class: "btn-row" },

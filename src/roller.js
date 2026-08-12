@@ -3,7 +3,7 @@
 import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6 } from "./core.js";
 import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
          BODY_ARMOR, COVER, NEUROCASTERS, TASER_RULE, TRAUMATIC_EVENTS, RANGES } from "../data.js";
-import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss } from "./derived.js";
+import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss, isDronePilot } from "./derived.js";
 import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
@@ -600,6 +600,24 @@ export async function damageDialog(ch, onDone) {
     outcome: `${raw} damage${soaked.stopped ? `, ${soaked.stopped} stopped` : ""} → ${next.state.health}/${hMax} Health`
   });
 
+  // A Drone Pilot takes damage as a drone: Hull zero disconnects the operator and the
+  // drone is unusable until repaired. No death rolls, and no flesh injuries either.
+  if (isDronePilot(next) && next.state.health === 0) {
+    next.state.disconnected = true;
+    next.state.death = null;
+    saveCharacter(next);
+    renderVitals(next);
+    await modal({
+      title: "Hull breached — disconnected",
+      body: el("div", {},
+        el("p", {}, "The drone's Hull is gone, so the operator is thrown out of it immediately."),
+        el("p", { class: "faint" }, "No death rolls: your body is elsewhere. The drone cannot be used again until someone repairs it.")),
+      actions: [{ label: "Understood", value: true, class: "btn-danger" }]
+    });
+    onDone?.();
+    return;
+  }
+
   if (isInstantKill(soaked.damage, hMax)) {
     await modal({
       title: "Killed outright",
@@ -781,6 +799,44 @@ export async function forcedDisconnect(ch) {
     actions: [{ label: "Roll trauma", value: true, class: "btn-primary" }]
   });
   location.hash = `#/injury/${ch.id}`;
+}
+
+/** Repairing a wrecked drone body: Wits, tools, a Shift; each 6 restores a point of Hull. */
+export async function repairDroneBody(ch, onDone) {
+  const helpers = listCharacters();
+  const who = el("select", { "aria-label": "Who repairs it" }, ...helpers.map((c) => el("option", { value: c.id }, c.name)));
+  const go = await modal({
+    title: "Repair the drone",
+    body: el("div", {},
+      el("p", { class: "faint" }, "A Shift of work and a Wits roll, with gear dice from vehicle or general tools. Each 6 restores a point of Hull. The Mechanic talent helps."),
+      el("div", { class: "field" }, el("label", {}, "Who works on it"), who)),
+    actions: [{ label: "Repair", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!go) return;
+
+  const mechanic = getCharacter(who.value);
+  const tools = (mechanic.inventory?.items || []).find((i) => i.gearId === "toolsVehicle" || i.gearId === "toolsGeneral");
+  const talentDice = (mechanic.talents || []).includes("mechanic") ? 2 : 0;
+  const dice = rollDice(Math.max(1, mechanic.attributes.wits + talentDice));
+  const gear = rollDice(tools?.bonus || 0);
+  const restored = countSixes(dice) + countSixes(gear);
+
+  const next = structuredClone(getCharacter(ch.id));
+  if (restored) {
+    next.state.health = clamp(next.state.health + restored, 0, maxHealth(next));
+    if (next.state.health > 0) next.state.disconnected = false;
+    saveCharacter(next);
+    renderVitals(next);
+  }
+  logRoll({ by: mechanic.name, label: "Repair drone", dice: [...dice, ...gear], outcome: restored ? `+${restored} Hull` : "no progress" });
+  await modal({
+    title: restored ? `Restored ${restored} Hull` : "No progress",
+    body: el("div", {},
+      el("p", { class: "mono faint" }, [...dice, ...gear].join(" ")),
+      next.state.health > 0 ? el("p", {}, "It moves again — you are back inside it.") : el("p", { class: "faint" }, "Still dead metal. Try again next Shift.")),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+  onDone?.();
 }
 
 export function resetRoller() { pending = null; }

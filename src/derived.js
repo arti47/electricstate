@@ -17,6 +17,9 @@ export function maxHope(ch) {
 
 /** The Drone Pilot takes damage as a drone and never tracks Bliss (p.70). */
 export const isDronePilot = (ch) => ch.archetype === DRONE_PILOT_RULES.archetype;
+/** "hull" for a Drone Pilot: no death rolls, no flesh injuries — disconnection and repair. */
+export const damageModel = (ch) => (isDronePilot(ch) ? DRONE_PILOT_RULES.damageAs : "health");
+export const healsByResting = (ch) => !isDronePilot(ch);
 export const tracksBliss = (ch) => !isDronePilot(ch);
 export const usesCash = (ch) => !isDronePilot(ch);
 export const needsFood = (ch) => !isDronePilot(ch);
