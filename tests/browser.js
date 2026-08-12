@@ -98,6 +98,10 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(60);
   const seeded = await page.evaluate(() => document.querySelectorAll("#screen .field .faint").length);
   check(seeded >= 2, "goal and threat seed words did not render");
+  await page.click('#screen button[aria-label="Roll a Kicker"]');
+  await page.waitForTimeout(60);
+  const kicker = await page.inputValue('#screen input >> nth=2');
+  check(kicker.split(" ").length >= 4, `kicker roll produced "${kicker}"`);
   await page.click('#screen button:has-text("Next")');
   await page.click('#screen button:has-text("Create Traveler")');
   await page.waitForTimeout(120);

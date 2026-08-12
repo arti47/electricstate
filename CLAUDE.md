@@ -53,10 +53,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   field they seeded, so they stay useful in play rather than being consumed at creation.
 - The Goal seeds also fill the hole left by ruling A17 — the book references a personal Goal table
   that was never printed.
-- `data-journey.js` holds four more: places, purposes, route features and vehicle details. The book
+- `data-journey.js` holds five more: places, purposes, route features, vehicle details and Kickers. The book
   gives Journey prep steps, the length table, a D6 destination table in Ch. 8, Kicker examples and
   the why-stick-together D6 — but nothing for the starting point, the route, or the vehicle
-  questions it asks. Destination rolls a place **and** a purpose; the book's own D6 sits beside it.
+  questions it asks, and only four Kicker examples where a table would serve. Destination rolls a
+  place **and** a purpose; the book's own D6 sits beside it. The Kicker is a content table — one
+  roll returns a finished event, since the Goal seeds already supply the words to interpret.
 - Place entries are described by what they are, never by named locations, so the house tables carry
   no setting text and stay inside the scope guard.
 - **Two kinds of house table, and the distinction matters** (see `docs/app/TABLE-AUDIT.md`):

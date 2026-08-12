@@ -120,7 +120,8 @@ function build(ch, rerender) {
     field("Goal", ch.goal, (v) => patch((c) => { c.goal = v; })),
     ch.goalWords?.length ? el("p", { class: "faint" }, ch.goalWords.join(" · ")) : null,
     field("Threat", ch.threat, (v) => patch((c) => { c.threat = v; })),
-    ch.threatWords?.length ? el("p", { class: "faint" }, ch.threatWords.join(" · ")) : null));
+    ch.threatWords?.length ? el("p", { class: "faint" }, ch.threatWords.join(" · ")) : null,
+    field("Kicker", ch.kicker, (v) => patch((c) => { c.kicker = v; }))));
 
   // --- conditions
   wrap.append(conditionsCard(ch, patch));

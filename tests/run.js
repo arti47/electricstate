@@ -479,7 +479,7 @@ await test("a descriptor roll takes one word from each table", () => {
 const journeyTables = await import("../data-journey.js");
 
 await test("journey house tables are 100 unique rows each", () => {
-  for (const key of ["JOURNEY_PLACES", "JOURNEY_PURPOSE", "ROUTE_FEATURES", "VEHICLE_DETAILS"]) {
+  for (const key of ["JOURNEY_PLACES", "JOURNEY_PURPOSE", "ROUTE_FEATURES", "VEHICLE_DETAILS", "KICKERS"]) {
     assert.equal(journeyTables[key].length, 100, `${key} has ${journeyTables[key].length}`);
     assert.equal(new Set(journeyTables[key]).size, 100, `${key} has duplicates`);
   }
@@ -494,6 +494,16 @@ await test("journey rolls return the requested number of distinct rows", () => {
     const details = wizardMod.pickDistinct(journeyTables.VEHICLE_DETAILS, 3);
     assert.equal(new Set(details).size, 3);
   }
+});
+
+await test("kickers are finished events, and the book's four examples survive", () => {
+  // A content table: each entry is a whole happening, not a word to interpret.
+  for (const k of journeyTables.KICKERS) {
+    assert.ok(k.split(" ").length >= 4, `"${k}" is too terse to be a Kicker`);
+  }
+  assert.equal(gm.KICKER_EXAMPLES.length, 4, "the book's own examples stay available");
+  const burned = journeyTables.KICKERS.some((k) => /burn/i.test(k));
+  assert.ok(burned, "the house table should extend the book's register, not depart from it");
 });
 
 await test("the book's own D6 destination table is still available", () => {

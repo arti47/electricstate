@@ -5,7 +5,8 @@ import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
 import { SHARED_ITEMS } from "../data-tables.js";
-import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURNEY_ROLLS } from "../data-journey.js";
+import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURNEY_ROLLS,
+         KICKERS } from "../data-journey.js";
 import { DESTINATIONS as SOLO_DESTINATIONS } from "../data-solo.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
 import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
@@ -354,6 +355,18 @@ function stepJourney(rerender) {
     rerender
   }));
 
+  // Kicker — what happened just before the Journey. A finished event, so one roll, not seeds.
+  const kickerInput = el("input", { value: draft.kicker || "", oninput: (e) => { draft.kicker = e.target.value; } });
+  wrap.append(el("div", { class: "field" },
+    el("label", {}, "Kicker"),
+    kickerInput,
+    el("div", { class: "card-row", style: "margin-top:6px" },
+      el("span", { class: "faint" }, "The thing that put you on the road now, rather than next year"),
+      el("button", {
+        class: "btn", "aria-label": "Roll a Kicker",
+        onclick: () => { draft.kicker = fromD100(KICKERS); rerender(); }
+      }, "D100"))));
+
   const journey = getJourney();
   wrap.append(el("div", { class: "card" },
     el("h3", {}, "The Journey"),
@@ -464,6 +477,7 @@ function finish() {
     dream: draft.dream, flaw: draft.flaw, song: draft.song, description: draft.description,
     descriptorWords: draft.descriptorWords || [],
     goalWords: draft.goalWords || [], threatWords: draft.threatWords || [],
+    kicker: draft.kicker || "",
     neurocaster: draft.neurocaster, personalItem: draft.personalItem,
     goal: draft.goal, threat: draft.threat,
     inventory: { items: draft.personalItem ? [{ name: draft.personalItem }] : [], cash: draft.cash || 0 },
