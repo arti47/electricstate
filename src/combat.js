@@ -5,7 +5,7 @@ import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js
 import { THREATS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
 import { maxHealth } from "./derived.js";
-import { showToast, modal, promptModal, confirmModal } from "./ui.js";
+import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 
 // ------------------------------------------------------------- progress tasks
@@ -63,6 +63,7 @@ export function combatScreen() {
 function build(rerender) {
   const c = combat();
   const wrap = el("div", {}, el("h1", {}, "Combat"));
+  wrap.append(explain('Zones rather than a grid. The side that starts the fight acts first, everyone gets a move and an action, and a reaction costs your next turn. Anyone wearing a neurocaster picks a realm each round and is inert in the other one.'));
 
   if (!c) {
     wrap.append(el("div", { class: "card" },

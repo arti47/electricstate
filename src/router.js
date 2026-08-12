@@ -10,11 +10,13 @@ import { sheetScreen, injuryScreen, clearVitals } from "./sheet.js";
 import { lifecycleScreen } from "./lifecycle.js";
 import { neuroScreen } from "./neurocasting.js";
 import { combatScreen } from "./combat.js";
+import { tutorialScreen } from "./tutorial.js";
 
 const ROUTES = [
   { path: "home", tab: "home", render: homeScreen },
   { path: "dice", tab: "dice", render: diceScreen },
   { path: "rules", tab: "rules", render: rulesScreen },
+  { path: "tutorial", tab: "rules", render: tutorialScreen },
   { path: "log", tab: "dice", render: rollLogScreen },
   { path: "time", tab: "home", render: lifecycleScreen },
   { path: "neuro", tab: "dice", render: neuroScreen },

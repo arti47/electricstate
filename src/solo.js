@@ -8,7 +8,7 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney, listCharacters } from "./store.js";
-import { showToast, modal } from "./ui.js";
+import { showToast, modal, explain } from "./ui.js";
 
 const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" };
 
@@ -111,6 +111,7 @@ const write = (patch) => {
 function build(rerender) {
   const s = state();
   const wrap = el("div", {}, el("h1", {}, "Solo"));
+  wrap.append(explain('Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing.'));
 
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },

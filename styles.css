@@ -208,6 +208,42 @@ table { border-collapse: collapse; width: 100%; font-size: .85rem; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line-soft); }
 th { color: var(--ink-faint); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
 
+/* ------------------------------------------------------- accordions & notes */
+details { border-radius: var(--r); }
+details > summary {
+  cursor: pointer; list-style: none;
+  min-height: var(--tap); display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-head); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase;
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: "▸"; color: var(--ink-faint); font-size: .8rem; transition: transform .12s ease;
+}
+details[open] > summary::before { transform: rotate(90deg); }
+
+/* the collapsed "what this does" note */
+.explain { margin: 4px 0 12px; border-left: 2px solid var(--line); padding-left: 10px; }
+.explain > summary { color: var(--ink-faint); min-height: 32px; }
+.explain > summary:hover { color: var(--ink-dim); }
+.explain p { margin: 4px 0 8px; color: var(--ink-dim); font-size: .85rem; }
+
+/* rules-library accordion */
+.rule-group { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 8px; }
+.rule-group > summary { padding: 12px; color: var(--ink); }
+.rule-group > summary .count { margin-left: auto; color: var(--ink-faint); font-size: .7rem; }
+.rule-entry { border-top: 1px solid var(--line-soft); padding: 0 12px; }
+.rule-entry > summary { color: var(--ink-dim); }
+.rule-entry[open] > summary { color: var(--ink); }
+.rule-entry p { margin: 0 0 10px; color: var(--ink-dim); font-size: .9rem; }
+
+/* tutorial */
+.step { counter-increment: step; }
+.step > summary::after {
+  content: counter(step); margin-left: auto;
+  color: var(--ink-faint); font-family: var(--mono); font-size: .75rem;
+}
+.tutorial { counter-reset: step; }
+
 /* ---------------------------------------------------------------- tabbar */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;

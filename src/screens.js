@@ -3,13 +3,15 @@ import { $, el } from "./core.js";
 import { Settings, TOGGLES, set as setSetting, get as getSetting } from "./settings.js";
 import { listCharacters, exportJSON, importJSON, getRollLog, resetAll } from "./store.js";
 import { searchLibrary } from "./rules.js";
-import { showToast, confirmModal } from "./ui.js";
+import { showToast, confirmModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
 
 export function homeScreen() {
   const wrap = el("div");
   const chars = listCharacters();
   wrap.append(el("h1", {}, "Travelers"));
+  wrap.append(explain("Everyone you are playing lives here. Tap a Traveler to open their sheet — vitals, talents, gear and conditions. The Journey is shared by the whole group: one destination, one vehicle, three items between you."));
+  if (!chars.length) wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "First time? Start here"));
 
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" },
@@ -51,6 +53,8 @@ export function homeScreen() {
 export function rulesScreen() {
   const wrap = el("div");
   wrap.append(el("h1", {}, "Rules"));
+  wrap.append(explain("Every rule the app automates, in the app's own words, grouped by subject. Panels stay closed until you open one. Searching opens whatever matches, so you can type \"push\" or \"bliss\" instead of hunting."));
+
   const results = el("div");
   const input = el("input", {
     type: "search", placeholder: "Search rules…", "aria-label": "Search rules",
@@ -61,26 +65,58 @@ export function rulesScreen() {
   const focus = sessionStorage.getItem("ruleFocus");
   if (focus) sessionStorage.removeItem("ruleFocus");
 
+  // Subject order runs roughly in the order a session needs them.
+  const GROUPS = [
+    ["core", "Rolling dice"],
+    ["vitals", "Health, Hope and Bliss"],
+    ["combat", "Combat"],
+    ["hazards", "Hazards"],
+    ["neuronics", "Neurocasting"],
+    ["vehicles", "Vehicles"],
+    ["gear", "Gear"],
+    ["social", "Tension"],
+    ["lifecycle", "Time"],
+    ["advancement", "Advancement"],
+    ["journey", "The Journey"]
+  ];
+
   function render(q = "") {
     results.replaceChildren();
     const hits = searchLibrary(q);
     if (!hits.length) { results.append(el("p", { class: "empty" }, "Nothing matches that.")); return; }
-    for (const entry of hits) {
-      results.append(el("article", { class: "card", id: `rule-${entry.id}` },
-        el("h3", {}, entry.title),
-        el("p", { class: "muted" }, entry.text),
-        el("div", {}, (entry.tags || []).map((t) => el("span", { class: "tag" + (t === "neuronics" ? " tag-neuro" : "") }, t)),
-          entry.page ? el("span", { class: "faint" }, ` p.${entry.page}`) : null)));
+    const searching = q.trim().length > 0;
+
+    const placed = new Set();
+    for (const [tag, title] of GROUPS) {
+      const entries = hits.filter((e) => (e.tags || []).includes(tag) && !placed.has(e.id));
+      if (!entries.length) continue;
+      entries.forEach((e) => placed.add(e.id));
+      results.append(ruleGroup(title, entries, searching, focus));
     }
+    const rest = hits.filter((e) => !placed.has(e.id));
+    if (rest.length) results.append(ruleGroup("Everything else", rest, searching, focus));
   }
+
   render();
   if (focus) {
     requestAnimationFrame(() => {
       const target = results.querySelector(`#rule-${focus}`);
-      if (target) { target.scrollIntoView({ block: "center" }); target.style.borderColor = "var(--accent)"; }
+      if (target) { target.open = true; target.closest("details.rule-group").open = true; target.scrollIntoView({ block: "center" }); }
     });
   }
   return wrap;
+}
+
+function ruleGroup(title, entries, searching, focus) {
+  const group = el("details", { class: "rule-group", open: searching || entries.some((e) => e.id === focus) },
+    el("summary", {}, title, el("span", { class: "count" }, `${entries.length}`)));
+  for (const entry of entries) {
+    group.append(el("details", { class: "rule-entry", id: `rule-${entry.id}`, open: searching },
+      el("summary", {}, entry.title),
+      el("p", {}, entry.text),
+      entry.page ? el("p", { class: "faint" }, `Book page ${entry.page}`) : null));
+  }
+  return group;
 }
 
 export function rollLogScreen() {
@@ -99,6 +135,8 @@ export function rollLogScreen() {
 
 export function settingsScreen() {
   const wrap = el("div", {}, el("h1", {}, "Settings"));
+  wrap.append(explain("Optional surfaces are switched off until you want them, so the app stays small for a player at a table. Everything is stored on this device only — export a backup before clearing your browser data."));
+  wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "Tutorial"));
 
   const theme = el("select", {
     "aria-label": "Theme",

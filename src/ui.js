@@ -57,6 +57,16 @@ export function modal({ title, body, actions = [], dismissible = true }) {
   });
 }
 
+/**
+ * A collapsed "what this does" note. Every panel gets one so a first-time player can
+ * find out what a surface is for without leaving it.
+ */
+export function explain(text, label = "What this does") {
+  return el("details", { class: "explain" },
+    el("summary", {}, label),
+    typeof text === "string" ? el("p", {}, text) : text);
+}
+
 export const confirmModal = (title, message, confirmLabel = "Confirm") =>
   modal({
     title, body: el("p", { class: "muted" }, message),

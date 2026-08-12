@@ -148,5 +148,10 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   not data: traumatic events with freeze, rally, Medic stabilize, body-armor Agility penalty,
   surgery (Surgeon roll or $1,000), and the three traumas that rewrite trauma handling. Findings,
   fixes and the verified-clean list are in `docs/app/AUDIT.md`; each one carries a regression test.
+- **Rules page is an accordion** grouped by subject in session order, everything collapsed until
+  opened; searching auto-opens matches. Every screen carries a collapsed `explain()` note
+  ("What this does") from `ui.js` — first-time players can learn a surface without leaving it.
+- **Tutorial at `#/tutorial`**: seven table steps plus four solo steps, each saying what to tap and
+  why the game asks for it. Linked from the home screen when no Traveler exists, and from Settings.
 - Verification: `npm test` = 38 invariants + browser smoke.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

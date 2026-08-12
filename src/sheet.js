@@ -7,7 +7,7 @@ import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./deriv
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
-import { showToast, confirmModal, modal, promptModal } from "./ui.js";
+import { showToast, confirmModal, modal, promptModal, explain } from "./ui.js";
 
 // ---------------------------------------------------------------- vitals header
 export function renderVitals(ch) {
@@ -72,6 +72,7 @@ function build(ch, rerender) {
       el("h1", { style: "margin:0" }, ch.name || "Unnamed"),
       el("a", { class: "btn", href: "#/home" }, "Back")),
     el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
+    explain("Everything about this Traveler, and everything that happens to them. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply their dice penalties to rolls automatically, and gear degrades as you push rolls with it."),
     ch.descriptorWords?.length ? el("p", { class: "faint" }, ch.descriptorWords.join(" · ")) : null);
 
   // --- vitals steppers

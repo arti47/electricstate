@@ -5,7 +5,7 @@ import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIR
 import { maxHope, tracksBliss } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent } from "./rules.js";
-import { showToast, modal } from "./ui.js";
+import { showToast, modal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { Settings } from "./settings.js";
 
@@ -65,6 +65,7 @@ let session = null;
 function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Neuroscape"));
+  wrap.append(explain("Jacking in. A task's Difficulty is how many successful rolls it needs, one per Stretch, with gear dice from whichever neurocaster attribute suits the job. Every failed roll adds a point of Bliss before you even consider pushing — which is how the network takes people."));
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" }, el("p", {}, "No Travelers yet.")));
     return wrap;

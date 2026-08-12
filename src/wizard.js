@@ -13,7 +13,7 @@ import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
          GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS, ANYTHING_WORDS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
-import { showToast, modal, confirmModal } from "./ui.js";
+import { showToast, modal, confirmModal, explain } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 
 const STEPS = ["archetype", "attributes", "talents", "identity", "gear", "journey", "review"];
@@ -537,6 +537,7 @@ function buildJourney(rerender) {
   const save = (patch) => { saveJourney({ ...j, ...patch }); rerender(); };
 
   const wrap = el("div", {}, el("h1", {}, "The Journey"));
+  wrap.append(explain("The group's shared entity: where you are going, what you are driving, and the three items in the back. Destination rolls a place and a reason together. Fuel starts at half a tank — running dry is a Blocker in its own right."));
 
   // Start and Destination. The book's only destination table is the Chapter 8 D6;
   // the d100 place and purpose tables are house aids that fill the rest.
@@ -680,6 +681,7 @@ export function tensionScreen() {
 
 function buildTension(rerender, chars) {
   const wrap = el("div", {}, el("h1", {}, "Tension"));
+  wrap.append(explain("What each Traveler feels toward each other Traveler, from 0 to 2. It is asymmetric on purpose — you can resent someone who thinks you are friends. It adds dice when you two are opposed, and talking it down is how Hope comes back."));
   if (chars.length < 2) {
     wrap.append(el("div", { class: "empty card" },
       el("p", {}, "Tension needs at least two Travelers. It runs between people, not inside them.")));

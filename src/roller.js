@@ -8,7 +8,7 @@ import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
 import { Settings } from "./settings.js";
-import { showToast, modal, promptModal, confirmModal } from "./ui.js";
+import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 
 // ============================================================ pure resolution
@@ -129,6 +129,7 @@ export function diceScreen() {
 function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Dice"));
+  wrap.append(explain('Build a pool and roll it. Attribute dice plus any talent you tap, plus gear, plus whatever the situation is worth. One 6 succeeds; extra 6s add damage or a better outcome. Pushing re-rolls everything that is not a 1 or a 6, and the app charges the Hope and gear damage that follow.'));
 
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" },

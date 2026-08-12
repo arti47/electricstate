@@ -5,7 +5,7 @@ import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, ATTRIBUTES, 
 import { maxHealth, maxHope, tracksBliss, needsFood } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, exportJSON, importJSON } from "./store.js";
 import { talent as findTalent } from "./rules.js";
-import { showToast, modal, confirmModal } from "./ui.js";
+import { showToast, modal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
 
@@ -199,6 +199,7 @@ function build(rerender) {
   const j = getJourney() || {};
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Time"));
+  wrap.append(explain('The app owns the clock. Say what the group did, then end a Stretch, Shift, Day or session — each fires its whole bundle of healing, hunger, sleep, fuel and Bliss decay, tells you exactly what changed, and can be undone once. Reducing Tension here is the main way Hope comes back.'));
 
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },

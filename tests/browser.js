@@ -37,7 +37,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   });
   await page.reload({ waitUntil: "networkidle" });
 
-  for (const route of ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey", "tension", "time", "neuro", "combat", "sheet"]) {
+  for (const route of ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey", "tension", "time", "neuro", "combat", "tutorial", "sheet"]) {
     await page.evaluate((r) => { location.hash = `#/${r}`; }, route);
     await page.waitForTimeout(60);
     const heading = await page.textContent("#screen h1").catch(() => null);
@@ -47,13 +47,43 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     check(!overflow, `${viewport.width}px: route ${route} overflows horizontally`);
   }
 
+  // rules page is an accordion, collapsed by default, and every panel carries an explainer
+  await page.evaluate(() => { location.hash = "#/rules"; });
+  await page.waitForTimeout(80);
+  const rulesState = await page.evaluate(() => ({
+    groups: document.querySelectorAll("#screen details.rule-group").length,
+    openGroups: document.querySelectorAll("#screen details.rule-group[open]").length,
+    entries: document.querySelectorAll("#screen details.rule-entry").length
+  }));
+  check(rulesState.groups >= 8, `rules page has ${rulesState.groups} groups, expected grouping`);
+  check(rulesState.openGroups === 0, "rules groups should start collapsed");
+  check(rulesState.entries === 38, `rules page shows ${rulesState.entries} entries, expected all 38`);
+
+  const explainers = await page.evaluate(() => document.querySelectorAll("#screen details.explain").length);
+  check(explainers >= 1, "rules page has no what-this-does note");
+  const explainerOpen = await page.evaluate(() => document.querySelectorAll("#screen details.explain[open]").length);
+  check(explainerOpen === 0, "what-this-does notes must start collapsed");
+
+  // tutorial exists and covers solo
+  await page.evaluate(() => { location.hash = "#/tutorial"; });
+  await page.waitForTimeout(80);
+  const tut = await page.textContent("#screen");
+  check(/First session/.test(tut), "tutorial did not render");
+  check(/Playing alone/.test(tut), "tutorial does not cover solo play");
+  check(await page.evaluate(() => document.querySelectorAll("#screen details.step").length) >= 10,
+    "tutorial should have both the table steps and the solo steps");
+
   // rules search filters
   await page.evaluate(() => { location.hash = "#/rules"; });
   await page.waitForTimeout(60);
   await page.fill('input[type="search"]', "bliss");
   await page.waitForTimeout(60);
-  const cards = await page.locator("#screen article.card").count();
-  check(cards > 0 && cards < 38, `rules search did not filter (got ${cards} cards)`);
+  const found = await page.evaluate(() => ({
+    entries: document.querySelectorAll("#screen details.rule-entry").length,
+    open: document.querySelectorAll("#screen details.rule-entry[open]").length
+  }));
+  check(found.entries > 0 && found.entries < 38, `rules search did not filter (got ${found.entries})`);
+  check(found.open === found.entries, "search results should open automatically");
 
   // theme toggle switches the document attribute
   await page.click("#themeToggle");

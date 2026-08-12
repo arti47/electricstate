@@ -7,7 +7,7 @@ import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATION
 import { THREATS, THREAT_RULES, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES } from "../data-npcs.js";
 import { listCharacters, getJourney, saveJourney } from "./store.js";
 import { maxHealth, maxHope } from "./derived.js";
-import { showToast, modal, promptModal } from "./ui.js";
+import { showToast, modal, promptModal, explain } from "./ui.js";
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
 const d6Pick = (table) => table[d6() - 1];
@@ -24,6 +24,7 @@ const writeStops = (list) => { const j = getJourney() || {}; saveJourney({ ...j,
 
 function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "GM"));
+  wrap.append(explain("Everything behind the screen. The party panel watches each Traveler's Bliss against their Hope; the Stop builder rolls a setting, a Blocker, a conflict, locations and a three-step Countdown; and every rollable table in the book is under Roll a table."));
 
   wrap.append(partyCard());
   wrap.append(stopBuilder(rerender));
