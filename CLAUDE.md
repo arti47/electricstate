@@ -1,15 +1,23 @@
 # CLAUDE.md
 
 ## What this repo is
-Working repository for *The Electric State Roleplaying Game* (Free League / Fria Ligan AB,
-2024; Simon Stålenhag; Year Zero Engine variant). It currently holds a PDF transcription of the
-core rulebook plus a distilled rules reference. No code yet.
+Working repository for **Electric State Player** — an installable player-character PWA for
+*The Electric State Roleplaying Game* (Free League / Fria Ligan AB, 2024; Simon Stålenhag;
+Year Zero Engine variant) — plus the rulebook transcription it is built from.
+
+Build is governed by `docs/app/RPG-APP-TEMPLATE.md` (v2 autonomous build instructions).
+**Current stage: B — checkpoint and product Q&A. No application code yet.**
+The checkpoint, System Profile, Data Extraction Ledger and phased roadmap live in
+`docs/app/ROADMAP.md`; at Stage C start that file's content is promoted into this CLAUDE.md
+as the project's canonical living spec.
 
 ## Layout
 ```
-docs/source/core-rulebook-transcript.md   raw PDF transcription, 17.5k lines — treat as read-only source of truth
-docs/rules/                               distilled reference, one file per subsystem (see docs/rules/README.md)
+docs/source/core-rulebook-transcript.md   raw PDF transcription, 17.5k lines — read-only source of truth
+docs/rules/                               distilled reference, one file per subsystem (convenience index, not authority)
 docs/TRANSCRIPT-ISSUES.md                 known extraction defects + chapter line offsets
+docs/app/RPG-APP-TEMPLATE.md              build instructions template (v2) — LOCKED architecture
+docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased roadmap
 ```
 
 ## System facts to keep straight
@@ -21,6 +29,15 @@ docs/TRANSCRIPT-ISSUES.md                 known extraction defects + chapter lin
 - Time units: Round (5–10 s) / Stretch (5–10 min) / Shift (5–10 h, 4 per day).
 - Campaign = **Journey**; adventure = **Stop** (Setting, Blocker, Situation, Countdown, Locations, Threats).
 - Advancement is per-session debrief: roll 1d6 against an attribute — higher raises it, equal-or-lower grants a talent.
+
+## App-specific findings that shape the build
+- **No skills, no encumbrance, no ammo tracking, no classic magic** — do not build those surfaces.
+- **Tension is an asymmetric N×N matrix** between Travelers, not a character stat, and it is the Hope economy's only reliable valve.
+- **Bliss ≥ current Hope** is the neuronic lose condition — a comparison of two tracked numbers, surfaced in the persistent header.
+- **Neurocasting is the "powers" subsystem**: Difficulty 1–3 = N successful rolls, gear bonus drawn from the neurocaster attribute matching the task, Bliss on each pre-push failure.
+- **Dual-realm turns**: a character acts either in the real world or the neuroscape each round and is inert in the other.
+- Advancement is a **session-debrief** flow (1d6 vs attribute); overcoming the Flaw grants 3 rolls then permanently locks improvement.
+- Blocked data: weapons, consumer drones and vehicle stat tables cannot be recovered from the transcript (see docs/TRANSCRIPT-ISSUES.md). No UI is built against them until the source pages arrive.
 
 ## Conventions
 - Cite the transcript by line number (`docs/source/core-rulebook-transcript.md:5150`), not by book page — book page numbers survive in the text but are unreliable anchors.
