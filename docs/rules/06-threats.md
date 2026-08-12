@@ -23,4 +23,14 @@ Never point an unbeatable Threat directly at the Travelers; let it harm others, 
 Every Threat category in the book carries a 4-step example Countdown, usable as a template.
 
 ## Minor NPCs
-Everyone who isn't a Threat: victims, petitioners, helpers. The book supplies random tables for NPC generation and a **quirks** table (p. 151).
+Everyone who isn't a Threat: victims, petitioners, helpers.
+
+**Baseline stat rule (p. 151):** every minor NPC is assumed to have **3 in all attributes**
+unless stated otherwise, and may have one talent indicating a specific proficiency. They are
+described with a name and a function ("Valeria Rocca, Mayor of Hartville") plus an optional
+quirk — see the D66 quirks table in [12-generator-tables.md](12-generator-tables.md).
+
+**Ending a personal Threat (p. 150):** either the GM or the player may declare at any time that
+a personal Threat has played itself out. The player then invents a new one or continues without.
+Ending a personal Threat is a victory that may grow the Traveler — or reveal the Threat was the
+tip of something larger.

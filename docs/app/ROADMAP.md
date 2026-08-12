@@ -123,6 +123,7 @@ neurine, Bliss).
 | A12 | Whether the **GM screen** should expose Threat Hope. | Threats have no Hope by rule; GM screen omits the field entirely rather than showing a null. |
 | A13 | **Solo Stop Threat Countdown (p. 213) is a D66 table whose ranges stop at 56** — results 61–66 are unassigned in the printed table. | Treat 61–66 as re-roll. Flag in the UI as a house aid, not a printed rule. |
 | A14 | **Drone Pilot** breaks several core economies: no gear, no cash, damage resolved as a drone (Hull) rather than Health, no eating, **no Bliss tracking**, and global neuroscapes only. | Implement as a first-class archetype variant, not a cosmetic flag: the sheet swaps the Health track for a drone Hull track, hides gear/cash/hunger surfaces, disables Bliss accrual, and restricts neuroscape access. Highest-complexity item in Phase 1–2. |
+| A17 | The **personal Goal examples table** referenced on p. 114 is not on p. 114 — that spread carries only Journey Length, Keep a Record and Random Tables. It must sit on the facing page (115). | Outstanding gap; request p. 115. Until then the wizard's Goal step offers free text plus the per-archetype solo Goals from Ch. 8 as suggestions. |
 | A16 | The p. 122 sidebar calls the first Threat category **Armed Threats**; Chapter 6 calls it **Violent Threats**. | Same category; canonicalize to *Violent*, alias *Armed*. |
 | A15 | Book is internally inconsistent on **beer**: gear list says once per **Day**, liquor once per **Shift**, both against a global 1-Hope-per-Shift cap. | Per-item cadence and the global cap both enforced; the stricter binds (A4 generalized). |
 
@@ -173,7 +174,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 ### `data-monsters.js` / `data-npcs.js`
 - [ ] T-28 Threat stat blocks from Ch. 6 with talents, gear, example Countdowns
 - [ ] T-29 Threat anatomy metadata (location, goal, reaction, special-ability menu)
-- [ ] T-30 Animals and minor-NPC quirk table
+- [ ] T-30 Minor-NPC baseline rule (all attributes 3, optional talent) + NPC Quirks D66 (36) — source: `docs/rules/12-generator-tables.md`
 - [ ] T-31 NPC reaction (2D6) and combat morale (2D6) tables
 
 ### `data-pregens.js`
@@ -196,7 +197,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-41 Electric State elements D66 (36); '90s nostalgia D66 (36) — source: `docs/rules/12-generator-tables.md`
 - [ ] T-42 Countdown element menu; Countdown design principles
 - [ ] T-43 Neuroscape generator (type/theme/mood)
-- [ ] T-44 Journey scaffolding: length table, Goal table, Kicker examples, "why stick together" D6
+- [ ] T-44 Journey scaffolding: length table (sourced), Kicker examples, "why stick together" D6 — **personal Goal table still missing, see A17**
 
 ---
 

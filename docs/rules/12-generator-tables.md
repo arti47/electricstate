@@ -155,3 +155,37 @@ Armed · Manipulative · Technological · Environmental · Past Sins · Personal
 
 Note: this sidebar names the first category **Armed Threats**, while Chapter 6 calls the same
 category **Violent Threats**. Canonicalize to *Violent* and alias *Armed*.
+
+## NPC Quirks (D66, p. 151)
+
+| D66 | Quirk | | D66 | Quirk |
+|---|---|---|---|---|
+| 11 | Bloodshot eyes | | 41 | Loud |
+| 12 | Wears neurocaster | | 42 | Shoeless |
+| 13 | Poor | | 43 | Worried |
+| 14 | Rich | | 44 | Dirty |
+| 15 | Bitter | | 45 | Shy |
+| 16 | Odd hairstyle | | 46 | Curious |
+| 21 | Boastful | | 51 | Babyface |
+| 22 | Hungry | | 52 | Old |
+| 23 | Afraid | | 53 | Angry |
+| 24 | Quiet | | 54 | Oddly shaped glasses |
+| 25 | Drunk | | 55 | Gambler |
+| 26 | Chain smoker | | 56 | Smelly |
+| 31 | Sick | | 61 | Wise |
+| 32 | Flirtatious | | 62 | Armed |
+| 33 | Violent | | 63 | Hyperactive |
+| 34 | Well-dressed | | 64 | Tired |
+| 35 | Short | | 65 | Grieving |
+| 36 | Thoughtful | | 66 | Neurine addict |
+
+## Journey Length (p. 114)
+
+| Length | Stops |
+|---|---|
+| One-shot | 1 |
+| Short journey | 2–4 |
+| Medium journey | 4–7 |
+| Long journey | 8–12 |
+
+One Stop typically takes one to three sessions to play.
