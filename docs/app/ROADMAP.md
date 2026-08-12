@@ -205,13 +205,13 @@ estimates. **An unticked box means the data does not exist yet — never build U
 ## 6. Phased roadmap
 
 ### Phase 0 — Foundations
-- [ ] P0.1 Scaffold LOCKED file set: `index.html`, `styles.css`, `src/*` per §6.1, `manifest.json`, `service-worker.js`, `icon.svg`, `firebase-config.js` (placeholder + `FIREBASE_ENABLED=false`), `database.rules.json`, `tests/`, `package.json`, README
-- [ ] P0.2 Theme tokens (light/dark, system-default + toggle), phone-first shell, bottom-nav router, `ui.js` modal/toast primitives
-- [ ] P0.3 `store.js` localStorage persistence + normalization/migration path
+- [x] P0.1 Scaffold LOCKED file set: `index.html`, `styles.css`, `src/*` per §6.1, `manifest.json`, `service-worker.js`, `icon.svg`, `firebase-config.js` (placeholder + `FIREBASE_ENABLED=false`), `database.rules.json`, `tests/`, `package.json`, README
+- [x] P0.2 Theme tokens (light/dark, system-default + toggle), phone-first shell, bottom-nav router, `ui.js` modal/toast primitives
+- [x] P0.3 `store.js` localStorage persistence + normalization/migration path
 - [x] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
 - [x] P0.5 **Data sub-phase B** — T-19…T-27 (neuronics, gear, recovery, advancement, rules library)
 - [x] P0.6 **Data sub-phase C** — T-28…T-44 (threats, pregens, solo, GM tables)
-- [ ] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
+- [x] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
 
 ### Phase 1 — Creation wizards
 - [ ] P1.1 Traveler wizard, all 17 steps, both attribute methods, legality gates (one archetype per party, ≤15 bonus talent, learn-once talents)

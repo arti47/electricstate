@@ -1,0 +1,12 @@
+{
+  "name": "Electric State Player",
+  "short_name": "Electric State",
+  "description": "Player-character companion for The Electric State roleplaying game.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#15181b",
+  "theme_color": "#15181b",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

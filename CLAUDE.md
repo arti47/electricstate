@@ -67,7 +67,8 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   data-solo.js, data-npcs.js, data-pregens.js, data-vehicles.js, data-library.js.
 - Known book erratum: the Carbone pregen sheet prints Hope 4 where the formula gives 5. Rules
   outrank printed derived values; see `PREGEN_ERRATA` in data-pregens.js.
-- Not built yet: `index.html`, `styles.css`, `src/*`, PWA shell. Nothing renders.
-- Verification so far is structural only — module parse, D66 row counts (36), D6 counts (6),
-  pregen sheets re-derived against the Health/Hope formulas. No browser verification yet;
-  that starts when the shell exists.
+- **Phase 0 complete.** Shell built: index.html, styles.css, src/{core,ui,settings,store,rules,derived,router,screens,main}.js, PWA (manifest + service worker + icon), firebase-config placeholder, database.rules.json with player/GM roles.
+- Theme: overcast slate and oxidised metal, dark-first, colour reserved for meaning (rust = damage/loss, teal = anything touching the network).
+- Verification: `npm test` runs 14 data/rules invariants plus a headless browser smoke test
+  (every route renders, zero console errors, zero horizontal overflow at 360 and 390px).
+- Next: Phase 1 creation wizard.

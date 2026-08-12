@@ -1,0 +1,14 @@
+{
+  "name": "electric-state-player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Player-character companion app for The Electric State RPG. Dev tooling only — the app itself has no build step.",
+  "scripts": {
+    "test": "node tests/run.js && node tests/browser.js",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.47.0"
+  }
+}
