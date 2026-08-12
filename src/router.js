@@ -5,12 +5,16 @@ import { homeScreen, rulesScreen, soloScreen, gmScreen, settingsScreen, rollLogS
 import { diceScreen } from "./roller.js";
 import { wizardScreen, journeyScreen, tensionScreen } from "./wizard.js";
 import { sheetScreen, injuryScreen, clearVitals } from "./sheet.js";
+import { lifecycleScreen } from "./lifecycle.js";
+import { neuroScreen } from "./neurocasting.js";
 
 const ROUTES = [
   { path: "home", tab: "home", render: homeScreen },
   { path: "dice", tab: "dice", render: diceScreen },
   { path: "rules", tab: "rules", render: rulesScreen },
   { path: "log", tab: "dice", render: rollLogScreen },
+  { path: "time", tab: "home", render: lifecycleScreen },
+  { path: "neuro", tab: "dice", render: neuroScreen },
   { path: "solo", tab: "solo", render: soloScreen, gate: () => Settings.solo() },
   { path: "gm", tab: "gm", render: gmScreen, gate: () => Settings.gmScreen() },
   { path: "settings", tab: "settings", render: settingsScreen },

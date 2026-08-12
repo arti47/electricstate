@@ -28,6 +28,7 @@ export function homeScreen() {
     wrap.append(el("div", { class: "btn-row" },
       el("a", { class: "btn", href: "#/create" }, "New Traveler"),
       el("a", { class: "btn", href: "#/journey" }, "Journey"),
+      el("a", { class: "btn", href: "#/time" }, "Time"),
       chars.length > 1 ? el("a", { class: "btn", href: "#/tension" }, "Tension") : null));
   }
   return wrap;

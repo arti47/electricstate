@@ -184,6 +184,122 @@ await test("only dice talents matching the attribute are offered", () => {
   assert.deepEqual(agility, ["athlete"], "Tough is not a dice talent; Charmer is Empathy");
 });
 
+// lifecycle and neurocasting run against a fake localStorage so the store works headless
+globalThis.localStorage = {
+  _d: new Map(),
+  getItem(k) { return this._d.has(k) ? this._d.get(k) : null; },
+  setItem(k, v) { this._d.set(k, String(v)); },
+  removeItem(k) { this._d.delete(k); }
+};
+globalThis.window = { dispatchEvent() {}, addEventListener() {} };
+globalThis.CustomEvent = class { constructor(t, o) { this.type = t; Object.assign(this, o); } };
+
+const store = await import("../src/store.js");
+const lifecycle = await import("../src/lifecycle.js");
+const neuro = await import("../src/neurocasting.js");
+
+const makeChar = (over = {}) => store.saveCharacter({
+  name: "Test", archetype: "veteran",
+  attributes: { strength: 4, agility: 4, wits: 3, empathy: 3 },
+  talents: [], conditions: [], tension: {},
+  inventory: { items: [], cash: 0 },
+  ...over
+});
+
+await test("a Shift heals one point while resting and two under a Nurse", () => {
+  store.resetAll();
+  const ch = makeChar();
+  store.saveCharacter({ ...ch, state: { ...ch.state, health: 1 } });
+  lifecycle.advanceTime("shift", { resting: true, fed: true });
+  assert.equal(store.getCharacter(ch.id).state.health, 2);
+  lifecycle.advanceTime("shift", { resting: true, nurse: true, fed: true });
+  assert.equal(store.getCharacter(ch.id).state.health, 4);
+});
+
+await test("a boundary can be undone exactly once", () => {
+  store.resetAll();
+  const ch = makeChar();
+  store.saveCharacter({ ...ch, state: { ...ch.state, health: 1 } });
+  lifecycle.advanceTime("shift", { resting: true, fed: true });
+  assert.equal(store.getCharacter(ch.id).state.health, 2);
+  assert.ok(lifecycle.canUndo());
+  lifecycle.undoLast();
+  assert.equal(store.getCharacter(ch.id).state.health, 1, "undo restored the earlier state");
+  assert.ok(!lifecycle.canUndo(), "undo is single-step");
+});
+
+await test("reducing Tension costs a step from both sides and pays a Hope each", () => {
+  store.resetAll();
+  const a = makeChar({ name: "A" });
+  const b = makeChar({ name: "B" });
+  store.saveCharacter({ ...a, tension: { [b.id]: 2 }, state: { ...a.state, hope: 1 } });
+  store.saveCharacter({ ...b, tension: { [a.id]: 1 }, state: { ...b.state, hope: 1 } });
+  const res = lifecycle.reduceTension(a.id, b.id);
+  assert.ok(res.ok);
+  assert.equal(store.getCharacter(a.id).tension[b.id], 1);
+  assert.equal(store.getCharacter(b.id).tension[a.id], 0);
+  assert.equal(store.getCharacter(a.id).state.hope, 2);
+  assert.equal(store.getCharacter(b.id).state.hope, 2);
+  assert.ok(!lifecycle.reduceTension(a.id, b.id).ok === false);
+});
+
+await test("Reclusive trauma blocks Hope from reducing Tension", () => {
+  store.resetAll();
+  const a = makeChar({ name: "A", conditions: [{ id: "t", name: "Reclusive", effects: [{ rule: "noHopeFromTension" }] }] });
+  const b = makeChar({ name: "B" });
+  store.saveCharacter({ ...a, tension: { [b.id]: 2 }, state: { ...a.state, hope: 1 } });
+  store.saveCharacter({ ...b, tension: { [a.id]: 2 }, state: { ...b.state, hope: 1 } });
+  lifecycle.reduceTension(a.id, b.id);
+  assert.equal(store.getCharacter(a.id).state.hope, 1, "Reclusive gains nothing");
+  assert.equal(store.getCharacter(b.id).state.hope, 2, "the other side still gains");
+});
+
+await test("Hope from items is capped at one per Shift and blocked by hunger", () => {
+  store.resetAll();
+  const ch = makeChar();
+  store.saveCharacter({ ...ch, state: { ...ch.state, hope: 1 } });
+  const first = lifecycle.useHopeItem(store.getCharacter(ch.id), { name: "Walkman" });
+  assert.ok(first.ok);
+  assert.equal(store.getCharacter(ch.id).state.hope, 2);
+  const second = lifecycle.useHopeItem(store.getCharacter(ch.id), { name: "Book" });
+  assert.ok(!second.ok, "a second item in the same Shift is refused");
+
+  const hungry = store.getCharacter(ch.id);
+  hungry.state.flags = { hungry: true };
+  hungry.state.hope = 1;
+  store.saveCharacter(hungry);
+  assert.ok(!lifecycle.useHopeItem(store.getCharacter(ch.id), { name: "Walkman" }).ok, "hunger blocks Hope");
+});
+
+await test("a failed neurocasting roll adds Bliss before any push", () => {
+  store.resetAll();
+  const ch = makeChar({ neurocaster: "stimulusTleStandard" });
+  const failed = neuro.applyNeuroResult(store.getCharacter(ch.id), { success: false });
+  assert.equal(failed.state.bliss, 1);
+  const ok = neuro.applyNeuroResult(failed, { success: true });
+  assert.equal(ok.state.bliss, 1, "a success costs nothing");
+});
+
+await test("Bliss catching Hope means lost in the Electric State", () => {
+  store.resetAll();
+  const ch = makeChar({ neurocaster: "juryRigged" });
+  const c = store.getCharacter(ch.id);
+  c.state.hope = 3; c.state.bliss = 2;
+  store.saveCharacter(c);
+  assert.ok(!neuro.isLost(store.getCharacter(ch.id)));
+  const c2 = store.getCharacter(ch.id);
+  c2.state.bliss = 3;
+  store.saveCharacter(c2);
+  assert.ok(neuro.isLost(store.getCharacter(ch.id)));
+});
+
+await test("a Drone Pilot never accumulates Bliss", () => {
+  store.resetAll();
+  const ch = makeChar({ archetype: "dronePilot", neurocaster: "stimulusTlePro" });
+  const after = neuro.applyNeuroResult(store.getCharacter(ch.id), { success: false });
+  assert.equal(after.state.bliss, 0);
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

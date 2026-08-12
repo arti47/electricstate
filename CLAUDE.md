@@ -90,4 +90,15 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   loss and gear degradation stay accurate instead of being trusted from a total.
 - Verification: `npm test` = 21 data/rules/engine invariants + browser smoke (wizard walk, sheet
   clamping, injury apply, dice roll, log write).
-- Next: Phase 4 in-play systems (lifecycle engine, rests, progress tracker, advancement, combat).
+- **Phase 4 (partial).** Lifecycle engine at `#/time`: Stretch / Shift / Day / Session boundaries
+  fire bundles, each reporting exactly what changed with single-step undo. Shift heals (1, or 2
+  under a Nurse), rotates the Shift name, burns fuel, tracks sleep. Day runs Bliss decay with the
+  permanence roll, the hunger Strength roll, and injury healing clocks (surgery-flagged injuries
+  do not tick). Tension reduction pays a Hope to both sides, blocked by Reclusive. Hope from items
+  is capped at 1 per Shift and blocked by hunger or sleep deprivation.
+- Advancement debrief enforces the post-Flaw lock: overcoming the Flaw gives 3 rolls, clears the
+  Flaw, then permanently disables improvement.
+- Neurocasting at `#/neuro`: Difficulty-N progress, Processor/Network/Graphics as gear dice by task,
+  Bliss on every pre-push failure, Busted-caster gate, lost-in-the-Electric-State warning.
+- Remaining in Phase 4: generic progress tracker, local combat tracker.
+- Verification: `npm test` = 29 invariants + browser smoke.
