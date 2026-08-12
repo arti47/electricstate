@@ -22,7 +22,47 @@ function migrate(data) {
   d.schema = SCHEMA_VERSION;
   for (const [id, ch] of Object.entries(d.characters || {})) d.characters[id] = normalize({ id, ...ch });
   if (!Array.isArray(d.rollLog)) d.rollLog = [];
+  d.journey = migrateJourney(d.journey);
   return d;
+}
+
+/**
+ * Stops were once two different shapes: a GM record with a name and a countdown, and a
+ * flat solo object with the setting spread across the top level. Both become one record.
+ */
+function migrateJourney(journey) {
+  if (!journey) return journey;
+  const j = { ...journey };
+  const asRecord = (stop, name = "") => {
+    if (!stop) return null;
+    if (stop.setting && Array.isArray(stop.countdown)) {
+      return { countdownProgress: 0, threat: null, resolved: false, name, ...stop };
+    }
+    // legacy solo shape: setting fields at the top level, no countdown
+    const { terrain, population, communications, size, prosperity, weather, ...rest } = stop;
+    return {
+      id: rest.id || `stop-${Date.now()}`, name, createdAt: Date.now(),
+      setting: { terrain, population, communications, size, prosperity, weather },
+      blocker: rest.blocker || "", need: rest.need || "",
+      conflict: rest.conflict || { a: "", b: "", over: "" },
+      locations: rest.locations || [], mood: rest.mood || [],
+      countdown: rest.countdown || [], countdownProgress: 0,
+      threat: rest.threat || null, resolved: false
+    };
+  };
+
+  j.stops = (j.stops || []).map((stop) => asRecord(stop, stop.name || ""));
+
+  const legacySolo = j.solo?.stop;
+  if (legacySolo) {
+    const record = asRecord(legacySolo, "Solo Stop");
+    if (record) {
+      j.stops = [...j.stops, record];
+      if (!j.activeStopId) j.activeStopId = record.id;
+    }
+    j.solo = { ...j.solo, stop: null, threat: null };
+  }
+  return j;
 }
 
 function persist() {

@@ -355,9 +355,10 @@ await test("the solo Stop Countdown never returns the unassigned 61-66 band", ()
 
 await test("solo generators return complete Stops and Threats", () => {
   const stop = soloMod.generateStop();
-  for (const key of ["terrain", "population", "communications", "size", "prosperity", "weather", "blocker", "need"]) {
-    assert.ok(stop[key], `stop missing ${key}`);
+  for (const key of ["terrain", "population", "communications", "size", "prosperity", "weather"]) {
+    assert.ok(stop.setting[key], `stop missing ${key}`);
   }
+  assert.ok(stop.blocker && stop.need);
   assert.equal(stop.locations.length, 3);
   const threat = soloMod.generateThreat();
   assert.ok(threat.type);
@@ -591,6 +592,50 @@ await test("damage lands wherever the combatant's health lives", () => {
   assert.equal(store.getCharacter(ch.id).state.health, before - 2);
 
   assert.equal(combatMod.damageCombatant("t1", 99).health, 0, "health never goes negative");
+});
+
+const stopsMod = await import("../src/stops.js");
+
+await test("solo and the GM screen build the same Stop record", () => {
+  store.resetAll();
+  const gmStop = stopsMod.makeStop("Littleville");
+  const soloStop = soloMod.generateStop();
+  assert.deepEqual(Object.keys(gmStop).sort(), Object.keys(soloStop).sort(),
+    "one shape, or neither screen can read the other's Stop");
+  for (const stop of [gmStop, soloStop]) {
+    assert.equal(stop.countdown.length, stopsMod.COUNTDOWN_STEPS);
+    assert.equal(new Set(stop.countdown).size, stop.countdown.length, "countdown steps must not repeat");
+    assert.equal(stop.countdownProgress, 0);
+    assert.ok(stop.setting.terrain && stop.blocker && stop.conflict.a);
+  }
+});
+
+await test("a Stop's countdown advances once per step and then stops", () => {
+  store.resetAll();
+  const stop = stopsMod.saveStop(stopsMod.makeStop("Liberty"), { makeActive: true });
+  assert.equal(stopsMod.activeStop().id, stop.id);
+  for (let i = 1; i <= stopsMod.COUNTDOWN_STEPS; i++) {
+    const fired = stopsMod.advanceCountdown(stop.id);
+    assert.equal(fired.index, i);
+    assert.equal(stopsMod.activeStop().countdownProgress, i);
+  }
+  assert.equal(stopsMod.advanceCountdown(stop.id), null, "a spent countdown fires nothing");
+});
+
+await test("legacy solo Stops migrate into the shared list", () => {
+  store.resetAll();
+  store.saveJourney({
+    solo: { deck: [], events: [], stop: { terrain: "Desert", population: "Quiet", communications: "Isolated",
+      size: "Tiny", prosperity: "Poor", weather: "Storm", blocker: "Out of fuel",
+      need: "Fuel", conflict: { a: "Farmer", b: "Mobster", over: "Money" },
+      locations: ["Garage"], mood: ["Neurograph towers"] } }
+  });
+  store.importJSON(store.exportJSON());
+  const stops = stopsMod.listStops();
+  assert.equal(stops.length, 1, "the old solo Stop became a record");
+  assert.equal(stops[0].setting.terrain, "Desert");
+  assert.equal(stops[0].name, "Solo Stop");
+  assert.equal(store.getJourney().solo.stop, null, "and is no longer duplicated in solo state");
 });
 
 const failed = results.filter((r) => r[0] === "FAIL");

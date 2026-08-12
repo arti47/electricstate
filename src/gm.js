@@ -6,6 +6,8 @@ import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATION
          KICKER_EXAMPLES, WHY_STICK_TOGETHER, MINOR_NPC_BASELINE, D66_ORDER } from "../data-gm.js";
 import { THREATS, THREAT_RULES, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES } from "../data-npcs.js";
 import { listCharacters, getJourney, saveJourney } from "./store.js";
+import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveStop, removeStop,
+         advanceCountdown, resolveStop, stopCard } from "./stops.js";
 import { maxHealth, maxHope } from "./derived.js";
 import { showToast, modal, promptModal, explain } from "./ui.js";
 
@@ -55,20 +57,36 @@ function partyCard() {
 
 // ------------------------------------------------------------- stop builder
 function stopBuilder(rerender) {
-  const list = stops();
-  const card = el("div", { class: "card" }, el("h3", {}, "Stops"));
+  const list = sharedStops();
+  const activeId = activeStopId();
+  const card = el("div", { class: "card" }, el("h3", {}, "Stops"),
+    el("p", { class: "faint" }, "The same Stop record solo play uses, so either can pick up the other's work."));
 
   for (const stop of list) {
+    const isActive = stop.id === activeId;
     card.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
       el("div", { class: "card-row" },
-        el("strong", {}, stop.name),
-        el("button", { class: "btn", onclick: () => { writeStops(list.filter((s) => s.id !== stop.id)); rerender(); } }, "Remove")),
-      el("div", { class: "faint" }, `${stop.setting.terrain} · ${stop.setting.size.split(".")[0]} · ${stop.setting.weather}`),
-      el("div", { class: "faint" }, `Blocker: ${stop.blocker}`),
-      el("div", { class: "faint" }, `${stop.conflict.a} vs ${stop.conflict.b} over ${stop.conflict.over.toLowerCase()}`),
-      el("div", { class: "faint" }, `Locations: ${stop.locations.join(", ")}`),
-      el("details", {}, el("summary", { class: "faint" }, "Countdown"),
-        el("ol", {}, ...stop.countdown.map((step) => el("li", { class: "faint" }, step))))));
+        el("strong", {}, `${stop.name || "Unnamed Stop"}${isActive ? " · in play" : ""}`),
+        el("div", { class: "btn-row" },
+          !isActive ? el("button", { class: "btn", onclick: () => { setActiveStop(stop.id); rerender(); } }, "Play this") : null,
+          el("button", { class: "btn", onclick: () => { removeStop(stop.id); rerender(); } }, "Remove"))),
+      el("div", { class: "faint" }, `${stop.setting.terrain} · ${stop.blocker} · Countdown ${stop.countdownProgress}/${stop.countdown.length}`),
+      isActive
+        ? stopCard(stop, {
+            onCountdown: async (s2) => {
+              const fired = advanceCountdown(s2.id);
+              rerender();
+              if (fired) {
+                await modal({
+                  title: `Countdown ${fired.index} of ${fired.of}`,
+                  body: el("p", {}, fired.step),
+                  actions: [{ label: "Good", value: true, class: "btn-primary" }]
+                });
+              }
+            },
+            onResolve: (s2) => { resolveStop(s2.id); rerender(); }
+          })
+        : null));
   }
 
   card.append(el("button", {
@@ -76,35 +94,12 @@ function stopBuilder(rerender) {
     onclick: async () => {
       const name = await promptModal("New Stop", { label: "Name it", value: "" });
       if (!name) return;
-      writeStops([...stops(), rollStop(name)]);
+      saveStop(makeStop(name), { makeActive: !activeStopId() });
       rerender();
     }
   }, "Roll up a Stop"));
   card.append(el("p", { class: "faint" }, COUNTDOWN_PRINCIPLE));
   return card;
-}
-
-function rollStop(name) {
-  const countdown = [];
-  const pool = [...COUNTDOWN_ELEMENTS];
-  for (let i = 0; i < 3; i++) {
-    const idx = Math.floor(Math.random() * pool.length);
-    countdown.push(pool.splice(idx, 1)[0]);
-  }
-  return {
-    id: uid(), name,
-    setting: {
-      terrain: d6Pick(SETTING.terrain), population: d6Pick(SETTING.population),
-      communications: d6Pick(SETTING.communications), size: d6Pick(SETTING.size),
-      prosperity: d6Pick(SETTING.prosperity), weather: d6Pick(SETTING.weather)
-    },
-    blocker: d66Pick(BLOCKERS),
-    need: d6Pick(NEEDS),
-    conflict: { a: d66Pick(CONFLICT_PARTIES), b: d66Pick(CONFLICT_PARTIES), over: d66Pick(CONFLICT_SUBJECTS) },
-    locations: [d66Pick(LOCATIONS), d66Pick(LOCATIONS), d66Pick(LOCATIONS)],
-    mood: [d66Pick(ELECTRIC_STATE_ELEMENTS), d66Pick(NINETIES_NOSTALGIA)],
-    countdown
-  };
 }
 
 // ----------------------------------------------------------------- threats

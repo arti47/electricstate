@@ -293,7 +293,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.click('#screen button:has-text("Stop Countdown")');
   await page.waitForTimeout(100);
   const modalText = (await page.textContent(".modal")) || "";
-  const eventLine = modalText.replace("Stop CountdownGood", "").trim();
+  const eventLine = modalText.replace(/^Countdown \d+ of \d+/, "").replace(/^Stop Countdown/, "").replace(/Good$/, "").trim();
   await page.click('.modal button:has-text("Good")');
   await page.waitForTimeout(100);
   const soloText = await page.textContent("#screen");
@@ -310,7 +310,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.evaluate(() => { location.hash = "#/gm"; });
   await page.waitForTimeout(80);
   check(/Threats/.test(await page.textContent("#screen")), "GM screen missing threat panel");
-  await page.click('#screen button:has-text("Blocker")');
+  await page.click('#screen button:text-is("Blocker")');
   await page.waitForTimeout(60);
   check(/Blocker:/.test(await page.textContent("#screen")), "GM table roll produced no output");
 

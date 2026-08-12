@@ -8,6 +8,8 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney, listCharacters } from "./store.js";
+import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
+         resolveStop, stopCard as sharedStopCard } from "./stops.js";
 import { showToast, modal, explain } from "./ui.js";
 
 const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" };
@@ -53,20 +55,9 @@ export function rollStopCountdown() {
   return { roll: null, event: STOP_THREAT_COUNTDOWN[0].event };
 }
 
-export function generateStop() {
-  return {
-    terrain: d6Pick(SETTING.terrain),
-    population: d6Pick(SETTING.population),
-    communications: d6Pick(SETTING.communications),
-    size: d6Pick(SETTING.size),
-    prosperity: d6Pick(SETTING.prosperity),
-    weather: d6Pick(SETTING.weather),
-    blocker: d66Pick(BLOCKERS),
-    need: d6Pick(NEEDS),
-    conflict: { a: d66Pick(CONFLICT_PARTIES), b: d66Pick(CONFLICT_PARTIES), over: d66Pick(CONFLICT_SUBJECTS) },
-    locations: [d66Pick(LOCATIONS), d66Pick(LOCATIONS), d66Pick(LOCATIONS)],
-    mood: [d66Pick(ELECTRIC_STATE_ELEMENTS), d66Pick(NINETIES_NOSTALGIA)]
-  };
+/** Solo and the GM screen build the same record, so either can pick up the other's Stop. */
+export function generateStop(name = "") {
+  return makeStop(name);
 }
 
 export function generateThreat() {
@@ -168,14 +159,16 @@ function build(rerender) {
     "Roll the setting, the Blocker and the conflict, then the Threat behind it.",
     row(
       act("Generate a Stop", () => {
-        const stop = generateStop();
-        write({ stop });
-        logEvent("New Stop", `${stop.terrain} · ${stop.blocker}`);
+        const stop = makeStop();
+        saveStop(stop, { makeActive: true });
+        logEvent("New Stop", `${stop.setting.terrain} · ${stop.blocker}`);
         rerender();
       }, true),
       act("Generate a Threat", () => {
+        const current = activeStop();
+        if (!current) { showToast("Generate a Stop first."); return; }
         const threat = generateThreat();
-        write({ threat });
+        attachThreat(current.id, threat);
         logEvent("New Threat", threat.sub ? `${threat.type} — ${threat.sub}` : threat.type);
         rerender();
       }),
@@ -185,10 +178,13 @@ function build(rerender) {
         await modal({ title: "Location", body: el("p", {}, place), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }))));
 
-  if (s.stop) wrap.append(stopCard(s.stop));
-  if (s.threat) wrap.append(el("div", { class: "card" }, el("h3", {}, "Threat"),
-    el("p", {}, s.threat.sub ? `${s.threat.type} — ${s.threat.sub}` : s.threat.type),
-    s.threat.note ? el("p", { class: "faint" }, s.threat.note) : null));
+  const current = activeStop();
+  if (current) {
+    wrap.append(sharedStopCard(current, {
+      onCountdown: (stop) => fireCountdown(stop, rerender),
+      onResolve: (stop) => { resolveStop(stop.id); logEvent("Stop resolved", stop.name || stop.blocker); rerender(); }
+    }));
+  }
 
   // ------------------------------------------------------------------- 4 play
   wrap.append(phase("4 · Playing the Stop",
@@ -217,6 +213,12 @@ function build(rerender) {
     "When the players stall, or a face card tells you to, move a Countdown forward.",
     row(
       act("Stop Countdown", async () => {
+        const current = activeStop();
+        // A live Stop advances its own prepared Countdown; otherwise roll the D66 table.
+        if (current && current.countdownProgress < current.countdown.length) {
+          await fireCountdown(current, rerender);
+          return;
+        }
         const r = rollStopCountdown();
         logEvent("Stop Countdown", r.event);
         rerender();
@@ -258,6 +260,18 @@ function build(rerender) {
   return wrap;
 }
 
+async function fireCountdown(stop, rerender) {
+  const fired = advanceCountdown(stop.id);
+  if (!fired) { showToast("That Countdown is spent — the Stop has played out."); return; }
+  logEvent("Stop Countdown", `Step ${fired.index} of ${fired.of}: ${fired.step}`);
+  rerender();
+  await modal({
+    title: `Countdown ${fired.index} of ${fired.of}`,
+    body: el("p", {}, fired.step),
+    actions: [{ label: "Good", value: true, class: "btn-primary" }]
+  });
+}
+
 async function encounter(rerender) {
   const { card, deck } = drawFrom(state().deck);
   if (!card) { showToast("The deck is spent — reshuffle."); return; }
@@ -270,21 +284,6 @@ async function encounter(rerender) {
     body: el("div", {}, el("p", {}, text), el("p", { class: "faint" }, "Unlike a Stop, you can drive past this one.")),
     actions: [{ label: "Good", value: true, class: "btn-primary" }]
   });
-}
-
-function stopCard(stop) {
-  const row = (k, v) => el("div", { class: "card-row", style: "padding:3px 0" },
-    el("span", { class: "faint" }, k), el("span", { style: "text-align:right" }, v));
-  return el("div", { class: "card" }, el("h3", {}, "The Stop"),
-    row("Terrain", stop.terrain), row("Population", stop.population),
-    row("Communications", stop.communications), row("Size", stop.size),
-    row("Prosperity", stop.prosperity), row("Weather", stop.weather),
-    el("h3", {}, "Blocker"), el("p", {}, stop.blocker),
-    el("p", { class: "faint" }, `They also need: ${stop.need.toLowerCase()}`),
-    el("h3", {}, "Conflict"),
-    el("p", {}, `${stop.conflict.a} against ${stop.conflict.b}, over ${stop.conflict.over.toLowerCase()}`),
-    el("h3", {}, "Locations"), el("p", {}, stop.locations.join(" · ")),
-    el("h3", {}, "In the air"), el("p", { class: "faint" }, stop.mood.join(" · ")));
 }
 
 async function draw(rerender) {

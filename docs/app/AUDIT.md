@@ -141,3 +141,23 @@ pool into the roller by hand, then applying the damage manually.
 
 Range also feeds the reaction: attacking at Engaged defaults the dialog to close combat, which
 is what the target may fight back against, while anything further defaults to a dodge.
+
+## Sixth pass — one Stop record
+
+The GM screen and solo play were both generating Stops, in two different shapes. The GM
+stored a named record with a three-step Countdown in `journey.stops`; solo kept a single
+unnamed object in `journey.solo.stop` that the next roll overwrote. A GM-prepared Stop could
+not be played through the solo screen, a solo Stop never reached the Journey's Stop log, and
+only one of the two had a Countdown at all — which is the Stop's entire escalation engine.
+
+| # | Finding | Fix |
+|---|---|---|
+| 22 | Two incompatible Stop shapes. | One record in `src/stops.js`, built by `makeStop()` and rendered by one shared card. Both screens now read and write the same list. |
+| 23 | Solo Stops had **no Countdown**, so escalation fell back to the D66 table every time. | Every Stop carries three distinct Countdown steps. Solo's Stop Countdown button fires the live Stop's own next step and only falls back to the D66 table when there is no Stop in play. |
+| 24 | Solo Stops were **overwritten** on each roll and never logged. | Stops accumulate in the Journey with an active one marked; the GM screen can hand play to any of them. |
+| 25 | A Threat was attached to solo state rather than to the Stop. | Threats attach to the Stop record, so they travel with it. |
+| 26 | Old saves held both shapes. | A migration folds legacy solo Stops into the shared list and clears the duplicate. |
+
+Two harness bugs surfaced during this pass and were fixed rather than worked around: a
+selector matching "Blocker resolved" when it meant the "Blocker" table button, and a modal
+parser still expecting the old countdown title.
