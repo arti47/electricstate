@@ -15,6 +15,17 @@ document.getElementById("themeToggle")?.addEventListener("click", () => {
   showToast(`Theme: ${next}`);
 });
 
+// Zoom suppression. The viewport meta covers most browsers; iOS Safari ignores
+// user-scalable=no, so pinch gestures and ctrl+wheel are cancelled explicitly.
+for (const type of ["gesturestart", "gesturechange", "gestureend"]) {
+  document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+}
+document.addEventListener("wheel", (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && ["+", "-", "=", "_", "0"].includes(e.key)) e.preventDefault();
+});
+
 startRouter();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {

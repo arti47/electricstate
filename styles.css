@@ -67,6 +67,15 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
+/* Zoom is off: this is a play aid held in one hand mid-session, and a stray pinch or
+   double-tap during a roll is only ever a nuisance. touch-action kills the double-tap
+   zoom that user-scalable=no no longer prevents on iOS. */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
   background: var(--bg);
   color: var(--ink);
@@ -166,9 +175,11 @@ a { color: inherit; }
 
 input, select, textarea {
   width: 100%; min-height: var(--tap);
+  /* 16px minimum: anything smaller makes iOS zoom the viewport on focus. */
+  font-size: 16px;
   background: var(--bg-sunk); color: var(--ink);
   border: 1px solid var(--line); border-radius: var(--r);
-  padding: 8px 10px; font: inherit;
+  padding: 8px 10px; font-family: inherit;
 }
 label { display: block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
 .field { margin-bottom: var(--gap); }

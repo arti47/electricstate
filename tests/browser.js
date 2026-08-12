@@ -220,6 +220,24 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(60);
   check(/Blocker:/.test(await page.textContent("#screen")), "GM table roll produced no output");
 
+  // zoom is locked off
+  const zoom = await page.evaluate(() => {
+    const meta = document.querySelector('meta[name="viewport"]')?.content || "";
+    const input = document.createElement("input");
+    document.body.append(input);
+    const size = parseFloat(getComputedStyle(input).fontSize);
+    input.remove();
+    return {
+      meta,
+      inputFontSize: size,
+      touchAction: getComputedStyle(document.documentElement).touchAction
+    };
+  });
+  check(/user-scalable=no/.test(zoom.meta), `viewport allows scaling: ${zoom.meta}`);
+  check(/maximum-scale=1/.test(zoom.meta), `viewport lacks maximum-scale: ${zoom.meta}`);
+  check(zoom.touchAction === "manipulation", `touch-action is ${zoom.touchAction}, so double-tap can still zoom`);
+  check(zoom.inputFontSize >= 16, `inputs render at ${zoom.inputFontSize}px, which makes iOS zoom on focus`);
+
   check(errors.length === 0, `${viewport.width}px: console errors: ${errors.join(" | ")}`);
   await page.close();
 }
