@@ -51,3 +51,15 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 ## Git
 - Feature branch: `claude/document-study-review-cd12ud`, merged to `main` after each unit of work.
 - Push with `git push -u origin <branch>`.
+
+## Build status (Stage C)
+- **Phase 0 — Foundations**, data layer first.
+- Data files live at repo root per the LOCKED file structure: `data.js` (core), `data-tables.js`
+  (injuries, traumas, shared items, gear, services), `data-gm.js` (Stop generators),
+  `data-solo.js` (Chapter 8), `data-npcs.js` (Threats), `data-pregens.js`.
+- Ledger: 48 of 51 items extracted. Outstanding: T-27 rules-library entries, T-45 vehicle
+  combat/chases, T-32 partial (one pregen blocked, ruling A18).
+- Not built yet: `index.html`, `styles.css`, `src/*`, PWA shell. Nothing renders.
+- Verification so far is structural only — module parse, D66 row counts (36), D6 counts (6),
+  pregen sheets re-derived against the Health/Hope formulas. No browser verification yet;
+  that starts when the shell exists.

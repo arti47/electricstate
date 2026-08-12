@@ -123,6 +123,7 @@ neurine, Bliss).
 | A12 | Whether the **GM screen** should expose Threat Hope. | Threats have no Hope by rule; GM screen omits the field entirely rather than showing a null. |
 | A13 | **Solo Stop Threat Countdown (p. 213) is a D66 table whose ranges stop at 56** — results 61–66 are unassigned in the printed table. | Treat 61–66 as re-roll. Flag in the UI as a house aid, not a printed rule. |
 | A14 | **Drone Pilot** breaks several core economies: no gear, no cash, damage resolved as a drone (Hull) rather than Health, no eating, **no Bliss tracking**, and global neuroscapes only. | Implement as a first-class archetype variant, not a cosmetic flag: the sheet swaps the Health track for a drone Hull track, hides gear/cash/hunger surfaces, disables Bliss accrual, and restricts neuroscape access. Highest-complexity item in Phase 1–2. |
+| A18 | The **Willy Carbone pregen sheet** extracts an attribute row of 2/6/4/6, which yields Hope 5, but the printed sheet shows Hope 4 — two-column sheet corruption. | Blocked. Ship the other three pregens; request the Carbone sheet page. Do not guess the attribute row. |
 | A17 | The **personal Goal examples table** referenced on p. 114 ("choose or roll on the adjacent table") does not exist on p. 112, 114 or 115, and is absent from the transcript and the summary. | Treat as a layout/editing error in the printed book. The wizard's Goal step uses free text, the per-archetype Goal suggestions from Ch. 8 (p. 207), and the Kicker examples from p. 115. Labelled a house aid, not a printed table. |
 | A16 | The p. 122 sidebar calls the first Threat category **Armed Threats**; Chapter 6 calls it **Violent Threats**. | Same category; canonicalize to *Violent*, alias *Armed*. |
 | A15 | Book is internally inconsistent on **beer**: gear list says once per **Day**, liquor once per **Shift**, both against a global 1-Hope-per-Shift cap. | Per-item cadence and the global cap both enforced; the stricter binds (A4 generalized). |
@@ -145,40 +146,40 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] T-04 Archetypes ×10: key attribute, cash formula, talent/Dream/Flaw/neurocaster/personal-item D6 tables
 - [x] T-05 Time units and lifecycle boundary definitions
 - [x] T-06 Push economy rules (base vs gear dice, Busted threshold)
-- [ ] T-07 Opposed-roll procedure incl. combat reactions, tie rules, margin banking
-- [ ] T-08 Tension: scale, starting distribution, bonus-dice rule, reduction procedure and Hope payout
+- [x] T-07 Opposed-roll procedure incl. combat reactions, tie rules, margin banking
+- [x] T-08 Tension: scale, starting distribution, bonus-dice rule, reduction procedure and Hope payout
 - [x] T-09 Zones, range bands, minimum/maximum range penalties
-- [ ] T-10 Initiative, action economy, reaction rules, free actions
+- [x] T-10 Initiative, action economy, reaction rules, free actions
 - [x] T-11 Cover Armor Levels; body armor (level, Agility modifier, price)
 - [x] T-12 **Weapons** (22) — name, gear bonus, base Damage, min/max range, price, flags (full auto, explosive, neurocaster-only, taser stun rule) — source: `docs/rules/09-stat-tables.md`
-- [ ] T-13 Full-auto, single-shot, ambush, firearms-in-close-combat rules
+- [x] T-13 Full-auto, single-shot, ambush, firearms-in-close-combat rules
 - [x] T-14 Damage, Incapacitation, death-roll, rally, stabilize, instant-kill rules
-- [ ] T-15 Serious Injuries D66 (18) with effect descriptors, healing dice, surgery flags — source: `docs/rules/10-injury-trauma-tables.md`
+- [x] T-15 Serious Injuries D66 (18) with effect descriptors, healing dice, surgery flags — source: `docs/rules/10-injury-trauma-tables.md`
 - [x] T-16 Hope loss, traumatic-event table, freeze rule, Breakdown, rally
-- [ ] T-17 Mental Traumas D66 (18) with rule-rewriting effect descriptors — source: `docs/rules/10-injury-trauma-tables.md`; 13 of 18 alter engine behavior
+- [x] T-17 Mental Traumas D66 (18) with rule-rewriting effect descriptors — source: `docs/rules/10-injury-trauma-tables.md`; 13 of 18 alter engine behavior
 - [x] T-18 Hazards: explosions/Blast Power, fire/Intensity, cold, disease/Virulence, falling, hunger/thirst, sleep deprivation
 - [x] T-19 Neurocaster models (5) — Processor/Network/Graphics/cost, GO exception — source: `docs/rules/11-gear-tables.md` (verified)
 - [x] T-20 Neurocasting: Bliss rules, wired/wireless, information Difficulty table, hacking Difficulty table, avatar social/combat/manipulation, dual-realm rule
 - [x] T-21 **Drones** — consumer models (6: Str, Agi, Hull, Armor, Damage, min/max range, cost), robots, drone growths — source: `docs/rules/09-stat-tables.md`
 - [x] T-22 **Vehicles** (19: passengers, maneuverability, speed, Hull, Armor, cost, rarity tier, horse riding exception) — source: `docs/rules/09-stat-tables.md`; plus vehicle traits D66 (12)
 - [x] T-23 Fuel/travel model (tank size, range, Shift-based travel)
-- [ ] T-24 Shared items D66 (36) with mechanical effects and use limits — source: `docs/rules/11-gear-tables.md` (transcript version is misordered, do not use)
-- [ ] T-51 Common Services (7): lodging and meal costs, surgery-for-cash at $1,000 — source: `docs/rules/11-gear-tables.md`
+- [x] T-24 Shared items D66 (36) with mechanical effects and use limits — source: `docs/rules/11-gear-tables.md` (transcript version is misordered, do not use)
+- [x] T-51 Common Services (7): lodging and meal costs, surgery-for-cash at $1,000 — source: `docs/rules/11-gear-tables.md`
 - [x] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
-- [ ] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
+- [x] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
 - [ ] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
 - [ ] T-45 Vehicle combat: stunts, road/boat/air accident tables (D6 each), ramming formula, component damage (D6), chase procedure + obstacle D66 (transcript 7375–7700)
-- [ ] T-46 Gear price list p. 109 (35 items: bonus, cost, use limits, per-item Hope cadence, neurine addiction check) — source: `docs/rules/11-gear-tables.md`
-- [ ] T-47 Drone Pilot archetype exception rules (no gear/cash, Hull damage model, no Bliss, global-only neuroscapes, sleep but no food)
+- [x] T-46 Gear price list p. 109 (35 items: bonus, cost, use limits, per-item Hope cadence, neurine addiction check) — source: `docs/rules/11-gear-tables.md`
+- [x] T-47 Drone Pilot archetype exception rules (no gear/cash, Hull damage model, no Bliss, global-only neuroscapes, sleep but no food)
 
 ### `data-monsters.js` / `data-npcs.js`
-- [ ] T-28 Threat stat blocks from Ch. 6 with talents, gear, example Countdowns
-- [ ] T-29 Threat anatomy metadata (location, goal, reaction, special-ability menu)
+- [x] T-28 Threat stat blocks from Ch. 6 with talents, gear, example Countdowns
+- [x] T-29 Threat anatomy metadata (location, goal, reaction, special-ability menu)
 - [x] T-30 Minor-NPC baseline rule (all attributes 3, optional talent) + NPC Quirks D66 (36) — source: `docs/rules/12-generator-tables.md`
-- [ ] T-31 NPC reaction (2D6) and combat morale (2D6) tables
+- [x] T-31 NPC reaction (2D6) and combat morale (2D6) tables
 
 ### `data-pregens.js`
-- [ ] T-32 The 4 published pre-made Travelers, fully statted
+- [~] T-32 Pre-made Travelers — 3 of 4 extracted and formula-verified; Carbone blocked (A18)
 
 ### `data-solo.js`
 - [x] T-33 Card oracle: suit→event mapping, deck-as-timer rule
@@ -207,8 +208,8 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] P0.1 Scaffold LOCKED file set: `index.html`, `styles.css`, `src/*` per §6.1, `manifest.json`, `service-worker.js`, `icon.svg`, `firebase-config.js` (placeholder + `FIREBASE_ENABLED=false`), `database.rules.json`, `tests/`, `package.json`, README
 - [ ] P0.2 Theme tokens (light/dark, system-default + toggle), phone-first shell, bottom-nav router, `ui.js` modal/toast primitives
 - [ ] P0.3 `store.js` localStorage persistence + normalization/migration path
-- [ ] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
-- [ ] P0.5 **Data sub-phase B** — T-19…T-27 (neuronics, gear, recovery, advancement, rules library)
+- [x] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
+- [x] P0.5 **Data sub-phase B** — T-19…T-27 (neuronics, gear, recovery, advancement, rules library)
 - [ ] P0.6 **Data sub-phase C** — T-28…T-44 (threats, pregens, solo, GM tables)
 - [ ] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
 

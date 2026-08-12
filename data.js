@@ -408,3 +408,91 @@ export default {
   META, TIME_UNITS, ATTRIBUTES, TALENTS, ARCHETYPES, WEAPONS, BODY_ARMOR, COVER,
   DEATH, RECOVERY, NEUROCASTERS, BLISS, NEURO_TASKS, DRONES, VEHICLES, FUEL
 };
+
+// ============================================================ appended: T-07..T-13
+// ------------------------------------------------------- T-07 opposed procedure
+export const OPPOSED = {
+  winCondition: "moreSixes",
+  pusher: "activeOnly",              // open opposed rolls: both may push
+  openOpposedTie: "compromise",      // else re-roll after pushing
+  travelerVsTraveler: { bothAddTension: true },
+  damageFormula: "base + (attackerSixes - defenderSixes - 1)"
+};
+export const COMBAT_REACTIONS = {
+  close: {
+    passive: { id: "takeTheHit", damage: "base + extraSixes" },
+    active: { id: "fightBack", opposed: true, tie: "noOneHurt", onDefenderWin: "attackerTakesDefenderWeaponDamage" }
+  },
+  ranged: {
+    passive: { id: "standTall", damage: "base + extraSixes" },
+    active: { id: "dodge", opposed: true, tie: "miss", onDefenderWin: "miss" }
+  },
+  cost: "forfeitNextTurn",
+  coversUnlimitedAttacksUntilNextTurn: true,
+  unavailableWhen: ["incapacitated", "unaware"]
+};
+
+// -------------------------------------------------------------- T-08 tension
+export const TENSION = {
+  min: 0, max: 2, asymmetric: true,
+  labels: ["No tension.", "Suppressed irritation, love, interest or other feeling.", "Uncontained strong emotion — rage, love, fear."],
+  startingOnes: [1, 2],              // Tension 1 toward one or two others, 0 to the rest
+  bonusDiceInOpposedVsTraveler: true,
+  reduce: { requires: "noImmediateThreat", time: "stretch", maxTravelersPerScene: 2,
+            bothReduceBy: 1, hopeGain: 1, minimumTensionToReduce: 1 },
+  loneWolfMayReduceAlone: true,
+  dramaQueenDoublesBonus: true
+};
+
+// ------------------------------------------------ T-10 initiative & action economy
+export const INITIATIVE = {
+  method: "sideBased",
+  attackersFirst: true,
+  orderWithinSide: "free",
+  tieBreaker: { die: "d6", addAttribute: "wits", scope: "bestOnSide", rerollTies: true },
+  pushable: false, isAction: false
+};
+export const ACTION_ECONOMY = {
+  perTurn: [{ moves: 1, actions: 1 }, { moves: 2, actions: 0 }],
+  moveBeforeAction: true,
+  moveDefinition: "between adjacent zones, or between Short and Engaged in the same zone",
+  freeActions: ["draw a weapon", "open a door", "speak a few words"],
+  sampleActions: ["Attack in close combat", "Make a ranged attack", "Reload", "Take cover",
+                  "Rally an Incapacitated fighter", "Interact with an item", "Pick up an item"],
+  reactionForfeitsNextTurn: true
+};
+
+// ------------------------------------------------------------ T-13 firearm rules
+export const FIREARM_RULES = {
+  trackAmmo: false,
+  singleShot: { reload: "action" },
+  fullAuto: { maxBursts: 3, emptiesMagazine: true, beltFedExempt: true, reload: "action" },
+  firearmsInCloseCombat: { attr: "strength", minRangePenaltyApplies: true },
+  ambush: { attr: "agility", closeCombatModifier: -3, targetCannotReact: true,
+            unavailableAgainst: "someone already in active combat" }
+};
+
+// --------------------------------------------------------------- T-26 advancement
+export const ADVANCEMENT = {
+  when: "sessionDebrief",
+  requires: "actedOnDreamOrFlaw",
+  roll: { die: "d6", vs: "chosenAttribute",
+          higher: { effect: "attributePlusOne", alsoRaisesDerivedMax: true },
+          equalOrLower: { effect: "gainTalent", mustJustify: true } },
+  overcomeFlaw: { oncePerJourney: true, immediateImprovementRolls: 3,
+                  removesFlaw: true, locksFurtherImprovement: true,
+                  advice: "Leave at least a session or two of play afterwards." },
+  newJourneyWithSameTraveler: "chooseNewFlaw"
+};
+
+// --------------------------------------------- T-47 Drone Pilot exception record
+export const DRONE_PILOT_RULES = {
+  archetype: "dronePilot",
+  statsCreatedNormally: true,
+  damageAs: "drone",
+  noGear: true, noCash: true,
+  needsFood: false, needsSleep: true,
+  tracksBliss: false,
+  neuroscapeAccess: "globalOnly",
+  uiImpact: ["swap Health track for Hull", "hide inventory and cash", "hide hunger", "disable Bliss meter", "restrict neuroscape picker"]
+};
