@@ -57,8 +57,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Data files live at repo root per the LOCKED file structure: `data.js` (core), `data-tables.js`
   (injuries, traumas, shared items, gear, services), `data-gm.js` (Stop generators),
   `data-solo.js` (Chapter 8), `data-npcs.js` (Threats), `data-pregens.js`.
-- Ledger: 48 of 51 items extracted. Outstanding: T-27 rules-library entries, T-45 vehicle
-  combat/chases, T-32 partial (one pregen blocked, ruling A18).
+- Ledger: 49 of 51 items extracted. Outstanding: T-27 rules-library entries, T-45 vehicle combat/chases.
+- Known book erratum: the Carbone pregen sheet prints Hope 4 where the formula gives 5. Rules
+  outrank printed derived values; see `PREGEN_ERRATA` in data-pregens.js.
 - Not built yet: `index.html`, `styles.css`, `src/*`, PWA shell. Nothing renders.
 - Verification so far is structural only — module parse, D66 row counts (36), D6 counts (6),
   pregen sheets re-derived against the Health/Hope formulas. No browser verification yet;

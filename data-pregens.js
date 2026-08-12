@@ -43,26 +43,25 @@ export const PREGENS = [
   },
   {
     id: "carbone", name: 'Wilhemina/William "Willy" Carbone', archetype: "runawayKid",
-    favoriteSong: null,
-    strength: null, agility: null, wits: null, empathy: null,
-    health: 4, hope: 4,
+    favoriteSong: "Friday, I'm in Love, The Cure",
+    strength: 2, agility: 6, wits: 4, empathy: 6,
+    health: 4, hope: 5,          // sheet prints Hope 4; see PREGEN_ERRATA
     talents: ["conArtist"],
     dream: "To belong.",
     flaw: "You're overeager. The child in you often annoys the cynical people of the world.",
     neurocaster: "juryRigged",
     gear: ["Knife", "Copy of \"If You Lived Here, You'd Be Home by Now\" by Chuck Palahniuk"],
-    blurb: "Parents lost to neuro addiction; escaped the Pacifica Orphanage System at 12, on the road since. Sixteen now.",
-    blocked: true
+    blurb: "Parents lost to neuro addiction; escaped the Pacifica Orphanage System at 12, on the road since. Sixteen now."
   }
 ];
 
-// The Carbone sheet's attribute row extracts as 2/6/4/6, which yields Hope 5 — but the
-// printed sheet shows Hope 4, so at least one value is wrong. Two-column sheet corruption,
-// same class of defect as the stat tables. Needs the pregen sheet page image.
-export const PREGEN_BLOCKED = {
-  id: "carbone",
-  reason: "Attribute row fails the Hope formula check (extracted 2/6/4/6 → Hope 5, sheet prints 4).",
-  needs: "Pre-made character sheet page for Willy Carbone."
-};
+// Not a transcription defect after all: the published sheet really does print
+// Str 2 / Agi 6 / Wits 4 / Emp 6 with Hope 4, which contradicts the book's own formula
+// (ceil((Wits+Empathy)/2) = 5). The rule outranks the derived number printed on the sheet,
+// so the app carries Hope 5 and surfaces this note. Health 4 is correct as printed.
+export const PREGEN_ERRATA = [
+  { id: "carbone", field: "hope", printed: 4, computed: 5,
+    reason: "Sheet's printed Hope contradicts the Hope formula; the formula is canonical." }
+];
 
-export default { PREGENS, PREGEN_BLOCKED };
+export default { PREGENS, PREGEN_ERRATA };

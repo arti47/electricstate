@@ -123,7 +123,7 @@ neurine, Bliss).
 | A12 | Whether the **GM screen** should expose Threat Hope. | Threats have no Hope by rule; GM screen omits the field entirely rather than showing a null. |
 | A13 | **Solo Stop Threat Countdown (p. 213) is a D66 table whose ranges stop at 56** — results 61–66 are unassigned in the printed table. | Treat 61–66 as re-roll. Flag in the UI as a house aid, not a printed rule. |
 | A14 | **Drone Pilot** breaks several core economies: no gear, no cash, damage resolved as a drone (Hull) rather than Health, no eating, **no Bliss tracking**, and global neuroscapes only. | Implement as a first-class archetype variant, not a cosmetic flag: the sheet swaps the Health track for a drone Hull track, hides gear/cash/hunger surfaces, disables Bliss accrual, and restricts neuroscape access. Highest-complexity item in Phase 1–2. |
-| A18 | The **Willy Carbone pregen sheet** extracts an attribute row of 2/6/4/6, which yields Hope 5, but the printed sheet shows Hope 4 — two-column sheet corruption. | Blocked. Ship the other three pregens; request the Carbone sheet page. Do not guess the attribute row. |
+| A18 | **RESOLVED — a book error, not an extraction defect.** The printed Carbone sheet shows Str 2 / Agi 6 / Wits 4 / Emp 6 with Hope 4; the book's own formula gives Hope 5. | The rule outranks a derived number printed on a sheet. App carries Hope 5, records the discrepancy in `PREGEN_ERRATA`, and surfaces it in the pregen picker. All 4 pregens now complete. |
 | A17 | The **personal Goal examples table** referenced on p. 114 ("choose or roll on the adjacent table") does not exist on p. 112, 114 or 115, and is absent from the transcript and the summary. | Treat as a layout/editing error in the printed book. The wizard's Goal step uses free text, the per-archetype Goal suggestions from Ch. 8 (p. 207), and the Kicker examples from p. 115. Labelled a house aid, not a printed table. |
 | A16 | The p. 122 sidebar calls the first Threat category **Armed Threats**; Chapter 6 calls it **Violent Threats**. | Same category; canonicalize to *Violent*, alias *Armed*. |
 | A15 | Book is internally inconsistent on **beer**: gear list says once per **Day**, liquor once per **Shift**, both against a global 1-Hope-per-Shift cap. | Per-item cadence and the global cap both enforced; the stricter binds (A4 generalized). |
@@ -179,7 +179,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] T-31 NPC reaction (2D6) and combat morale (2D6) tables
 
 ### `data-pregens.js`
-- [~] T-32 Pre-made Travelers — 3 of 4 extracted and formula-verified; Carbone blocked (A18)
+- [x] T-32 Pre-made Travelers (4), all formula-checked; one printed-sheet erratum recorded (A18)
 
 ### `data-solo.js`
 - [x] T-33 Card oracle: suit→event mapping, deck-as-timer rule
