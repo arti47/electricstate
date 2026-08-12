@@ -1,6 +1,6 @@
 // Character-derived calculations. Pure functions over a character object.
 import { ceilHalf, clamp } from "./core.js";
-import { TALENTS, DERIVED, ATTRIBUTE_MIN, ATTRIBUTE_MAX, DRONE_PILOT_RULES } from "../data.js";
+import { TALENTS, DERIVED, ATTRIBUTE_MIN, ATTRIBUTE_MAX, DRONE_PILOT_RULES, BODY_ARMOR } from "../data.js";
 
 const talentEffect = (id) => TALENTS.find((t) => t.id === id)?.effect;
 
@@ -34,6 +34,9 @@ export function validAttributes(attrs) {
 export function conditionModifiers(ch, context = {}) {
   let mod = 0;
   const notes = [];
+  // Worn body armor is clumsy: it costs dice on every Agility roll.
+  const armor = BODY_ARMOR.find((a) => a.id === ch.state?.armor);
+  if (armor && context.attr === "agility") { mod += armor.agility; notes.push(`${armor.name} ${armor.agility}`); }
   for (const cond of ch.conditions || []) {
     for (const eff of cond.effects || []) {
       if (typeof eff.dice !== "number") continue;

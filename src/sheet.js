@@ -1,7 +1,8 @@
 // The live character sheet and the persistent vitals header (Phase 2).
 import { $, el, clamp } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, NEUROCASTERS, TENSION, FUEL, DRONE_PILOT_RULES } from "../data.js";
-import { GEAR } from "../data-tables.js";
+import { GEAR, SURGERY } from "../data-tables.js";
+import { BODY_ARMOR } from "../data.js";
 import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./derived.js";
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
@@ -137,6 +138,10 @@ function build(ch, rerender) {
   wrap.append(el("div", { class: "btn-row", style: "margin:16px 0" },
     el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll dice"),
     el("button", { class: "btn", onclick: async () => { const { damageDialog } = await import("./roller.js"); damageDialog(ch, rerender); } }, "Take damage"),
+    el("button", { class: "btn", onclick: async () => { const { traumaticEventDialog } = await import("./roller.js"); await traumaticEventDialog(ch, rerender); } }, "Traumatic event"),
+    ch.state.health === 0 || ch.state.hope === 0
+      ? el("button", { class: "btn", onclick: async () => { const { rallyDialog } = await import("./roller.js"); await rallyDialog(ch, rerender); } }, "Rally")
+      : null,
     ch.state.health === 0 && !ch.state.stabilized && !ch.state.dead
       ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
       : null));
@@ -200,7 +205,10 @@ function conditionsCard(ch, patch) {
           class: "btn", onclick: () => patch((c) => { c.conditions = c.conditions.filter((x) => x.id !== cond.id); })
         }, "Heal")),
       el("div", { class: "faint" }, describeCondition(cond)),
-      cond.heal ? el("div", { class: "faint" }, `Healing time: ${cond.heal} days${cond.surgery ? " — requires surgery first" : ""}`) : null));
+      cond.heal ? el("div", { class: "faint" }, `Healing time: ${cond.heal} days${cond.surgery ? " — requires surgery first" : ""}`) : null,
+      cond.surgery ? el("button", {
+        class: "btn", onclick: async () => { const { surgeryDialog } = await import("./roller.js"); await surgeryDialog(ch, cond, patch); }
+      }, `Operate ($${SURGERY.cashAlternative} or a Surgeon)`) : null));
   }
   card.append(el("a", { class: "btn btn-block", href: `#/injury/${ch.id}` }, "Add injury or trauma"));
   return card;
@@ -265,6 +273,17 @@ function inventoryCard(ch, patch) {
         : null,
       item.uses != null ? el("div", { class: "faint" }, `${item.uses} uses left`) : null));
   }
+
+  // Body armor: worn armor soaks damage but costs Agility, so it is equipped, not just carried.
+  const armorSelect = el("select", { "aria-label": "Body armor" },
+    el("option", { value: "" }, "No body armor"),
+    ...BODY_ARMOR.map((a) => el("option", { value: a.id, selected: ch.state.armor === a.id },
+      `${a.name} — armor ${a.armor}, ${a.agility} Agility`)));
+  armorSelect.addEventListener("change", (e) => patch((c) => { c.state.armor = e.target.value || null; }));
+  const worn = BODY_ARMOR.find((a) => a.id === ch.state.armor);
+  card.append(el("div", { class: "field", style: "margin-top:12px" },
+    el("label", {}, "Worn armor"), armorSelect,
+    worn ? el("p", { class: "faint" }, `Every Agility roll takes ${worn.agility} dice while you wear it.`) : null));
 
   const pick = el("select", { "aria-label": "Add gear" },
     el("option", { value: "" }, "Add from the gear list…"),

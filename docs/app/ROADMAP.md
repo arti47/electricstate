@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **Stage C, Phase 6 complete.** Remaining: accessibility pass and the full rules-accuracy audit (§11). Phase 5 multiplayer stays gated per the local-first decision. Data layer landing first, per the ledger rule that no UI is built against an unticked table.
+Status: **Build complete** except Phase 5 multiplayer, which stays gated per the local-first decision. Audit findings and the accessibility pass are recorded in `docs/app/AUDIT.md`. Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -266,8 +266,8 @@ Create Traveler → live sheet → roll tests and combat → track Health/Hope/B
 
 ### Hardening (continuous)
 - [x] H.1 Playwright regression harness (`npm test`): boot smoke with zero console errors; derived-stat invariants; push/gear-degradation invariants; opposed-sequence and tie cases; Hope/Bliss cap and decay schedules; every automated talent opens a non-empty resolution; lifecycle bundles fire and undo cleanly; zero horizontal overflow at 360/390 px; a11y basics
-- [ ] H.2 Accessibility pass
-- [ ] H.3 Full rules-accuracy audit (§11) — expect findings concentrated in engine behavior: push legality under traumas, Hope cap stacking, death-roll counters, dual-realm turn locking, Tension symmetry, improvement lock
+- [x] H.2 Accessibility pass
+- [x] H.3 Full rules-accuracy audit (§11) — expect findings concentrated in engine behavior: push legality under traumas, Hope cap stacking, death-roll counters, dual-realm turn locking, Tension symmetry, improvement lock
 
 ---
 

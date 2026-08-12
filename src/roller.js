@@ -2,8 +2,9 @@
 // Pure resolution functions live at the top so the harness can test them without a DOM.
 import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6 } from "./core.js";
 import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
-         BODY_ARMOR, COVER, NEUROCASTERS, TASER_RULE } from "../data.js";
+         BODY_ARMOR, COVER, NEUROCASTERS, TASER_RULE, TRAUMATIC_EVENTS } from "../data.js";
 import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss } from "./derived.js";
+import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
 import { Settings } from "./settings.js";
@@ -332,6 +333,129 @@ function writeLog(ch, pool, result, pushed) {
   });
 }
 
+// ============================================================ traumatic events
+/** Empathy resists the loss; any Hope actually lost also costs your next turn (freeze). */
+export function resolveTraumaticEvent(potential, sixes, ch) {
+  const flashbacks = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "traumaticLossPlus"));
+  const worse = flashbacks ? potential + 1 : potential;
+  const lost = Math.max(0, worse - sixes);
+  const panic = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "autoBreakdownOnHopeLoss"));
+  const violent = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "attackInsteadOfFreeze"));
+  return { lost, freeze: lost > 0 && !violent, violent: lost > 0 && violent, breakdown: lost > 0 && panic };
+}
+
+export async function traumaticEventDialog(ch, onDone) {
+  const level = el("select", { "aria-label": "Potential Hope loss" },
+    ...TRAUMATIC_EVENTS.map((e) => el("option", { value: e.hope }, `${e.event} — ${e.hope}`)),
+    el("option", { value: "1" }, "Something else — 1"),
+    el("option", { value: "2" }, "Something else — 2"),
+    el("option", { value: "3" }, "Something else — 3"));
+
+  const go = await modal({
+    title: "Traumatic event",
+    body: el("div", {},
+      el("p", { class: "faint" }, "Roll Empathy — each 6 cancels a point of the loss. Pushing risks losing more."),
+      el("div", { class: "field" }, el("label", {}, "Potential Hope loss"), level)),
+    actions: [{ label: "Roll Empathy", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!go) return;
+
+  const hardened = (ch.talents || []).includes("hardened") ? 2 : 0;
+  const overwhelmed = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.dice === -2 && e.when === "resisting traumatic events")) ? -2 : 0;
+  const dice = rollDice(Math.max(1, ch.attributes.empathy + hardened + overwhelmed));
+  const outcome = resolveTraumaticEvent(Number(level.value), countSixes(dice), ch);
+
+  const next = structuredClone(ch);
+  next.state.hope = clamp(next.state.hope - outcome.lost, 0, maxHope(next));
+  if (outcome.freeze) next.state.frozen = true;
+  saveCharacter(next);
+  renderVitals(next);
+
+  logRoll({ by: ch.name, label: "Resist trauma", dice, outcome: `${outcome.lost} Hope lost${outcome.freeze ? " · frozen" : ""}` });
+
+  await modal({
+    title: outcome.lost ? `${outcome.lost} Hope lost` : "Held together",
+    body: el("div", {},
+      el("p", { class: "mono faint" }, dice.join(" ")),
+      outcome.freeze ? el("p", {}, "You freeze — you lose your next turn.") : null,
+      outcome.violent ? el("p", {}, "Instead of freezing you attack the nearest person in close combat, and fight until you take damage.") : null,
+      outcome.breakdown ? el("p", { style: "color:var(--danger)" }, "Panic attacks: this triggers an immediate Breakdown.") : null,
+      next.state.hope === 0 ? el("p", { style: "color:var(--danger)" }, "Hope is gone — Breakdown.") : null),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+  onDone?.();
+}
+
+// ================================================================ rally / stabilize
+export async function rallyDialog(target, onDone) {
+  const helpers = listCharacters().filter((c) => c.id !== target.id && c.state.health > 0);
+  if (!helpers.length) { showToast("Nobody else is standing.", "danger"); return; }
+
+  const who = el("select", { "aria-label": "Who helps" }, ...helpers.map((c) => el("option", { value: c.id }, c.name)));
+  const isBreakdown = target.state.hope === 0;
+  const body = el("div", {},
+    el("p", { class: "faint" }, isBreakdown
+      ? "An Empathy roll from someone in the same zone. Success restores Hope equal to the number of 6s."
+      : "An Empathy roll from someone in the same zone. Success restores Health equal to the number of 6s — but does not stabilize; death rolls continue."),
+    el("div", { class: "field" }, el("label", {}, "Who helps"), who));
+
+  const mode = await modal({
+    title: isBreakdown ? "Rally from Breakdown" : "Rally the Incapacitated", body,
+    actions: [
+      { label: "Rally (Empathy)", value: "rally", class: "btn-primary" },
+      !isBreakdown ? { label: "Stabilize (Medic)", value: "stabilize" } : null,
+      { label: "Cancel", value: null }
+    ].filter(Boolean)
+  });
+  if (!mode) return;
+
+  const helper = getCharacter(who.value);
+  const leader = (helper.talents || []).includes("leader") ? 2 : 0;
+
+  if (mode === "stabilize") {
+    if (!(helper.talents || []).includes("medic")) { showToast("Only someone with the Medic talent can stabilize.", "danger"); return; }
+    const dice = rollDice(Math.max(1, helper.attributes.wits));
+    const ok = countSixes(dice) > 0;
+    logRoll({ by: helper.name, label: "Stabilize", dice, outcome: ok ? "stabilized" : "failed" });
+    if (ok) {
+      const next = structuredClone(getCharacter(target.id));
+      next.state.death = null;
+      next.state.stabilized = true;
+      saveCharacter(next);
+    }
+    await modal({
+      title: ok ? "Stabilized" : "No good",
+      body: el("p", {}, ok ? "The death rolls stop. They are still Incapacitated until rallied." : "The bleeding continues — death rolls go on."),
+      actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    });
+    onDone?.();
+    return;
+  }
+
+  const depressed = isBreakdown && (target.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "cannotBeRallied"));
+  if (depressed) { showToast("Depressed: this Traveler cannot be rallied by anyone.", "danger"); return; }
+
+  const dice = rollDice(Math.max(1, helper.attributes.empathy + leader));
+  const sixes = countSixes(dice);
+  const next = structuredClone(getCharacter(target.id));
+  if (sixes) {
+    if (isBreakdown) next.state.hope = clamp(next.state.hope + sixes, 0, maxHope(next));
+    else next.state.health = clamp(next.state.health + sixes, 0, maxHealth(next));
+    saveCharacter(next);
+    renderVitals(next);
+  }
+  logRoll({ by: helper.name, label: isBreakdown ? "Rally (Hope)" : "Rally (Health)", dice, outcome: sixes ? `+${sixes}` : "failed" });
+
+  await modal({
+    title: sixes ? `Back on their feet — +${sixes}` : "No response",
+    body: el("div", {},
+      el("p", { class: "mono faint" }, dice.join(" ")),
+      !isBreakdown && sixes ? el("p", {}, "Still not stabilized — the death rolls continue until a Medic stops them.") : null),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+  onDone?.();
+}
+
 // ================================================================ damage flow
 export async function damageDialog(ch, onDone) {
   const amount = el("input", { type: "number", value: "1", min: "0", "aria-label": "Damage" });
@@ -434,6 +558,54 @@ export async function deathRollDialog(ch) {
     saveCharacter(next);
   }
   renderVitals(getCharacter(ch.id));
+}
+
+// ==================================================================== surgery
+/** Surgery takes a Shift and a Wits roll from a Surgeon; failure re-Incapacitates the patient.
+    Paid surgery is the cash alternative for a Traveler with no Surgeon in the group. */
+export async function surgeryDialog(patient, condition, onDone) {
+  const surgeons = listCharacters().filter((c) => (c.talents || []).includes("surgeon"));
+  const who = el("select", { "aria-label": "Surgeon" },
+    ...surgeons.map((c) => el("option", { value: c.id }, c.name)),
+    el("option", { value: "__paid" }, `Pay for it — $${SURGERY.cashAlternative}`));
+
+  const mode = await modal({
+    title: `Operate — ${condition.name}`,
+    body: el("div", {},
+      el("p", { class: "faint" }, "A Shift of work and a Wits roll. A failed operation leaves the patient Incapacitated. Until it succeeds, this injury does not heal at all."),
+      el("div", { class: "field" }, el("label", {}, "Who operates"), who)),
+    actions: [{ label: "Operate", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!mode) return;
+
+  const clear = () => onDone?.((c) => {
+    const target = c.conditions.find((x) => x.id === condition.id);
+    if (target) target.surgery = false;
+  });
+
+  if (who.value === "__paid") {
+    const cash = patient.inventory?.cash ?? 0;
+    if (cash < SURGERY.cashAlternative) { showToast(`Not enough money — $${SURGERY.cashAlternative} is needed.`, "danger"); return; }
+    onDone?.((c) => {
+      c.inventory.cash -= SURGERY.cashAlternative;
+      const target = c.conditions.find((x) => x.id === condition.id);
+      if (target) target.surgery = false;
+    });
+    showToast("Paid for. The injury can heal now.");
+    return;
+  }
+
+  const surgeon = getCharacter(who.value);
+  const kit = (patient.inventory?.items || []).some((i) => i.gearId === "surgicalInstruments") ? 2 : 0;
+  const dice = rollDice(Math.max(1, surgeon.attributes.wits + kit));
+  const ok = countSixes(dice) > 0;
+  logRoll({ by: surgeon.name, label: `Surgery — ${condition.name}`, dice, outcome: ok ? "succeeded" : "failed" });
+
+  if (ok) { clear(); showToast("The operation holds. It can heal now."); }
+  else {
+    onDone?.((c) => { c.state.health = 0; });
+    showToast("The operation fails — the patient is Incapacitated.", "danger");
+  }
 }
 
 export function resetRoller() { pending = null; }

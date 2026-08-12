@@ -362,6 +362,42 @@ await test("solo generators return complete Stops and Threats", () => {
   assert.ok(threat.type);
 });
 
+const derived = await import("../src/derived.js");
+
+await test("worn body armor costs dice on Agility rolls only", () => {
+  const ch = { state: { armor: "plateVest" }, conditions: [] };
+  assert.equal(derived.conditionModifiers(ch, { attr: "agility" }).mod, -2);
+  assert.equal(derived.conditionModifiers(ch, { attr: "strength" }).mod, 0);
+});
+
+await test("traumatic events subtract successes and freeze on any loss", () => {
+  const plain = { conditions: [] };
+  assert.deepEqual(roller.resolveTraumaticEvent(3, 1, plain), { lost: 2, freeze: true, violent: false, breakdown: false });
+  assert.deepEqual(roller.resolveTraumaticEvent(2, 2, plain), { lost: 0, freeze: false, violent: false, breakdown: false });
+
+  const flashbacks = { conditions: [{ effects: [{ rule: "traumaticLossPlus", value: 1 }] }] };
+  assert.equal(roller.resolveTraumaticEvent(1, 0, flashbacks).lost, 2, "Flashbacks raise every potential loss");
+
+  const violent = { conditions: [{ effects: [{ rule: "attackInsteadOfFreeze" }] }] };
+  const v = roller.resolveTraumaticEvent(2, 0, violent);
+  assert.ok(v.violent && !v.freeze, "Violent attacks instead of freezing");
+
+  const panic = { conditions: [{ effects: [{ rule: "autoBreakdownOnHopeLoss" }] }] };
+  assert.ok(roller.resolveTraumaticEvent(1, 0, panic).breakdown);
+});
+
+await test("injuries needing surgery never tick down on their own", () => {
+  store.resetAll();
+  const ch = makeChar({ conditions: [
+    { id: "a", name: "Broken arm", heal: 3, surgery: false, effects: [] },
+    { id: "b", name: "Cracked skull", heal: 3, surgery: true, effects: [] }
+  ] });
+  lifecycle.advanceTime("day", { fed: true });
+  const after = store.getCharacter(ch.id).conditions;
+  assert.equal(after.find((c) => c.id === "a").heal, 2, "an ordinary injury heals");
+  assert.equal(after.find((c) => c.id === "b").heal, 3, "surgery-flagged injuries wait");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

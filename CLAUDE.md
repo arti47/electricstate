@@ -113,5 +113,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   threat reference, and thirteen rollable tables.
 - Verification: `npm test` = 35 invariants + browser smoke (wizard walk, sheet clamping, injury,
   dice roll, log, solo draw, GM table roll).
-- Remaining: accessibility pass, then the full rules-accuracy audit (§11). Phase 5 multiplayer
-  stays gated behind the local-first decision.
+- **Hardening complete.** Rules-accuracy audit closed six engine findings — all six were behaviour,
+  not data: traumatic events with freeze, rally, Medic stabilize, body-armor Agility penalty,
+  surgery (Surgeon roll or $1,000), and the three traumas that rewrite trauma handling. Findings,
+  fixes and the verified-clean list are in `docs/app/AUDIT.md`; each one carries a regression test.
+- Verification: `npm test` = 38 invariants + browser smoke.
+- Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.
