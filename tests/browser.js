@@ -196,6 +196,32 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const start = await page.inputValue('#screen input >> nth=0');
   check(start.length > 3, `starting point roll produced "${start}"`);
 
+  // a gated screen reached while switched off explains itself and can be enabled in place
+  await page.evaluate(() => {
+    localStorage.setItem("electricState.v1.settings", JSON.stringify({ theme: "dark" }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/gm"; });
+  await page.waitForTimeout(80);
+  check(await page.evaluate(() => location.hash) === "#/gm", "gated route silently redirected instead of explaining");
+  const gatedText = await page.textContent("#screen");
+  check(/switched off/i.test(gatedText), "gated screen did not explain why it is empty");
+  const homeHint = await page.evaluate(() => { location.hash = "#/home"; return true; });
+  await page.waitForTimeout(60);
+  check(/Switched off/.test(await page.textContent("#screen")), "home screen does not mention the hidden surfaces");
+  await page.evaluate(() => { location.hash = "#/gm"; });
+  await page.waitForTimeout(60);
+  await page.click('#screen button:has-text("Turn it on")');
+  await page.waitForTimeout(120);
+  check(/Roll up a Stop/.test(await page.textContent("#screen")), "enabling in place did not render the GM screen");
+  check(await page.evaluate(() => !document.querySelector('[data-tab="gm"]').hidden), "GM tab still hidden after enabling");
+
+  // restore both gated tabs for the remaining checks
+  await page.evaluate(() => {
+    localStorage.setItem("electricState.v1.settings", JSON.stringify({ solo: true, gmScreen: true, theme: "dark" }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+
   // solo: draw a card and confirm the deck depletes
   await page.evaluate(() => { location.hash = "#/solo"; });
   await page.waitForTimeout(80);

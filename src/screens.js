@@ -31,6 +31,20 @@ export function homeScreen() {
       el("a", { class: "btn", href: "#/time" }, "Time"),
       chars.length > 1 ? el("a", { class: "btn", href: "#/tension" }, "Tension") : null));
   }
+  const hidden = [
+    !Settings.solo() && ["Solo mode", "#/solo"],
+    !Settings.gmScreen() && ["GM screen", "#/gm"]
+  ].filter(Boolean);
+  if (hidden.length) {
+    wrap.append(el("p", { class: "faint", style: "margin-top:20px" },
+      "Switched off: ",
+      ...hidden.flatMap(([label, href], i) => [
+        i ? " · " : "",
+        el("a", { href }, label)
+      ]),
+      ". Turn them on in Settings."));
+  }
+
   return wrap;
 }
 
