@@ -59,6 +59,13 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   questions it asks. Destination rolls a place **and** a purpose; the book's own D6 sits beside it.
 - Place entries are described by what they are, never by named locations, so the house tables carry
   no setting text and stay inside the scope guard.
+- **Two kinds of house table, and the distinction matters** (see `docs/app/TABLE-AUDIT.md`):
+  *meaning tables* feed interpretation and must hold **single words** plus the ten Anything Words
+  (Change, Continue, Decrease, Increase, Mundane, Mysterious, Start, Stop, Strange, Extra);
+  *content tables* hand over a finished thing — a name, a place, a dashboard detail — and keep
+  their phrases. `GOAL_SEEDS` and `THREAT_SEEDS` are meaning tables; everything else is content.
+- Meaning rolls **keep doubles** and mark them amplified (`Decrease ×2`); content rolls draw
+  distinct rows. Method comes from Mythic Magazine 38, kept at `docs/app/MYTHIC-CUSTOM-TABLES.md`.
 - Any future invented content goes in its own file with the same flag — never mixed into the
   extracted data files.
 

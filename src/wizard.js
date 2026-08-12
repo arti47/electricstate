@@ -9,7 +9,7 @@ import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURN
 import { DESTINATIONS as SOLO_DESTINATIONS } from "../data-solo.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
 import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
-         GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS } from "../data-names.js";
+         GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS, ANYTHING_WORDS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, confirmModal } from "./ui.js";
@@ -190,7 +190,27 @@ function toggleTalent(id, allowed, rerender) {
   rerender();
 }
 
-/** Distinct words from one table — used for the Goal and Threat seeds. */
+/**
+ * Meaning-table roll. Repeats are kept, not re-rolled: on a Mythic-style table a doubled
+ * word is an amplification — "Decrease Decrease" is not less, it is almost nothing left.
+ */
+export function rollSeeds(table = GOAL_SEEDS, count = SEED_ROLLS) {
+  const words = Array.from({ length: count }, () => fromD100(table));
+  const counts = words.reduce((acc, w) => ({ ...acc, [w]: (acc[w] || 0) + 1 }), {});
+  const amplified = Object.entries(counts).filter(([, n]) => n > 1).map(([w]) => w);
+  return { words, amplified };
+}
+
+/** Formats a seed roll, marking any amplified word. */
+export function formatSeeds({ words, amplified }) {
+  const seen = new Set();
+  return words
+    .filter((w) => (seen.has(w) ? false : seen.add(w)))
+    .map((w) => (amplified.includes(w) ? `${w} ×${words.filter((x) => x === w).length}` : w))
+    .join(" · ");
+}
+
+/** Distinct rows from one table — for content tables, where a repeat is just noise. */
 export function rollDescriptors(count = SEED_ROLLS, table = GOAL_SEEDS) {
   const picked = new Set();
   let guard = 0;
@@ -357,7 +377,7 @@ function seedField({ label, key, wordsKey, table, hint, rerender }) {
       el("span", { class: "faint" }, words.length ? words.join(" · ") : hint),
       el("button", {
         class: "btn", "aria-label": `Roll seeds for ${label}`,
-        onclick: () => { draft[wordsKey] = rollDescriptors(SEED_ROLLS, table); rerender(); }
+        onclick: () => { draft[wordsKey] = formatSeeds(rollSeeds(table, SEED_ROLLS)).split(" · "); rerender(); }
       }, "Roll 3 words")));
 }
 

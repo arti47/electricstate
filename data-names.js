@@ -181,52 +181,64 @@ export const DESCRIPTOR_TABLES = [
 export const DESCRIPTOR_ROLLS = 3;   // one from each table
 
 // ----------------------------------------------------------- d100 goal seeds
-// The book gives no Goal table (it points at one that was never printed — ruling A17).
-// Roll three and build a specific objective out of them: an act, a thing, a person.
+// A Mythic-style meaning table: single words only. Three rolls give an act, a thing and a
+// pressure, and the reader wires them together — "Deliver / Grave / Winter" is more generative
+// than any phrase would be. Includes the ten Anything Words as state-shift modifiers.
+// The book gives no Goal table at all (it points at one never printed — ruling A17).
 export const GOAL_SEEDS = [
-  "deliver", "bury", "reunite", "confess", "return", "retrieve", "destroy", "witness",
-  "warn", "cure", "record", "atone", "inherit", "escort", "sell", "buy back", "unplug",
-  "prove", "disprove", "finish", "abandon", "rebuild", "release", "forgive", "avenge",
-  "find", "outlive", "outrun", "outbid", "join", "leave", "refuse", "surrender",
-  "a grave", "a letter", "a child", "a sibling", "a parent", "a lover", "a rival",
-  "a stranger", "a corpse", "a recording", "a photograph", "a map", "a key", "a drone",
-  "a neurocaster", "a car", "a house", "a farm", "a bar", "a church", "a clinic",
-  "a laboratory", "a bunker", "a tower", "a wreck", "a border", "a coastline", "a desert",
-  "a city", "a hometown", "a memory", "a promise", "a debt", "a diagnosis", "a name",
-  "a confession", "a signal", "a frequency", "a rumour", "a cure",
-  "a formula", "a password", "a body", "before winter", "before the drought", "before they die",
-  "before the trial", "before the wedding", "before the funeral", "before the network falls",
-  "one last time", "for money", "for love", "for spite", "for nothing", "out of guilt",
-  "out of duty", "out of habit", "in secret", "in the open", "with witnesses", "alone",
-  "against orders", "with the wrong people", "too late", "too early", "at any cost"
+  "Deliver", "Bury", "Reunite", "Confess", "Return", "Retrieve",
+  "Destroy", "Witness", "Warn", "Heal", "Record", "Atone",
+  "Inherit", "Escort", "Sell", "Repay", "Unplug", "Prove",
+  "Disprove", "Finish", "Abandon", "Rebuild", "Release", "Forgive",
+  "Avenge", "Find", "Outlive", "Outrun", "Join", "Leave",
+  "Refuse", "Surrender", "Escape", "Protect", "Rescue", "Steal",
+  "Trade", "Vigil", "Grave", "Letter", "Child", "Sibling",
+  "Parent", "Lover", "Rival", "Stranger", "Corpse", "Recording",
+  "Photograph", "Map", "Key", "Drone", "Neurocaster", "Vehicle",
+  "Home", "Farm", "Church", "Clinic", "Laboratory", "Bunker",
+  "Tower", "Wreck", "Border", "Coast", "Desert", "City",
+  "Memory", "Promise", "Debt", "Diagnosis", "Name", "Inheritance",
+  "Signal", "Frequency", "Rumour", "Remedy", "Formula", "Password",
+  "Body", "Money", "Weapon", "Medicine", "Water", "Fuel",
+  "Evidence", "Truth", "Secret", "Family", "Freedom", "Justice",
+  "Change", "Continue", "Decrease", "Increase", "Mundane", "Mysterious",
+  "Start", "Stop", "Strange", "Extra"
+];
+
+// -------------------------------------------------- d100 goal and threat modifiers
+// Mythic's Anything Words: universal state-shift modifiers. Rolled alongside the seeds
+// they turn a static noun into a change — "Stop / Signal" reads very differently to
+// "Increase / Signal". Doubles amplify: two Decreases is not less, it is almost nothing.
+export const ANYTHING_WORDS = [
+  "Change", "Continue", "Decrease", "Increase", "Mundane",
+  "Mysterious", "Start", "Stop", "Strange", "Extra"
 ];
 
 // --------------------------------------------------------- d100 threat seeds
-// A personal Threat opposes the Goal. Roll three: who or what, how it reaches you, what it wants.
+// Single words again. Three rolls give who or what, how it reaches the Traveler, and what
+// it wants. Internal threats sit in the same table — the core rules avoid them, but solo
+// play permits them and this is a house table either way.
 export const THREAT_SEEDS = [
-  "a bounty hunter", "an old partner", "a former squadmate", "an ex-lover", "a sibling",
-  "a parent", "a child grown up", "a jilted employer", "a creditor", "a landlord",
-  "a sheriff", "a highway patrol unit", "a militia", "a biker gang", "a cult",
-  "a cult leader", "a corporate agent", "a Sentre fixer", "a rival scientist", "a journalist",
-  "a private investigator", "a drone growth", "an intercerebral intelligence", "a robot",
-  "a rogue system", "a swarm of scavenger drones", "a hitchhiker", "a doctor", "a nurse",
-  "a preacher", "a mayor", "a smuggler", "a dealer", "an addict", "a witness",
-  "a debt", "a warrant", "a blood feud", "a broken contract", "a stolen prototype",
-  "a false confession", "a photograph", "a recording", "a rumour", "blackmail",
-  "a diagnosis", "an addiction", "withdrawal", "a disease", "an infected wound",
-  "grief", "guilt", "shame", "a phobia", "flashbacks", "sleeplessness", "paranoia",
-  "a promise you broke", "a lie you told", "a body you left", "a fire you started",
-  "follows the car", "waits at the destination", "is already in the group", "arrives by radio",
-  "arrives by letter", "arrives in a neuroscape", "appears in dreams", "wears your face",
-  "knows your name", "has your photograph", "has the money", "has the evidence",
-  "has hostages", "has the law", "has the network", "wants you dead", "wants you back",
-  "wants you to confess", "wants what you carry", "wants the drone", "wants the child",
-  "wants an apology", "wants nothing you can give", "will not explain", "will not stop",
-  "will trade", "will lie first", "will take a hostage", "will burn it down",
-  "gets closer each Stop", "is patient", "is desperate", "is dying", "is mistaken",
-  "was right about you", "is protecting someone", "is owed something", "is not real", "already won once"
+  "Hunter", "Partner", "Squadmate", "Sibling", "Parent", "Child",
+  "Employer", "Creditor", "Landlord", "Sheriff", "Patrol", "Militia",
+  "Gang", "Cult", "Preacher", "Agent", "Fixer", "Rival",
+  "Journalist", "Investigator", "Growth", "Intelligence", "Robot", "System",
+  "Swarm", "Hitchhiker", "Doctor", "Nurse", "Mayor", "Smuggler",
+  "Dealer", "Addict", "Witness", "Debt", "Warrant", "Feud",
+  "Contract", "Prototype", "Confession", "Photograph", "Recording", "Rumour",
+  "Blackmail", "Diagnosis", "Addiction", "Withdrawal", "Disease", "Wound",
+  "Grief", "Guilt", "Shame", "Phobia", "Flashback", "Insomnia",
+  "Paranoia", "Promise", "Lie", "Body", "Fire", "Pursuit",
+  "Ambush", "Surveillance", "Betrayal", "Hostage", "Ransom", "Bounty",
+  "Deadline", "Trap", "Roadblock", "Storm", "Machine", "Network",
+  "Signal", "Static", "Mask", "Name", "Evidence", "Money",
+  "Weapon", "Poison", "Sabotage", "Silence", "Patience", "Desperation",
+  "Mistake", "Obligation", "Illusion", "Zealot", "Deserter", "Scavenger",
+  "Change", "Continue", "Decrease", "Increase", "Mundane", "Mysterious",
+  "Start", "Stop", "Strange", "Extra"
 ];
 
 export const SEED_ROLLS = 3;
+export const USE_ANYTHING_WORDS = true;
 
 export default { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES, GOAL_SEEDS, THREAT_SEEDS, HOUSE_AID };

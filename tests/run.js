@@ -424,15 +424,34 @@ await test("d100 covers the whole table and stays in range", () => {
   assert.equal(seen.size, 100, "every row should be reachable");
 });
 
-await test("goal and threat seeds roll three distinct words from their own table", () => {
-  for (const table of [names.GOAL_SEEDS, names.THREAT_SEEDS]) {
-    for (let i = 0; i < 100; i++) {
-      const words = wizardMod.rollDescriptors(names.SEED_ROLLS, table);
-      assert.equal(words.length, 3);
-      assert.equal(new Set(words).size, 3);
-      for (const w of words) assert.ok(table.includes(w), `${w} is not in its own table`);
+await test("meaning tables hold single words only", () => {
+  for (const key of ["GOAL_SEEDS", "THREAT_SEEDS"]) {
+    const multiword = names[key].filter((w) => w.includes(" "));
+    assert.deepEqual(multiword, [], `${key} still contains phrases: ${multiword.slice(0, 3)}`);
+  }
+});
+
+await test("meaning tables carry all ten Anything Words", () => {
+  assert.equal(names.ANYTHING_WORDS.length, 10);
+  for (const key of ["GOAL_SEEDS", "THREAT_SEEDS"]) {
+    for (const word of names.ANYTHING_WORDS) {
+      assert.ok(names[key].includes(word), `${key} is missing the Anything Word ${word}`);
     }
   }
+});
+
+await test("seed rolls keep doubles and mark them as amplified", () => {
+  for (const table of [names.GOAL_SEEDS, names.THREAT_SEEDS]) {
+    for (let i = 0; i < 300; i++) {
+      const roll = wizardMod.rollSeeds(table, names.SEED_ROLLS);
+      assert.equal(roll.words.length, 3);
+      for (const w of roll.words) assert.ok(table.includes(w), `${w} is not in its own table`);
+      const dupes = roll.words.filter((w, idx) => roll.words.indexOf(w) !== idx);
+      assert.equal(roll.amplified.length > 0, dupes.length > 0, "amplification must track real doubles");
+    }
+  }
+  const doubled = wizardMod.formatSeeds({ words: ["Decrease", "Decrease", "Signal"], amplified: ["Decrease"] });
+  assert.equal(doubled, "Decrease ×2 · Signal");
 });
 
 await test("each descriptor table is 100 unique rows", () => {
