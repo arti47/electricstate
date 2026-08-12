@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **awaiting Stage B sign-off.** No application code yet.
+Status: **Stage C, Phase 0 in progress.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -139,28 +139,28 @@ same change** that writes the table, append a changelog row, and record real cou
 estimates. **An unticked box means the data does not exist yet — never build UI against it.**
 
 ### `data.js` — core rules library
-- [ ] T-01 Attributes, ranges, both generation methods, the ≤15 bonus-talent rule
-- [ ] T-02 Derived formulas (Health, Hope) incl. rounding and talent modifiers
-- [ ] T-03 Talents (~50) with structured effect descriptors (`+2 dice when <condition>`, or a named mechanic hook)
-- [ ] T-04 Archetypes ×10: key attribute, cash formula, talent/Dream/Flaw/neurocaster/personal-item D6 tables
-- [ ] T-05 Time units and lifecycle boundary definitions
-- [ ] T-06 Push economy rules (base vs gear dice, Busted threshold)
+- [x] T-01 Attributes, ranges, both generation methods, the ≤15 bonus-talent rule
+- [x] T-02 Derived formulas (Health, Hope) incl. rounding and talent modifiers
+- [x] T-03 Talents (~50) with structured effect descriptors (`+2 dice when <condition>`, or a named mechanic hook)
+- [x] T-04 Archetypes ×10: key attribute, cash formula, talent/Dream/Flaw/neurocaster/personal-item D6 tables
+- [x] T-05 Time units and lifecycle boundary definitions
+- [x] T-06 Push economy rules (base vs gear dice, Busted threshold)
 - [ ] T-07 Opposed-roll procedure incl. combat reactions, tie rules, margin banking
 - [ ] T-08 Tension: scale, starting distribution, bonus-dice rule, reduction procedure and Hope payout
-- [ ] T-09 Zones, range bands, minimum/maximum range penalties
+- [x] T-09 Zones, range bands, minimum/maximum range penalties
 - [ ] T-10 Initiative, action economy, reaction rules, free actions
-- [ ] T-11 Cover Armor Levels; body armor (level, Agility modifier, price)
-- [ ] T-12 **Weapons** (22) — name, gear bonus, base Damage, min/max range, price, flags (full auto, explosive, neurocaster-only, taser stun rule) — source: `docs/rules/09-stat-tables.md`
+- [x] T-11 Cover Armor Levels; body armor (level, Agility modifier, price)
+- [x] T-12 **Weapons** (22) — name, gear bonus, base Damage, min/max range, price, flags (full auto, explosive, neurocaster-only, taser stun rule) — source: `docs/rules/09-stat-tables.md`
 - [ ] T-13 Full-auto, single-shot, ambush, firearms-in-close-combat rules
-- [ ] T-14 Damage, Incapacitation, death-roll, rally, stabilize, instant-kill rules
+- [x] T-14 Damage, Incapacitation, death-roll, rally, stabilize, instant-kill rules
 - [ ] T-15 Serious Injuries D66 (18) with effect descriptors, healing dice, surgery flags — source: `docs/rules/10-injury-trauma-tables.md`
-- [ ] T-16 Hope loss, traumatic-event table, freeze rule, Breakdown, rally
+- [x] T-16 Hope loss, traumatic-event table, freeze rule, Breakdown, rally
 - [ ] T-17 Mental Traumas D66 (18) with rule-rewriting effect descriptors — source: `docs/rules/10-injury-trauma-tables.md`; 13 of 18 alter engine behavior
-- [ ] T-18 Hazards: explosions/Blast Power, fire/Intensity, cold, disease/Virulence, falling, hunger/thirst, sleep deprivation
-- [ ] T-19 Neurocaster models (5) — Processor/Network/Graphics/cost, GO exception — source: `docs/rules/11-gear-tables.md` (verified)
-- [ ] T-20 Neurocasting: Bliss rules, wired/wireless, information Difficulty table, hacking Difficulty table, avatar social/combat/manipulation, dual-realm rule
-- [ ] T-21 **Drones** — consumer models (6: Str, Agi, Hull, Armor, Damage, min/max range, cost), robots, drone growths — source: `docs/rules/09-stat-tables.md`
-- [ ] T-22 **Vehicles** (19: passengers, maneuverability, speed, Hull, Armor, cost, rarity tier, horse riding exception) — source: `docs/rules/09-stat-tables.md`; plus vehicle traits D66 (12)
+- [x] T-18 Hazards: explosions/Blast Power, fire/Intensity, cold, disease/Virulence, falling, hunger/thirst, sleep deprivation
+- [x] T-19 Neurocaster models (5) — Processor/Network/Graphics/cost, GO exception — source: `docs/rules/11-gear-tables.md` (verified)
+- [x] T-20 Neurocasting: Bliss rules, wired/wireless, information Difficulty table, hacking Difficulty table, avatar social/combat/manipulation, dual-realm rule
+- [x] T-21 **Drones** — consumer models (6: Str, Agi, Hull, Armor, Damage, min/max range, cost), robots, drone growths — source: `docs/rules/09-stat-tables.md`
+- [x] T-22 **Vehicles** (19: passengers, maneuverability, speed, Hull, Armor, cost, rarity tier, horse riding exception) — source: `docs/rules/09-stat-tables.md`; plus vehicle traits D66 (12)
 - [ ] T-23 Fuel/travel model (tank size, range, Shift-based travel)
 - [ ] T-24 Shared items D66 (36) with mechanical effects and use limits — source: `docs/rules/11-gear-tables.md` (transcript version is misordered, do not use)
 - [ ] T-51 Common Services (7): lodging and meal costs, surgery-for-cash at $1,000 — source: `docs/rules/11-gear-tables.md`
@@ -174,30 +174,30 @@ estimates. **An unticked box means the data does not exist yet — never build U
 ### `data-monsters.js` / `data-npcs.js`
 - [ ] T-28 Threat stat blocks from Ch. 6 with talents, gear, example Countdowns
 - [ ] T-29 Threat anatomy metadata (location, goal, reaction, special-ability menu)
-- [ ] T-30 Minor-NPC baseline rule (all attributes 3, optional talent) + NPC Quirks D66 (36) — source: `docs/rules/12-generator-tables.md`
+- [x] T-30 Minor-NPC baseline rule (all attributes 3, optional talent) + NPC Quirks D66 (36) — source: `docs/rules/12-generator-tables.md`
 - [ ] T-31 NPC reaction (2D6) and combat morale (2D6) tables
 
 ### `data-pregens.js`
 - [ ] T-32 The 4 published pre-made Travelers, fully statted
 
 ### `data-solo.js`
-- [ ] T-33 Card oracle: suit→event mapping, deck-as-timer rule
-- [ ] T-34 Tilt table (suit valence × rank degree)
-- [ ] T-35 NPC motive/method draws; predisposition rule
-- [ ] T-36 Conversation subjects; Traveler events; personal Threats; Destinations; 1990s vehicles; per-archetype solo Goals/Threats
-- [ ] T-48 Solo Threat generation: type D6 + sub-type D6 tables
-- [ ] T-49 Solo NPC personality types (13) and emotional states (13), card-indexed — personality from page image, emotional states verified across transcript + summary; plus solo mind-map location procedure
-- [ ] T-50 Solo Stop Threat Countdown D66 (p. 213, see A13); start-of-Stop Shift draw (suit → Morning/Day/Evening/Night)
+- [x] T-33 Card oracle: suit→event mapping, deck-as-timer rule
+- [x] T-34 Tilt table (suit valence × rank degree)
+- [x] T-35 NPC motive/method draws; predisposition rule
+- [x] T-36 Conversation subjects; Traveler events; personal Threats; Destinations; 1990s vehicles; per-archetype solo Goals/Threats
+- [x] T-48 Solo Threat generation: type D6 + sub-type D6 tables
+- [x] T-49 Solo NPC personality types (13) and emotional states (13), card-indexed — personality from page image, emotional states verified across transcript + summary; plus solo mind-map location procedure
+- [x] T-50 Solo Stop Threat Countdown D66 (p. 213, see A13); start-of-Stop Shift draw (suit → Morning/Day/Evening/Night)
 
 ### `data-gm.js` (GM tables; folded into `data.js` if small)
-- [ ] T-37 Stop setting generators (terrain, population, communications, size, prosperity, weather) — transcript, verified clean
-- [ ] T-38 Blockers D66 (36); Needs D6 — source: `docs/rules/12-generator-tables.md`
-- [ ] T-39 Conflict generator (36 parties, 36 subjects) — source: `docs/rules/12-generator-tables.md`
-- [ ] T-40 Locations D66 (36) — source: `docs/rules/12-generator-tables.md`
-- [ ] T-41 Electric State elements D66 (36); '90s nostalgia D66 (36) — source: `docs/rules/12-generator-tables.md`
-- [ ] T-42 Countdown element menu; Countdown design principles
-- [ ] T-43 Neuroscape generator (type/theme/mood)
-- [ ] T-44 Journey scaffolding: length table, Kicker examples (4), "why stick together" D6 — all sourced; no printed Goal table exists (A17)
+- [x] T-37 Stop setting generators (terrain, population, communications, size, prosperity, weather) — transcript, verified clean
+- [x] T-38 Blockers D66 (36); Needs D6 — source: `docs/rules/12-generator-tables.md`
+- [x] T-39 Conflict generator (36 parties, 36 subjects) — source: `docs/rules/12-generator-tables.md`
+- [x] T-40 Locations D66 (36) — source: `docs/rules/12-generator-tables.md`
+- [x] T-41 Electric State elements D66 (36); '90s nostalgia D66 (36) — source: `docs/rules/12-generator-tables.md`
+- [x] T-42 Countdown element menu; Countdown design principles
+- [x] T-43 Neuroscape generator (type/theme/mood)
+- [x] T-44 Journey scaffolding: length table, Kicker examples (4), "why stick together" D6 — all sourced; no printed Goal table exists (A17)
 
 ---
 
@@ -207,7 +207,7 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] P0.1 Scaffold LOCKED file set: `index.html`, `styles.css`, `src/*` per §6.1, `manifest.json`, `service-worker.js`, `icon.svg`, `firebase-config.js` (placeholder + `FIREBASE_ENABLED=false`), `database.rules.json`, `tests/`, `package.json`, README
 - [ ] P0.2 Theme tokens (light/dark, system-default + toggle), phone-first shell, bottom-nav router, `ui.js` modal/toast primitives
 - [ ] P0.3 `store.js` localStorage persistence + normalization/migration path
-- [ ] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
+- [x] P0.4 **Data sub-phase A** — T-01…T-11, T-13…T-18 (core rules, no blocked tables)
 - [ ] P0.5 **Data sub-phase B** — T-19…T-27 (neuronics, gear, recovery, advancement, rules library)
 - [ ] P0.6 **Data sub-phase C** — T-28…T-44 (threats, pregens, solo, GM tables)
 - [ ] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
