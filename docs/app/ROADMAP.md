@@ -56,7 +56,7 @@ marked **ABSENT** and their template features are dropped, not invented.
 | Archetypes | **10** (each: key attribute, cash formula, 3 talents, 3 Dreams, 3 Flaws, 3 neurocasters, 3 personal items) | Ch. 3, transcript 3838–4799 |
 | Talents | ~50 | Ch. 3 |
 | Neurocaster models | 5 | Ch. 4 |
-| Shared items | 34 (D66) | Ch. 3 |
+| Shared items | 36 (D66) | Ch. 3 p. 63 |
 | Weapons | 22 | Ch. 4 p. 81 |
 | Body armor / cover | 3 / 5 | Ch. 4 |
 | Explosives, fires, diseases | 5 / 3 / 3 | Ch. 4 |
@@ -151,16 +151,17 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [ ] T-12 **Weapons** (22) — name, gear bonus, base Damage, min/max range, price, flags (full auto, explosive, neurocaster-only, taser stun rule) — source: `docs/rules/09-stat-tables.md`
 - [ ] T-13 Full-auto, single-shot, ambush, firearms-in-close-combat rules
 - [ ] T-14 Damage, Incapacitation, death-roll, rally, stabilize, instant-kill rules
-- [ ] T-15 Serious Injuries D66 (18) with effect descriptors, healing dice, surgery flags
+- [ ] T-15 Serious Injuries D66 (18) with effect descriptors, healing dice, surgery flags — source: `docs/rules/10-injury-trauma-tables.md`
 - [ ] T-16 Hope loss, traumatic-event table, freeze rule, Breakdown, rally
-- [ ] T-17 Mental Traumas D66 (18) with rule-rewriting effect descriptors
+- [ ] T-17 Mental Traumas D66 (18) with rule-rewriting effect descriptors — source: `docs/rules/10-injury-trauma-tables.md`; 13 of 18 alter engine behavior
 - [ ] T-18 Hazards: explosions/Blast Power, fire/Intensity, cold, disease/Virulence, falling, hunger/thirst, sleep deprivation
-- [ ] T-19 Neurocaster models (5) — Processor/Network/Graphics/cost, GO exception — *partially recoverable; verify against source*
+- [ ] T-19 Neurocaster models (5) — Processor/Network/Graphics/cost, GO exception — source: `docs/rules/11-gear-tables.md` (verified)
 - [ ] T-20 Neurocasting: Bliss rules, wired/wireless, information Difficulty table, hacking Difficulty table, avatar social/combat/manipulation, dual-realm rule
 - [ ] T-21 **Drones** — consumer models (6: Str, Agi, Hull, Armor, Damage, min/max range, cost), robots, drone growths — source: `docs/rules/09-stat-tables.md`
 - [ ] T-22 **Vehicles** (19: passengers, maneuverability, speed, Hull, Armor, cost, rarity tier, horse riding exception) — source: `docs/rules/09-stat-tables.md`; plus vehicle traits D66 (12)
 - [ ] T-23 Fuel/travel model (tank size, range, Shift-based travel)
-- [ ] T-24 Gear catalog: shared items D66 (34) with mechanical effects and use limits; tool sets; repair rules
+- [ ] T-24 Shared items D66 (36) with mechanical effects and use limits — source: `docs/rules/11-gear-tables.md` (transcript version is misordered, do not use)
+- [ ] T-51 Common Services (7): lodging and meal costs, surgery-for-cash at $1,000 — source: `docs/rules/11-gear-tables.md`
 - [ ] T-25 Recovery: Health per Shift, Nurse rates, Hope sources and caps, Bliss decay + permanence roll, trauma recovery cadence
 - [ ] T-26 Advancement: debrief procedure, improvement roll, Flaw-overcome bundle and lock
 - [ ] T-27 Rules-library quick-reference entries (one per automated surface, for citation links)
