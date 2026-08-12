@@ -5,7 +5,7 @@ import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { SHARED_ITEMS } from "../data-tables.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
-import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTORS, DESCRIPTOR_ROLLS,
+import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
          GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
@@ -187,12 +187,17 @@ function toggleTalent(id, allowed, rerender) {
   rerender();
 }
 
-/** Three distinct descriptor words, re-rolling collisions. */
-export function rollDescriptors(count = DESCRIPTOR_ROLLS, table = DESCRIPTORS) {
+/** Distinct words from one table — used for the Goal and Threat seeds. */
+export function rollDescriptors(count = SEED_ROLLS, table = GOAL_SEEDS) {
   const picked = new Set();
   let guard = 0;
   while (picked.size < Math.min(count, table.length) && guard++ < 500) picked.add(fromD100(table));
   return [...picked];
+}
+
+/** One word from each descriptor table, so a description always covers build, wear and manner. */
+export function rollDescriptorSet(tables = DESCRIPTOR_TABLES) {
+  return tables.map((t) => ({ id: t.id, label: t.label, word: fromD100(t.table) }));
 }
 
 export function describeTalent(t) {
@@ -243,9 +248,11 @@ function stepIdentity(rerender) {
     el("label", {}, "Description"),
     descBox,
     el("div", { class: "card-row", style: "margin-top:6px" },
-      el("span", { class: "faint" }, draft.descriptorWords?.length ? draft.descriptorWords.join(" · ") : "Three words to build a picture from"),
+      el("span", { class: "faint" }, draft.descriptorWords?.length
+        ? draft.descriptorWords.join(" · ")
+        : "One roll each for build, wear and manner"),
       el("button", {
-        class: "btn", onclick: () => { draft.descriptorWords = rollDescriptors(); rerender(); }
+        class: "btn", onclick: () => { draft.descriptorWords = rollDescriptorSet().map((d) => d.word); rerender(); }
       }, "Roll 3 words"))));
   return wrap;
 }

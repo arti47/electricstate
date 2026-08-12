@@ -41,12 +41,15 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Blocked data: weapons, consumer drones and vehicle stat tables cannot be recovered from the transcript (see docs/TRANSCRIPT-ISSUES.md). No UI is built against them until the source pages arrive.
 
 ## House aids (not book content)
-- `data-names.js` holds six **d100 tables the book does not print**: paired first names, surnames,
-  favourite '90s songs, description words, Goal seeds and Threat seeds. Flagged `HOUSE_AID = true`
+- `data-names.js` holds eight **d100 tables the book does not print**: paired first names, surnames,
+  favourite '90s songs, three description tables (build / wear / manner), Goal seeds and Threat seeds. Flagged `HOUSE_AID = true`
   and labelled as such in the UI. Name pairs follow the book's own pregen convention
   (`Cade/Courtney`).
-- Description, Goal and Threat each roll three distinct words as writing prompts, stored on the
-  character as `descriptorWords` / `goalWords` / `threatWords` and shown on the sheet beside the
+- Description rolls **one word from each of the three tables** rather than three from one, so a
+  description always covers how they are built, what they wear and how they behave. The three
+  tables are disjoint — a word appears in exactly one of them.
+- Goal and Threat each roll three distinct words from their own table. All three sets are stored on
+  the character as `descriptorWords` / `goalWords` / `threatWords` and shown on the sheet beside the
   field they seeded, so they stay useful in play rather than being consumed at creation.
 - The Goal seeds also fill the hole left by ruling A17 — the book references a personal Goal table
   that was never printed.

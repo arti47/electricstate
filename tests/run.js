@@ -402,7 +402,7 @@ const names = await import("../data-names.js");
 const wizardMod = await import("../src/wizard.js");
 
 await test("house d100 tables are exactly 100 unique rows", () => {
-  for (const key of ["FIRST_NAMES", "SURNAMES", "SONGS", "DESCRIPTORS", "GOAL_SEEDS", "THREAT_SEEDS"]) {
+  for (const key of ["FIRST_NAMES", "SURNAMES", "SONGS", "GOAL_SEEDS", "THREAT_SEEDS"]) {
     assert.equal(names[key].length, 100, `${key} has ${names[key].length}`);
     assert.equal(new Set(names[key]).size, 100, `${key} has duplicates`);
   }
@@ -435,12 +435,25 @@ await test("goal and threat seeds roll three distinct words from their own table
   }
 });
 
-await test("rolling descriptors returns three distinct words", () => {
+await test("each descriptor table is 100 unique rows", () => {
+  assert.equal(names.DESCRIPTOR_TABLES.length, 3);
+  for (const { id, table } of names.DESCRIPTOR_TABLES) {
+    assert.equal(table.length, 100, `${id} has ${table.length}`);
+    assert.equal(new Set(table).size, 100, `${id} has duplicates`);
+  }
+  const all = names.DESCRIPTOR_TABLES.flatMap((t) => t.table);
+  assert.equal(new Set(all).size, all.length, "the three tables must not overlap");
+});
+
+await test("a descriptor roll takes one word from each table", () => {
   for (let i = 0; i < 200; i++) {
-    const words = wizardMod.rollDescriptors();
-    assert.equal(words.length, 3);
-    assert.equal(new Set(words).size, 3, "words must not repeat");
-    for (const w of words) assert.ok(names.DESCRIPTORS.includes(w));
+    const set = wizardMod.rollDescriptorSet();
+    assert.equal(set.length, 3);
+    assert.deepEqual(set.map((d) => d.id), ["build", "wear", "manner"]);
+    for (const entry of set) {
+      const source = names.DESCRIPTOR_TABLES.find((t) => t.id === entry.id).table;
+      assert.ok(source.includes(entry.word), `${entry.word} is not in the ${entry.id} table`);
+    }
   }
 });
 

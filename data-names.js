@@ -89,33 +89,96 @@ export const SONGS = [
   "Fast Car — Tracy Chapman"
 ];
 
-// --------------------------------------------------- d100 description words
-// Roll three times for three unique words, then write a description around them.
-// Deliberately mixed: build, wear, manner, mark, habit.
-export const DESCRIPTORS = [
-  "sunburnt", "rangy", "barrel-chested", "stooped", "wiry",
-  "heavyset", "hollow-cheeked", "broad-shouldered", "small-framed", "long-limbed",
-  "soft-spoken", "loud", "clipped", "drawling", "hoarse",
-  "restless", "watchful", "unhurried", "twitchy", "still",
-  "grease-stained", "sun-bleached", "immaculate", "threadbare", "borrowed",
-  "oversized", "military-surplus", "hand-me-down", "thrifted", "meticulous",
-  "cracked glasses", "chipped tooth", "burn scar", "faded tattoo", "shaved head",
-  "unruly hair", "bleached tips", "buzzcut", "long braid", "receding",
-  "nicotine-stained fingers", "bitten nails", "calloused hands", "ink-stained", "bandaged",
-  "limping", "favouring one arm", "squinting", "hard of hearing", "wheezing",
-  "chain-smoker", "gum-chewer", "coffee-fuelled", "pill-rattling", "always eating",
-  "never eating", "always cold", "always sweating", "sleeps badly", "sleeps anywhere",
-  "flinches at noise", "stares too long", "avoids eyes", "smiles wrong", "never smiles",
-  "laughs first", "laughs late", "hums constantly", "talks to themselves", "quotes movies",
-  "swears creatively", "religious about it", "counts things", "collects junk", "hoards batteries",
-  "carries photographs", "keeps a journal", "writes letters unsent", "listens more than speaks", "interrupts",
-  "explains everything", "asks nothing", "apologises reflexively", "never apologises", "walks point",
-  "hangs back", "drives too fast", "won't drive", "sits facing the door", "sleeps in the car",
-  "smells of motor oil", "smells of antiseptic", "smells of woodsmoke", "wears the neurocaster too long", "won't touch a neurocaster",
-  "flinches from screens", "stares at towers", "hums with static", "wears sunglasses at night", "keeps the radio on"
+// ------------------------------------------------- d100 description: the body
+// Three tables instead of one, rolled once each, so a description always covers
+// how they are built, what they wear, and how they behave.
+export const DESC_BUILD = [
+  "rangy", "barrel-chested", "stooped", "wiry", "heavyset", "hollow-cheeked", "broad-shouldered",
+  "small-framed", "long-limbed", "thick-necked", "narrow-shouldered", "bow-legged", "gaunt",
+  "well-fed", "unusually tall", "short and square", "sunburnt", "weather-beaten", "pale as paper",
+  "freckled", "sun-damaged", "acne-scarred", "birthmarked cheek", "cleft chin", "heavy jaw",
+  "sharp cheekbones", "soft round face", "deep-set eyes", "pale eyes", "black eyes",
+  "one milky eye", "gouged eye", "permanent squint", "dark circles", "laugh lines",
+  "frown lines", "crooked nose", "broken nose set badly", "chipped front tooth", "gap-toothed",
+  "gold tooth", "split lip", "bruised knuckles", "scraped knuckles", "calloused hands",
+  "ink-stained hands", "nicotine-stained fingers", "bitten nails", "missing finger",
+  "prosthetic hand", "thick glasses", "cracked glasses", "wire-rimmed glasses", "shaved head",
+  "buzzcut", "unruly hair", "bleached tips", "long braid", "dreadlocks", "ponytail",
+  "receding hairline", "greying early", "jet-black dye", "box-dyed red", "curtain fringe",
+  "mustache", "patchy beard", "full beard", "clean-shaven", "sideburns", "pierced ear",
+  "pierced nose", "faded tattoo", "prison tattoo", "unit tattoo", "burn scar on the forearm",
+  "surgical scar", "scar across the brow", "throat scar", "anti-neuronic surgery scars",
+  "port scar at the temple", "tremor in one hand", "limp", "favours one arm", "stiff shoulder",
+  "bad back", "ruined knee", "wheezing breath", "hoarse voice", "high thin voice", "deep voice",
+  "soft voice", "carrying voice", "slow drawl", "clipped speech", "accent from elsewhere",
+  "lisp", "stutter under stress", "hard of hearing", "never quite still"
 ];
 
-export const DESCRIPTOR_ROLLS = 3;   // roll three, keep them distinct
+// ----------------------------------------------- d100 description: what they wear
+export const DESC_WEAR = [
+  "grease-stained coveralls", "sun-bleached denim", "threadbare flannel", "a borrowed jacket",
+  "an oversized coat", "military surplus parka", "hand-me-down boots", "a thrifted dress",
+  "an immaculate suit", "a permanently wrinkled shirt", "a band t-shirt", "a Bart Simpson t-shirt",
+  "a Billabong shirt", "a black trench coat", "a cracked leather jacket", "a denim vest",
+  "a hoodie with the strings gone", "a windbreaker", "cargo pants", "flared jeans",
+  "ripped jeans", "steel-toed work boots", "sneakers held together with tape", "cowboy boots",
+  "sandals in all weather", "a baseball cap", "a trucker cap", "a beanie",
+  "a bandana", "sunglasses worn at night", "prescription shades", "hoop earrings",
+  "dog tags", "a crucifix", "a saint's medal", "a friendship bracelet",
+  "a wedding ring", "a ring on a chain", "a heavy wristwatch", "a watch stopped at one time",
+  "a Walkman on the belt", "headphones round the neck", "a camera on a strap", "a notebook in the back pocket",
+  "a worn deck of cards", "a Zippo", "a cigarette behind the ear", "a rattling pill bottle",
+  "a hip flask", "an army canteen", "a first aid pouch", "a tool belt",
+  "an overstuffed backpack", "a duffel bag", "a plastic bag of everything", "a guitar case",
+  "a sidearm on the hip", "a knife on the belt", "a crowbar carried like a cane", "a neurocaster slung at the hip",
+  "a neurocaster never taken off", "a cracked neurocaster", "trailing cables", "the smell of motor oil",
+  "the smell of antiseptic", "the smell of woodsmoke", "the smell of gasoline", "cheap perfume",
+  "old sweat", "stale cigarettes", "mint over something worse", "dust in every seam",
+  "sand in the cuffs", "mud to the knee", "an old bloodstain", "bleach burns",
+  "flecks of paint", "patched elbows", "duct tape repairs", "mismatched socks",
+  "one glove", "fingerless gloves", "a long scarf", "a poncho",
+  "an apron never taken off", "a uniform from the wrong job", "a name tag from somewhere else", "a hospital bracelet",
+  "an expired security badge", "someone else's ID", "a photograph in the wallet", "a child's drawing, folded soft",
+  "letters in a rubber band", "a map covered in notes", "a rosary wound round the wrist", "a lucky coin",
+  "a St Christopher on the dash", "keys for a door that's gone", "nothing they didn't steal", "a jacket two sizes too big"
+];
+
+// -------------------------------------------- d100 description: how they behave
+export const DESC_MANNER = [
+  "watchful", "restless", "unhurried", "twitchy",
+  "unnervingly still", "smiles at the wrong moment", "never smiles", "laughs first",
+  "laughs a beat late", "stares too long", "won't meet your eyes", "flinches at sudden noise",
+  "talks to themselves", "hums constantly", "whistles tunelessly", "quotes movies",
+  "swears creatively", "prays under their breath", "counts things", "taps fingers",
+  "cracks knuckles", "always chewing gum", "chain-smokes", "never without coffee",
+  "rattles a pill bottle", "always eating", "never seen eating", "sleeps anywhere",
+  "sleeps badly", "wakes at any sound", "sits facing the door", "checks the exits",
+  "walks point", "hangs back", "drives too fast", "won't drive",
+  "keeps the radio on", "keeps the radio off", "interrupts", "explains everything",
+  "asks nothing", "apologises reflexively", "never apologises", "deflects with jokes",
+  "answers questions with questions", "listens more than speaks", "monologues", "whispers",
+  "shouts when nervous", "goes quiet when angry", "cries easily", "never cries",
+  "touches people constantly", "flinches from touch", "gives things away", "takes without asking",
+  "hoards batteries", "collects junk", "keeps a journal", "writes letters they never send",
+  "carries photographs", "named the car", "talks to machines", "won't touch a neurocaster",
+  "wears the neurocaster too long", "stares at the towers", "salutes out of habit", "checks every mirror",
+  "avoids mirrors", "lies for practice", "tells the truth too bluntly", "over-shares",
+  "keeps secrets badly", "keeps secrets far too well", "first to volunteer", "last to commit",
+  "argues for sport", "agrees to end the argument", "changes the subject", "remembers every name",
+  "forgets names immediately", "gives everyone a nickname", "refuses all nicknames", "cooks for everyone",
+  "eats alone", "shares their cigarettes", "shares nothing", "pays for everything",
+  "never has money", "tips too well", "haggles over everything", "feeds strays",
+  "kicks at strays", "steps between people", "stands too close", "keeps a hand near their weapon",
+  "goes unarmed by choice", "sings along badly", "dances when drunk", "doesn't drink"
+];
+
+export const DESCRIPTOR_TABLES = [
+  { id: "build", label: "Build", table: DESC_BUILD },
+  { id: "wear", label: "Wear", table: DESC_WEAR },
+  { id: "manner", label: "Manner", table: DESC_MANNER }
+];
+
+export const DESCRIPTOR_ROLLS = 3;   // one from each table
 
 // ----------------------------------------------------------- d100 goal seeds
 // The book gives no Goal table (it points at one that was never printed — ruling A17).
@@ -166,4 +229,4 @@ export const THREAT_SEEDS = [
 
 export const SEED_ROLLS = 3;
 
-export default { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTORS, HOUSE_AID };
+export default { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES, GOAL_SEEDS, THREAT_SEEDS, HOUSE_AID };
