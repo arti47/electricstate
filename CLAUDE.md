@@ -53,6 +53,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   field they seeded, so they stay useful in play rather than being consumed at creation.
 - The Goal seeds also fill the hole left by ruling A17 — the book references a personal Goal table
   that was never printed.
+- `data-journey.js` holds four more: places, purposes, route features and vehicle details. The book
+  gives Journey prep steps, the length table, a D6 destination table in Ch. 8, Kicker examples and
+  the why-stick-together D6 — but nothing for the starting point, the route, or the vehicle
+  questions it asks. Destination rolls a place **and** a purpose; the book's own D6 sits beside it.
+- Place entries are described by what they are, never by named locations, so the house tables carry
+  no setting text and stay inside the scope guard.
 - Any future invented content goes in its own file with the same flag — never mixed into the
   extracted data files.
 

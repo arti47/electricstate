@@ -180,6 +180,18 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const logText = await page.textContent("#screen");
   check(/success/.test(logText), "roll log did not render the entry");
 
+  // journey: roll a destination and route features
+  await page.evaluate(() => { location.hash = "#/journey"; });
+  await page.waitForTimeout(80);
+  await page.click('#screen button[aria-label="Roll a destination"]');
+  await page.waitForTimeout(80);
+  const dest = await page.inputValue('#screen input >> nth=1');
+  check(/ — /.test(dest), `destination roll produced "${dest}"`);
+  await page.click('#screen button[aria-label="Roll a starting point"]');
+  await page.waitForTimeout(60);
+  const start = await page.inputValue('#screen input >> nth=0');
+  check(start.length > 3, `starting point roll produced "${start}"`);
+
   // solo: draw a card and confirm the deck depletes
   await page.evaluate(() => { location.hash = "#/solo"; });
   await page.waitForTimeout(80);

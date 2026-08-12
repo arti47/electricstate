@@ -457,6 +457,31 @@ await test("a descriptor roll takes one word from each table", () => {
   }
 });
 
+const journeyTables = await import("../data-journey.js");
+
+await test("journey house tables are 100 unique rows each", () => {
+  for (const key of ["JOURNEY_PLACES", "JOURNEY_PURPOSE", "ROUTE_FEATURES", "VEHICLE_DETAILS"]) {
+    assert.equal(journeyTables[key].length, 100, `${key} has ${journeyTables[key].length}`);
+    assert.equal(new Set(journeyTables[key]).size, 100, `${key} has duplicates`);
+  }
+  assert.ok(journeyTables.HOUSE_AID);
+});
+
+await test("journey rolls return the requested number of distinct rows", () => {
+  for (let i = 0; i < 200; i++) {
+    const route = wizardMod.pickDistinct(journeyTables.ROUTE_FEATURES, 3);
+    assert.equal(route.length, 3);
+    assert.equal(new Set(route).size, 3);
+    const details = wizardMod.pickDistinct(journeyTables.VEHICLE_DETAILS, 3);
+    assert.equal(new Set(details).size, 3);
+  }
+});
+
+await test("the book's own D6 destination table is still available", () => {
+  assert.equal(solo.DESTINATIONS.length, 6);
+  assert.ok(solo.DESTINATIONS.every((d) => typeof d === "string" && d.length > 5));
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

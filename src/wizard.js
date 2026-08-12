@@ -3,7 +3,10 @@
 import { el, clamp, d6, d100, fromD100, rollNotation, uid } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
+import { JOURNEY_LENGTH } from "../data-gm.js";
 import { SHARED_ITEMS } from "../data-tables.js";
+import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURNEY_ROLLS } from "../data-journey.js";
+import { DESTINATIONS as SOLO_DESTINATIONS } from "../data-solo.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
 import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
          GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS } from "../data-names.js";
@@ -501,11 +504,42 @@ function buildJourney(rerender) {
 
   const wrap = el("div", {}, el("h1", {}, "The Journey"));
 
+  // Start and Destination. The book's only destination table is the Chapter 8 D6;
+  // the d100 place and purpose tables are house aids that fill the rest.
+  const startInput = el("input", { value: j.start || "", onchange: (e) => save({ start: e.target.value }) });
+  const destInput = el("input", { value: j.destination || "", onchange: (e) => save({ destination: e.target.value }) });
+
   wrap.append(el("div", { class: "card" },
+    el("div", { class: "field" }, el("label", {}, "Starting point"),
+      el("div", { class: "card-row" }, startInput,
+        el("button", { class: "btn", "aria-label": "Roll a starting point", onclick: () => save({ start: fromD100(JOURNEY_PLACES) }) }, "D100"))),
+
     el("div", { class: "field" }, el("label", {}, "Destination"),
-      el("input", { value: j.destination || "", onchange: (e) => save({ destination: e.target.value }) })),
+      el("div", { class: "card-row" }, destInput,
+        el("button", {
+          class: "btn", "aria-label": "Roll a destination",
+          onclick: () => save({ destination: `${fromD100(JOURNEY_PLACES)} — ${fromD100(JOURNEY_PURPOSE)}` })
+        }, "D100")),
+      el("div", { class: "card-row", style: "margin-top:6px" },
+        el("span", { class: "faint" }, "The book's own D6: former home, new home, a remaining city, a battle site, a secret facility, a pilgrimage"),
+        el("button", {
+          class: "btn", "aria-label": "Roll the book's destination table",
+          onclick: () => save({ destination: SOLO_DESTINATIONS[d6() - 1] })
+        }, "D6"))),
+
+    el("div", { class: "field" }, el("label", {}, "Length"),
+      el("select", { onchange: (e) => save({ length: e.target.value }) },
+        el("option", { value: "" }, "How many Stops?"),
+        ...JOURNEY_LENGTH.map((l) => el("option", { value: l.id, selected: j.length === l.id },
+          `${l.label} — ${l.stops[0] === l.stops[1] ? l.stops[0] : `${l.stops[0]}–${l.stops[1]}`} Stops`)))),
+
     el("div", { class: "field" }, el("label", {}, "Route notes"),
-      el("input", { value: j.route || "", onchange: (e) => save({ route: e.target.value }) }))));
+      el("input", { value: j.route || "", onchange: (e) => save({ route: e.target.value }) }),
+      el("div", { class: "card-row", style: "margin-top:6px" },
+        el("span", { class: "faint" }, (j.routeFeatures || []).join(" · ") || "What lies between the Stops"),
+        el("button", {
+          class: "btn", onclick: () => save({ routeFeatures: pickDistinct(ROUTE_FEATURES, JOURNEY_ROLLS.routeFeatures) })
+        }, "Roll 3")))));
 
   // vehicle
   const vehicleCard = el("div", { class: "card" }, el("h3", {}, "Vehicle"));
@@ -515,6 +549,11 @@ function buildJourney(rerender) {
       el("div", { class: "card-row" }, el("strong", {}, v.label || v.name), el("span", { class: "faint mono" }, `Hull ${v.hull}`)),
       el("div", { class: "faint" }, `Passengers ${v.passengers ?? "—"} · Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability ?? "—"} · Speed ${v.speed} · Armor ${v.armor}`),
       v.traits?.length ? el("p", { class: "faint" }, "Traits: " + v.traits.map((t) => t.name).join(", ")) : null,
+      el("div", { class: "card-row", style: "margin-top:6px" },
+        el("span", { class: "faint" }, (j.vehicleDetails || []).join(" · ") || "What it looks like, how it smells inside"),
+        el("button", {
+          class: "btn", onclick: () => save({ vehicleDetails: pickDistinct(VEHICLE_DETAILS, JOURNEY_ROLLS.vehicleDetails) })
+        }, "Roll 3")),
       el("div", { class: "card-row", style: "margin-top:8px" },
         el("span", { class: "faint" }, `Fuel ${j.fuel ?? Math.round(FUEL.tankGallons * FUEL.startingFraction)} / ${FUEL.tankGallons} gal`),
         el("button", { class: "btn", onclick: () => save({ vehicle: null }) }, "Change")));
@@ -569,6 +608,14 @@ function buildJourney(rerender) {
   wrap.append(itemsCard);
   wrap.append(el("a", { class: "btn btn-block", href: "#/home" }, "Done"));
   return wrap;
+}
+
+/** N distinct rows from a d100 table. */
+export function pickDistinct(table, count) {
+  const picked = new Set();
+  let guard = 0;
+  while (picked.size < Math.min(count, table.length) && guard++ < 500) picked.add(fromD100(table));
+  return [...picked];
 }
 
 function rollTrait() {

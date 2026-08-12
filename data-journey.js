@@ -1,0 +1,173 @@
+// HOUSE AID — not from the rulebook.
+// The book gives Journey prep steps, a length table, a D6 destination table in Chapter 8,
+// Kicker examples and the why-stick-together D6 — but no tables for the starting point,
+// the route, or the vehicle questions it asks. These fill those gaps.
+// Deliberately generic: places are described by what they are, not by named locations,
+// so they work anywhere and carry no setting text.
+
+export const HOUSE_AID = true;
+
+// ------------------------------------------------------------------ d100 places
+// Roll for the Starting Point, the Destination, or both. Pair with a purpose below.
+export const JOURNEY_PLACES = [
+  "a coastal town that still has power", "a drowned harbour district", "a container port gone quiet",
+  "a fishing village on stilts", "a lighthouse with people living in it", "a river delta of houseboats",
+  "an irrigation town below a cracked dam", "a reservoir town, now dry", "a canal town of rusted locks",
+  "a farming valley worked by robots", "an orchard nobody harvests", "a cattle town with no cattle",
+  "a grain silo settlement", "a greenhouse complex under glass", "a seed vault in a hillside",
+  "a desert crossroads with one pump", "a truck stop grown into a town", "a motel strip on a dead highway",
+  "a drive-in cinema turned camp", "a roadside attraction turned shrine", "a diner at a fork in the road",
+  "a bus depot where people wait for nothing", "a rail yard of stopped trains", "a level crossing town",
+  "a mountain pass station", "a ski resort out of season", "a mining town on a tailings pond",
+  "an open-pit mine with a settlement in it", "a quarry town of stone dust", "a logging camp",
+  "a burnt forest with a standing chimney", "a national park with squatters", "a hot spring resort",
+  "a lakeside town with a sunken street", "an island reachable at low tide", "a peninsula with one road",
+  "a suburb where the lawns are still cut", "a gated community with the gate open", "a trailer park",
+  "a housing project with its own council", "a high-rise with only the lower floors used", "a downtown of empty offices",
+  "a financial district turned market", "a university campus, occupied", "a hospital running on generators",
+  "a sanatorium in the hills", "a clinic that treats addiction", "a prison with the doors open",
+  "a courthouse turned meeting hall", "a police barracks", "a military base half-decommissioned",
+  "an airfield of grounded aircraft", "a naval yard of dry docks", "a missile silo with a family living in it",
+  "a radar station on a ridge", "a checkpoint on a border", "a border crossing with a queue",
+  "a refugee camp that became permanent", "a militia-run toll town", "a company town owned outright",
+  "a corporate research campus", "a data centre with its own guards", "a neurograph tower with a camp at its foot",
+  "a relay station on a mountaintop", "a scrapyard the size of a district", "a drone boneyard",
+  "a vehicle graveyard sorted by make", "a recycling plant picked over", "a landfill with tunnels dug into it",
+  "a factory still running one line", "an assembly plant converted to housing", "a refinery flaring at night",
+  "a power station on standby", "a wind farm half-turning", "a solar field with cracked panels",
+  "a water treatment works", "a pumping station guarded by one family", "a transmitter running an unmanned broadcast",
+  "a warehouse district of squats", "a cold store with the freezers still on", "a cannery",
+  "a brewery converted to a fortress", "a stadium turned market", "a convention centre turned shelter",
+  "a theme park with the rides stopped", "a zoo whose animals are gone", "an aquarium with dry tanks",
+  "a museum with the collection intact", "a public library still lending", "an archive in a bunker",
+  "a monastery on a hill", "a megachurch with a working generator", "a roadside chapel",
+  "a graveyard with fresh graves", "a memorial to the civil war", "a mass grave nobody marks",
+  "a commune that farms and shares", "a cult compound behind a fence", "an artists' colony",
+  "a hospice for the neuronic"
+];
+
+// ---------------------------------------------------------------- d100 purposes
+// Why this Destination and not another. Pair with a place.
+export const JOURNEY_PURPOSE = [
+  "someone there is dying", "someone there is already dead", "someone there is waiting",
+  "someone there does not know they are coming", "someone there must be warned", "someone there must be paid",
+  "someone there owes them", "someone there must answer for it", "a parent is buried there",
+  "a child was sent there", "a sibling was last seen there", "a lover left for there",
+  "a friend never came back from there", "a stranger asked them to go", "a letter told them to",
+  "a phone call told them to", "a broadcast told them to", "a dream told them to",
+  "a machine told them to", "the neuroscape showed it to them", "it is the only place that still treats it",
+  "the cure is said to be there", "the doctor who can help is there", "the surgery is there",
+  "the medicine ships from there", "the last clean water is there", "there is work there",
+  "there is food there", "there is fuel there", "there is a road out from there",
+  "there is a border crossing there", "there is a boat leaving from there", "there is a plane still flying from there",
+  "a job pays on delivery there", "a buyer is waiting there", "a seller has what they need",
+  "the parts are there", "the vehicle they need is there", "the drone they need is there",
+  "the terminal they need is there", "the tower they need is there", "a body has to be brought there",
+  "a body has to be taken from there", "something stolen has to be returned there", "something owed has to be collected there",
+  "evidence has to reach someone there", "a story has to be told there", "a photograph has to be shown to someone there",
+  "a recording has to be played there", "a confession has to be made there", "a promise was made about there",
+  "an inheritance waits there", "a deed is held there", "a debt is recorded there",
+  "a name is on a list there", "a trial is happening there", "a funeral is happening there",
+  "a wedding is happening there", "a birth is expected there", "a festival is happening there",
+  "a market opens there once a year", "the caravan leaves from there", "the convoy forms there",
+  "the militia is recruiting there", "the army is disbanding there", "a unit is having its reunion there",
+  "the war ended there", "the war started there", "they were born there",
+  "they were raised there", "they ran from there", "they were happy there once",
+  "they have never seen it", "they always meant to go", "it was on the postcard",
+  "it is in the song", "it is where the photograph was taken", "the map they found ends there",
+  "the coordinates point there", "the signal comes from there", "the frequency broadcasts from there",
+  "the network is different there", "there is no network there at all", "the towers stop before it",
+  "the drones do not go there", "something in the machine wants them there", "the cult believes it begins there",
+  "a prophecy names it", "a rumour will not let it go", "nobody who goes there comes back",
+  "everyone who leaves is heading there", "it is the last place they have not looked", "it is the furthest they can get",
+  "it is uphill of the drought", "it is beyond the exclusion zone", "it is where the road ends",
+  "it is where the water starts", "it is where the war never reached", "it is safe, they are told",
+  "it is not safe, and they go anyway"
+];
+
+// ------------------------------------------------------------ d100 route features
+// Roll a few for what lies between the Stops — landmarks, hazards, small wonders.
+export const ROUTE_FEATURES = [
+  "a bridge with one lane left", "a collapsed overpass", "a tunnel with no lights",
+  "a mountain pass above the snow line", "a switchback road with no barrier",
+  "a causeway that floods twice a day", "a ferry that runs when it feels like it",
+  "a ford across a shallow river", "a dry riverbed used as a road", "a salt flat you cross by compass",
+  "dunes swallowing the highway", "a dust storm you wait out", "a sinkhole that took the road",
+  "a landslide being cleared by hand", "a wildfire burning a valley over", "smoke you can taste for miles",
+  "a flooded underpass", "black ice at altitude", "a hailstorm that dents the roof",
+  "heat that softens the asphalt", "fog that does not lift", "a night with no stars",
+  "a toll bridge with armed collectors", "a checkpoint that wants papers", "a checkpoint that wants money",
+  "a roadblock of burnt cars", "a chain across the road", "spike strips laid in a dip",
+  "a convoy that will not let you pass", "a truck that follows too long",
+  "a hitchhiker at the same spot twice", "a family walking with everything they own",
+  "a column of people wearing neurocasters", "a pilgrimage on foot", "a funeral procession",
+  "a cattle drive with no cattle", "a herd of animals crossing", "a pack of dogs that follow",
+  "birds that will not scatter", "an animal that watches from the treeline",
+  "a horse standing in the road", "an eyeless deer", "an insect swarm at dusk",
+  "a field of dead crops", "an orchard in improbable bloom", "a lone tree hung with shoes",
+  "a hillside of wind turbines, all still", "a solar field pointing the wrong way",
+  "power lines cut and coiled", "a neurograph tower humming", "a tower being taken down",
+  "a tower being built", "black cable strung between trees", "cables running into the ground",
+  "a relay dish aimed at nothing", "a payphone that rings as you pass",
+  "a radio station playing one song", "a broadcast in a language nobody speaks",
+  "static that gets louder with altitude", "a stretch where nothing receives",
+  "a billboard repainted as a warning", "hand-painted signs counting down miles",
+  "a mile marker with names carved into it", "a shrine of photographs at a crash site",
+  "flowers tied to a guardrail", "a cross for every mile", "graffiti that is a message to someone",
+  "a wrecked drone ship on its side", "a drone ship being stripped", "a crater with a fence around it",
+  "a minefield marked with tape", "a tank left where it stopped", "trenches grown over",
+  "a battlefield with the wrecks still in formation", "a war memorial nobody tends",
+  "an abandoned checkpoint with the coffee still out", "a car with the doors open and the engine running",
+  "a car with two dead in neurocasters", "a car buried to the windows", "a convoy of burnt vehicles",
+  "a school bus far from any school", "an ambulance out of fuel", "a fuel tanker on its side",
+  "a fuel stop with one working pump", "a fuel stop with a queue", "a fuel stop with nobody at all",
+  "a motel with one room lit", "a diner open at three in the morning", "a bar with the door propped",
+  "a church with the doors chained", "a house with the television on", "a farmhouse with laundry out",
+  "a caravan park of the same model trailer", "a drive-in screen showing static",
+  "a water tower with a name on it", "a grain silo painted like the sky",
+  "a robot working a field alone", "a robot walking the shoulder of the road",
+  "a scrapyard dog with a collar", "a child selling something at the roadside"
+];
+
+// ---------------------------------------------------------- d100 vehicle details
+// The book asks what the vehicle looks like and how it smells inside. Roll three.
+export const VEHICLE_DETAILS = [
+  "primer grey down one side", "sun-bleached to two colours", "rust through the sills",
+  "a replacement door in the wrong colour", "a spiderweb crack across the windshield", "one headlight aimed at the trees",
+  "a taillight patched with red tape", "a bumper wired on", "no bumper at all",
+  "a roof rack loaded and tarped", "a spare strapped to the hood", "jerrycans lashed to the back",
+  "a bull bar welded on", "chicken wire over the windows", "plywood where a window was",
+  "a sunroof that leaks", "a hood held by a bungee", "a hood that will not close",
+  "a door that opens from outside only", "windows that no longer roll up", "a boot that will not lock",
+  "a tailgate that drops on its own", "mismatched wheels", "one steel spare running permanently",
+  "tyres worn to the belt", "a suspension that bottoms out", "a exhaust you hear coming",
+  "an engine that ticks when hot", "a radiator that needs topping up hourly", "a fuel gauge stuck on half",
+  "a speedometer stopped at seventy", "an odometer rolled over twice", "no key, just wires",
+  "a starter you hit with a wrench", "a battery that has to be jumped", "a heater stuck on hot",
+  "no heater at all", "air conditioning that smells of mould", "a horn that plays two notes",
+  "wipers that only work on fast", "a driver's seat worn to the frame", "a seat cushioned with a folded blanket",
+  "back seats taken out for cargo", "a mattress in the back", "seatbelts cut out long ago",
+  "a child seat nobody has removed", "a dog blanket on the back seat", "sand in every seam",
+  "dust on everything but the dashboard", "a floor of fast-food wrappers", "a floor swept every morning",
+  "ashtrays full", "ashtrays taped shut", "a cracked dash held with duct tape",
+  "a glovebox that will not shut", "a glovebox with a gun in it", "a glovebox with letters in it",
+  "maps folded wrong in the door pocket", "a road atlas with a route drawn on it", "a logbook of every fuel stop",
+  "a tally scratched into the dash", "a rosary on the mirror", "a St Christopher glued to the dash",
+  "an air freshener shaped like a pine tree", "a pot leaf air freshener", "a photograph taped to the sun visor",
+  "a polaroid clipped to the vent", "a child's drawing on the headliner", "a bullet hole in the door",
+  "a bullet hole in the roof", "a dent the shape of a fist", "a dent nobody explains",
+  "a repaint over something", "a company logo half sanded off", "a bumper sticker from a dead state",
+  "a parking permit from a closed facility", "an expired inspection tag", "plates from somewhere else",
+  "no plates", "hand-painted plates", "a name painted on the hood",
+  "a number stencilled on the roof", "a CB radio that still receives", "a tape deck that eats tapes",
+  "a stereo worth more than the car", "one working speaker", "a box of tapes under the seat",
+  "a single tape, played to death", "a CD wallet with everything scratched", "a cassette adapter for something newer",
+  "a neurocaster terminal wired into the dash", "a drone dock in the trunk", "a battery bank bolted behind the seats",
+  "cables run under the carpet", "it smells of gasoline", "it smells of hot plastic",
+  "it smells of wet dog", "it smells of cigarettes and pine", "it smells of someone who is gone",
+  "it smells faintly of ozone"
+];
+
+export const JOURNEY_ROLLS = { routeFeatures: 3, vehicleDetails: 3 };
+
+export default { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, HOUSE_AID };
