@@ -37,7 +37,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   });
   await page.reload({ waitUntil: "networkidle" });
 
-  for (const route of ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "sheet"]) {
+  for (const route of ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey", "tension", "sheet"]) {
     await page.evaluate((r) => { location.hash = `#/${r}`; }, route);
     await page.waitForTimeout(60);
     const heading = await page.textContent("#screen h1").catch(() => null);
@@ -59,6 +59,58 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.click("#themeToggle");
   const themed = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
   check(themed !== null, "theme toggle did not set data-theme");
+
+  // walk the creation wizard end to end and assert the character persists
+  await page.evaluate(() => { localStorage.removeItem("electricState.v1"); location.hash = "#/create"; });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/create"; });
+  await page.waitForTimeout(80);
+
+  await page.click("#screen .list button");                       // first archetype
+  await page.click('#screen button:has-text("Next")');
+  await page.click('#screen button:has-text("Roll four dice")');
+  for (let i = 0; i < 4; i++) {
+    const sel = page.locator("#screen select").nth(i);
+    await sel.selectOption({ index: 1 });
+  }
+  await page.click('#screen button:has-text("Next")');
+  const allowance = await page.evaluate(() =>
+    document.querySelector("#screen p.muted")?.textContent.match(/Choose (\d)/)?.[1]);
+  await page.locator("#screen .card .btn-row .btn").first().click();
+  if (allowance === "2") await page.locator("#screen .card .btn-row .btn").nth(1).click();
+  await page.click('#screen button:has-text("Next")');
+  await page.fill("#screen input >> nth=0", "Test Traveler");
+  await page.locator('#screen button:has-text("D6")').nth(0).click();  // dream
+  await page.locator('#screen button:has-text("D6")').nth(1).click();  // flaw
+  await page.click('#screen button:has-text("Next")');
+  await page.click('#screen button:has-text("Next")');
+  await page.click('#screen button:has-text("Next")');
+  await page.click('#screen button:has-text("Create Traveler")');
+  await page.waitForTimeout(120);
+
+  const saved = await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1") || "{}");
+    const list = Object.values(db.characters || {});
+    return list.map((c) => ({
+      name: c.name, archetype: c.archetype, talents: c.talents.length,
+      attrs: c.attributes, health: c.state?.health, hope: c.state?.hope
+    }));
+  });
+  check(saved.length === 1, `wizard saved ${saved.length} characters, expected 1`);
+  if (saved[0]) {
+    const c = saved[0];
+    const total = Object.values(c.attrs).reduce((a, b) => a + b, 0);
+    check(c.name === "Test Traveler", "wizard did not persist the name");
+    check(Object.values(c.attrs).every((v) => v >= 2 && v <= 6), `attributes out of range: ${JSON.stringify(c.attrs)}`);
+    check(c.talents === (total <= 15 ? 2 : 1), `talent count ${c.talents} wrong for attribute total ${total}`);
+    check(c.health === Math.ceil((c.attrs.strength + c.attrs.agility) / 2) ||
+          c.health === Math.ceil((c.attrs.strength + c.attrs.agility) / 2) + 2,
+          `health ${c.health} does not match the formula`);
+  }
+  const homeShows = await page.evaluate(() => { location.hash = "#/home"; return true; });
+  await page.waitForTimeout(60);
+  const listed = await page.textContent("#screen");
+  check(listed.includes("Test Traveler"), "new Traveler not listed on the home screen");
 
   check(errors.length === 0, `${viewport.width}px: console errors: ${errors.join(" | ")}`);
   await page.close();

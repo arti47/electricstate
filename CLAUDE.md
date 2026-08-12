@@ -71,4 +71,7 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Theme: overcast slate and oxidised metal, dark-first, colour reserved for meaning (rust = damage/loss, teal = anything touching the network).
 - Verification: `npm test` runs 14 data/rules invariants plus a headless browser smoke test
   (every route renders, zero console errors, zero horizontal overflow at 360 and 390px).
-- Next: Phase 1 creation wizard.
+- **Phase 1 complete.** Creation wizard (7 grouped screens over the book's 17 steps), Journey/vehicle
+  group entity, Tension matrix, pregen instantiation. Attribute generation defaults to rolling
+  (4d6 re-rolling 1s, assign freely) with the book's 16-point distribution as the alternative.
+- Next: Phase 2 tracker (live sheet + persistent vitals header).

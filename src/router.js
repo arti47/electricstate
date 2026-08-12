@@ -2,6 +2,7 @@
 import { $, $$, el } from "./core.js";
 import { Settings } from "./settings.js";
 import { homeScreen, rulesScreen, diceScreen, soloScreen, gmScreen, settingsScreen, rollLogScreen } from "./screens.js";
+import { wizardScreen, journeyScreen, tensionScreen } from "./wizard.js";
 
 const ROUTES = [
   { path: "home", tab: "home", render: homeScreen },
@@ -11,7 +12,9 @@ const ROUTES = [
   { path: "solo", tab: "solo", render: soloScreen, gate: () => Settings.solo() },
   { path: "gm", tab: "gm", render: gmScreen, gate: () => Settings.gmScreen() },
   { path: "settings", tab: "settings", render: settingsScreen },
-  { path: "create", tab: "home", render: () => notYet("Creation wizard", "Phase 1") },
+  { path: "create", tab: "home", render: wizardScreen },
+  { path: "journey", tab: "home", render: journeyScreen },
+  { path: "tension", tab: "home", render: tensionScreen },
   { path: "sheet", tab: "home", render: () => notYet("Character sheet", "Phase 2") }
 ];
 

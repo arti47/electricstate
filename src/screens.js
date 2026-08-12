@@ -25,7 +25,10 @@ export function homeScreen() {
         el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—"))));
     }
     wrap.append(el("div", { class: "card" }, list));
-    wrap.append(el("a", { class: "btn btn-block", href: "#/create" }, "Create a Traveler"));
+    wrap.append(el("div", { class: "btn-row" },
+      el("a", { class: "btn", href: "#/create" }, "New Traveler"),
+      el("a", { class: "btn", href: "#/journey" }, "Journey"),
+      chars.length > 1 ? el("a", { class: "btn", href: "#/tension" }, "Tension") : null));
   }
   return wrap;
 }

@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **Stage C, Phase 0 in progress.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
+Status: **Stage C, Phase 1 complete.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -214,12 +214,12 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] P0.7 PWA install + `CACHE_VERSION` discipline + update toast
 
 ### Phase 1 — Creation wizards
-- [ ] P1.1 Traveler wizard, all 17 steps, both attribute methods, legality gates (one archetype per party, ≤15 bonus talent, learn-once talents)
-- [ ] P1.2 Derived-stat computation in `derived.js`; live preview
-- [ ] P1.3 Dream/Flaw/song/personal-item/neurocaster/cash rollers with manual override
-- [ ] P1.4 **Journey + vehicle wizard** (group entity): Destination, route notes, Stop count, vehicle stats + 1–2 traits, 3 shared items, fuel at half tank
-- [ ] P1.5 Tension matrix setup (each Traveler: 1 toward one or two others, 0 elsewhere)
-- [ ] P1.6 Pregen instantiation (4)
+- [x] P1.1 Traveler wizard, all 17 steps, both attribute methods, legality gates (one archetype per party, ≤15 bonus talent, learn-once talents)
+- [x] P1.2 Derived-stat computation in `derived.js`; live preview
+- [x] P1.3 Dream/Flaw/song/personal-item/neurocaster/cash rollers with manual override
+- [x] P1.4 **Journey + vehicle wizard** (group entity): Destination, route notes, Stop count, vehicle stats + 1–2 traits, 3 shared items, fuel at half tank
+- [x] P1.5 Tension matrix setup (each Traveler: 1 toward one or two others, 0 elsewhere)
+- [x] P1.6 Pregen instantiation (4)
 
 ### Phase 2 — Core tracker
 - [ ] P2.1 Sheet: identity, attributes, talents, Dream/Flaw, Goal/Threat, notes, portrait
