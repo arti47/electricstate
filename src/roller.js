@@ -211,7 +211,8 @@ function build(rerender) {
   if (pending.result) wrap.append(resultCard(ch, pool, legality, rerender));
   wrap.append(el("div", { class: "btn-row", style: "margin-top:16px" },
     el("a", { class: "btn", href: "#/log" }, "Roll log"),
-    el("a", { class: "btn", href: "#/neuro" }, "Neuroscape")));
+    el("a", { class: "btn", href: "#/neuro" }, "Neuroscape"),
+    el("a", { class: "btn", href: "#/combat" }, "Combat")));
   return wrap;
 }
 

@@ -300,6 +300,21 @@ await test("a Drone Pilot never accumulates Bliss", () => {
   assert.equal(after.state.bliss, 0);
 });
 
+const combatMod = await import("../src/combat.js");
+
+await test("progress tasks count successes and optional failures", () => {
+  let t = combatMod.makeTask({ name: "Hack the door", requirement: 2, failuresAllowed: 3 });
+  t = combatMod.advanceTask(t, { success: true });
+  assert.equal(t.progress, 1);
+  assert.ok(!t.done);
+  t = combatMod.advanceTask(t, { success: true });
+  assert.ok(t.done, "reaching the requirement completes the task");
+
+  let d = combatMod.makeTask({ name: "Death roll", requirement: 3, failuresAllowed: 3 });
+  for (let i = 0; i < 3; i++) d = combatMod.advanceTask(d, { success: false });
+  assert.ok(d.failed, "the failure allowance ends the task too");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

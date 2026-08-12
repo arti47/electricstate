@@ -7,6 +7,7 @@ import { wizardScreen, journeyScreen, tensionScreen } from "./wizard.js";
 import { sheetScreen, injuryScreen, clearVitals } from "./sheet.js";
 import { lifecycleScreen } from "./lifecycle.js";
 import { neuroScreen } from "./neurocasting.js";
+import { combatScreen } from "./combat.js";
 
 const ROUTES = [
   { path: "home", tab: "home", render: homeScreen },
@@ -15,6 +16,7 @@ const ROUTES = [
   { path: "log", tab: "dice", render: rollLogScreen },
   { path: "time", tab: "home", render: lifecycleScreen },
   { path: "neuro", tab: "dice", render: neuroScreen },
+  { path: "combat", tab: "dice", render: combatScreen },
   { path: "solo", tab: "solo", render: soloScreen, gate: () => Settings.solo() },
   { path: "gm", tab: "gm", render: gmScreen, gate: () => Settings.gmScreen() },
   { path: "settings", tab: "settings", render: settingsScreen },

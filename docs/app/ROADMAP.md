@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **Stage C, Phase 4 mostly complete.** Remaining: generic progress tracker (P4.2), local combat tracker (P4.7). Data layer landing first, per the ledger rule that no UI is built against an unticked table.
+Status: **Stage C, Phase 4 complete.** Next: Phase 6 conditional surfaces (solo tab, GM screen); Phase 5 multiplayer stays gated per the local-first decision. Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -245,12 +245,12 @@ Create Traveler → live sheet → roll tests and combat → track Health/Hope/B
 
 ### Phase 4 — In-play systems
 - [x] P4.1 **Neurocasting module**: session state, wired/wireless, Difficulty-N progress loop, Bliss accrual, lost-in-the-Electric-State state, avatar combat with dual-realm turn switching, drone piloting
-- [ ] P4.2 Generic progress tracker (Difficulty tasks, Countdowns, death rolls, disease, healing timers)
+- [x] P4.2 Generic progress tracker (Difficulty tasks, Countdowns, death rolls, disease, healing timers)
 - [x] P4.3 Lifecycle engine: Stretch / Shift / Day / Session / Stop / Journey-end bundles with confirmation summary + one-step undo
 - [x] P4.4 Rest & recovery with enforced caps (Hope 1/Shift, per-item daily limits, Nurse capacity, blocked-while-hungry)
 - [x] P4.5 Tension board: adjust, reduce-with-Hope-payout, triangle visualization
 - [x] P4.6 Debrief/advancement flow with the post-Flaw improvement lock
-- [ ] P4.7 Local combat tracker: zones, side-based initiative, reactions, cover, full auto, Threat drop-in from the bestiary
+- [x] P4.7 Local combat tracker: zones, side-based initiative, reactions, cover, full auto, Threat drop-in from the bestiary
 
 ### Phase 5 — Multiplayer & sync *(gated on the milestone unless promoted at Stage B)*
 - [ ] P5.1 Firebase RTDB + anonymous auth + optional Google link; `database.rules.json` with player/GM roles and **group-entity (Journey/vehicle) write rules**

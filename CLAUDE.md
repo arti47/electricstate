@@ -100,5 +100,10 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   Flaw, then permanently disables improvement.
 - Neurocasting at `#/neuro`: Difficulty-N progress, Processor/Network/Graphics as gear dice by task,
   Bliss on every pre-push failure, Busted-caster gate, lost-in-the-Electric-State warning.
-- Remaining in Phase 4: generic progress tracker, local combat tracker.
-- Verification: `npm test` = 29 invariants + browser smoke.
+- Combat tracker at `#/combat`: side-based initiative (d6 + best Wits, re-rolled on ties), zone
+  movement, per-round acted flags, threat drop-in from the bestiary, and the **dual-realm toggle** —
+  a Traveler acting in the neuroscape is marked inert in the real world until their next turn.
+- Generic progress tracker shared by countdowns, neurocasting difficulties, healing clocks and
+  diseases: N successes, optional failure allowance.
+- Verification: `npm test` = 30 invariants + browser smoke.
+- Next: Phase 6 solo tab, then GM screen. Phase 5 multiplayer remains gated (local-first).

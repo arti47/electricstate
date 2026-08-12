@@ -37,7 +37,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   });
   await page.reload({ waitUntil: "networkidle" });
 
-  for (const route of ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey", "tension", "time", "neuro", "sheet"]) {
+  for (const route of ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey", "tension", "time", "neuro", "combat", "sheet"]) {
     await page.evaluate((r) => { location.hash = `#/${r}`; }, route);
     await page.waitForTimeout(60);
     const heading = await page.textContent("#screen h1").catch(() => null);
