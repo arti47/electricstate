@@ -106,4 +106,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Generic progress tracker shared by countdowns, neurocasting difficulties, healing clocks and
   diseases: N successes, optional failure allowance.
 - Verification: `npm test` = 30 invariants + browser smoke.
-- Next: Phase 6 solo tab, then GM screen. Phase 5 multiplayer remains gated (local-first).
+- **Phase 6 complete.** Solo tab (`#/solo`, toggle-gated): 52-card deck as pacing timer with no
+  reshuffle until spent, face-card events routed by suit, Tilts, 5-card NPC generation, Stop and
+  Threat generators, Countdown events with the 61-66 re-roll. GM screen (`#/gm`, toggle-gated):
+  party panel with Bliss watch, Stop builder rolling setting/blocker/conflict/locations/countdown,
+  threat reference, and thirteen rollable tables.
+- Verification: `npm test` = 35 invariants + browser smoke (wizard walk, sheet clamping, injury,
+  dice roll, log, solo draw, GM table roll).
+- Remaining: accessibility pass, then the full rules-accuracy audit (§11). Phase 5 multiplayer
+  stays gated behind the local-first decision.

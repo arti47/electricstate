@@ -315,6 +315,53 @@ await test("progress tasks count successes and optional failures", () => {
   assert.ok(d.failed, "the failure allowance ends the task too");
 });
 
+const soloMod = await import("../src/solo.js");
+
+await test("a fresh deck is 52 unique cards and draws without replacement", () => {
+  const deck = soloMod.freshDeck();
+  assert.equal(deck.length, 52);
+  assert.equal(new Set(deck.map((c) => c.suit + c.rank)).size, 52);
+  const { card, deck: rest } = soloMod.drawFrom(deck);
+  assert.ok(card);
+  assert.equal(rest.length, 51);
+  assert.ok(!rest.some((c) => c.suit === card.suit && c.rank === card.rank));
+});
+
+await test("face cards fire events by suit, others do not", () => {
+  assert.equal(soloMod.eventFor({ suit: "spades", rank: "K" }).id, "personalThreat");
+  assert.equal(soloMod.eventFor({ suit: "clubs", rank: "J" }).id, "stopCountdown");
+  assert.equal(soloMod.eventFor({ suit: "hearts", rank: "Q" }).id, "travelerEvent");
+  assert.equal(soloMod.eventFor({ suit: "diamonds", rank: "J" }).id, "conversation");
+  assert.equal(soloMod.eventFor({ suit: "spades", rank: "9" }), null);
+  assert.equal(soloMod.eventFor({ suit: "spades", rank: "A" }), null, "an ace is not a face card here");
+});
+
+await test("tilts read valence from suit and degree from rank", () => {
+  assert.equal(soloMod.readTilt({ suit: "hearts", rank: "2" }).good, true);
+  assert.equal(soloMod.readTilt({ suit: "hearts", rank: "2" }).degree, "Low");
+  assert.equal(soloMod.readTilt({ suit: "spades", rank: "A" }).good, false);
+  assert.equal(soloMod.readTilt({ suit: "spades", rank: "A" }).degree, "Extreme");
+  assert.equal(soloMod.readTilt({ suit: "clubs", rank: "7" }).degree, "High");
+});
+
+await test("the solo Stop Countdown never returns the unassigned 61-66 band", () => {
+  for (let i = 0; i < 200; i++) {
+    const r = soloMod.rollStopCountdown();
+    assert.ok(r.event, "always yields an event");
+    if (r.roll != null) assert.ok(r.roll <= 56, `rolled ${r.roll}, which is unassigned in print`);
+  }
+});
+
+await test("solo generators return complete Stops and Threats", () => {
+  const stop = soloMod.generateStop();
+  for (const key of ["terrain", "population", "communications", "size", "prosperity", "weather", "blocker", "need"]) {
+    assert.ok(stop[key], `stop missing ${key}`);
+  }
+  assert.equal(stop.locations.length, 3);
+  const threat = soloMod.generateThreat();
+  assert.ok(threat.type);
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

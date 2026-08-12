@@ -69,16 +69,6 @@ export function rulesScreen() {
   return wrap;
 }
 
-export function soloScreen() {
-  return el("div", {}, el("h1", {}, "Solo"),
-    el("div", { class: "empty card" }, el("p", {}, "The card oracle, tilts and NPC decks arrive in Phase 6.")));
-}
-
-export function gmScreen() {
-  return el("div", {}, el("h1", {}, "GM"),
-    el("div", { class: "empty card" }, el("p", {}, "The Stop builder and threat drop-in arrive in Phase 6.")));
-}
-
 export function rollLogScreen() {
   const log = getRollLog();
   const wrap = el("div", {}, el("h1", {}, "Roll log"));

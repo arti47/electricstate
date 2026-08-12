@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **Stage C, Phase 4 complete.** Next: Phase 6 conditional surfaces (solo tab, GM screen); Phase 5 multiplayer stays gated per the local-first decision. Data layer landing first, per the ledger rule that no UI is built against an unticked table.
+Status: **Stage C, Phase 6 complete.** Remaining: accessibility pass and the full rules-accuracy audit (§11). Phase 5 multiplayer stays gated per the local-first decision. Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -260,12 +260,12 @@ Create Traveler → live sheet → roll tests and combat → track Health/Hope/B
 - [ ] P5.5 Portrait upload with client-side compression
 
 ### Phase 6 — Conditional surfaces
-- [ ] P6.1 **Solo tab**: persistent 52-card deck state, draw/reshuffle timer, face-card event routing, Tilt draws, NPC motive/method, conversation and Traveler-event generators, solo Journey prep checklist
-- [ ] P6.2 **GM screen**: party panel, peek sheets, Threat drop-in, hand out damage/conditions, Countdown manager, all Ch. 5/6 rollable tables, Stop builder (setting → Blocker → conflict → locations → Countdown)
-- [ ] P6.3 Rules library: searchable, the citation target for every automated surface
+- [x] P6.1 **Solo tab**: persistent 52-card deck state, draw/reshuffle timer, face-card event routing, Tilt draws, NPC motive/method, conversation and Traveler-event generators, solo Journey prep checklist
+- [x] P6.2 **GM screen**: party panel, peek sheets, Threat drop-in, hand out damage/conditions, Countdown manager, all Ch. 5/6 rollable tables, Stop builder (setting → Blocker → conflict → locations → Countdown)
+- [x] P6.3 Rules library: searchable, the citation target for every automated surface
 
 ### Hardening (continuous)
-- [ ] H.1 Playwright regression harness (`npm test`): boot smoke with zero console errors; derived-stat invariants; push/gear-degradation invariants; opposed-sequence and tie cases; Hope/Bliss cap and decay schedules; every automated talent opens a non-empty resolution; lifecycle bundles fire and undo cleanly; zero horizontal overflow at 360/390 px; a11y basics
+- [x] H.1 Playwright regression harness (`npm test`): boot smoke with zero console errors; derived-stat invariants; push/gear-degradation invariants; opposed-sequence and tie cases; Hope/Bliss cap and decay schedules; every automated talent opens a non-empty resolution; lifecycle bundles fire and undo cleanly; zero horizontal overflow at 360/390 px; a11y basics
 - [ ] H.2 Accessibility pass
 - [ ] H.3 Full rules-accuracy audit (§11) — expect findings concentrated in engine behavior: push legality under traumas, Hope cap stacking, death-roll counters, dual-realm turn locking, Tension symmetry, improvement lock
 

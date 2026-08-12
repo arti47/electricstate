@@ -166,6 +166,30 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const logText = await page.textContent("#screen");
   check(/success/.test(logText), "roll log did not render the entry");
 
+  // solo: draw a card and confirm the deck depletes
+  await page.evaluate(() => { location.hash = "#/solo"; });
+  await page.waitForTimeout(80);
+  const before = await page.textContent("#screen");
+  check(/52 cards left/.test(before), "solo deck did not start at 52");
+  await page.click('#screen button:has-text("Draw a card")');
+  await page.waitForTimeout(80);
+  await page.click('.modal button:has-text("Good")');
+  await page.waitForTimeout(80);
+  const after = await page.textContent("#screen");
+  check(/51 cards left/.test(after), "drawing did not deplete the deck");
+
+  await page.click('#screen button:has-text("Generate a Stop")');
+  await page.waitForTimeout(80);
+  check(/Blocker/.test(await page.textContent("#screen")), "solo Stop generator produced nothing");
+
+  // gm: roll up a Stop
+  await page.evaluate(() => { location.hash = "#/gm"; });
+  await page.waitForTimeout(80);
+  check(/Threats/.test(await page.textContent("#screen")), "GM screen missing threat panel");
+  await page.click('#screen button:has-text("Blocker")');
+  await page.waitForTimeout(60);
+  check(/Blocker:/.test(await page.textContent("#screen")), "GM table roll produced no output");
+
   check(errors.length === 0, `${viewport.width}px: console errors: ${errors.join(" | ")}`);
   await page.close();
 }
