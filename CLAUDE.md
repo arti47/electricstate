@@ -74,4 +74,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **Phase 1 complete.** Creation wizard (7 grouped screens over the book's 17 steps), Journey/vehicle
   group entity, Tension matrix, pregen instantiation. Attribute generation defaults to rolling
   (4d6 re-rolling 1s, assign freely) with the book's 16-point distribution as the alternative.
-- Next: Phase 2 tracker (live sheet + persistent vitals header).
+- **Phase 2 complete.** Live sheet with steppers clamped to true maxima, persistent vitals header
+  (Health/Hull · Hope · Bliss with Permanent inline · Cash · Fuel), status notes for
+  Incapacitated / Breakdown / lost in the Electric State, injury and trauma pickers writing
+  machine-readable conditions, neurocaster attribute degradation with Busted state, inventory
+  with gear bonuses, Tension summary, notes, delete.
+- Header design note: Permanent Bliss renders inside the Bliss tile (`4 ⌊2⌋`) because by rule it is
+  the irreducible floor of Bliss, not a parallel track. Tension is deliberately off the header —
+  it is pairwise and needs names to mean anything.
+- Next: Phase 3 dice engine.

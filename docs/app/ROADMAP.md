@@ -5,7 +5,7 @@ Stage A (ingest/extract) done from `docs/source/core-rulebook-transcript.md`; di
 reference in `docs/rules/`. This file is the **checkpoint + roadmap**. It becomes the
 project `CLAUDE.md` (repo root) at Stage C start.
 
-Status: **Stage C, Phase 1 complete.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
+Status: **Stage C, Phase 2 complete.** Data layer landing first, per the ledger rule that no UI is built against an unticked table.
 
 **Sources.** Primary: `docs/source/core-rulebook-transcript.md` (direct PDF text). Secondary:
 `docs/source/secondary-summary.md` (a third-party digest of the same book) and the page images
@@ -222,12 +222,12 @@ estimates. **An unticked box means the data does not exist yet — never build U
 - [x] P1.6 Pregen instantiation (4)
 
 ### Phase 2 — Core tracker
-- [ ] P2.1 Sheet: identity, attributes, talents, Dream/Flaw, Goal/Threat, notes, portrait
-- [ ] P2.2 **Persistent header on every in-play screen**: Health, Hope, **Bliss with the Bliss≥Hope alarm**, Permanent Bliss, cash, fuel
-- [ ] P2.3 Vitals steppers clamped to true maxima; condition/injury/trauma chips with live effect application
-- [ ] P2.4 Inventory: gear bonus + Busted state, use-limited consumables, shared-item panel, no encumbrance
-- [ ] P2.5 Neurocaster panel: model, three attributes with degradation, Busted → forced-disconnect consequence
-- [ ] P2.6 JSON export/import in Settings
+- [x] P2.1 Sheet: identity, attributes, talents, Dream/Flaw, Goal/Threat, notes, portrait
+- [x] P2.2 **Persistent header on every in-play screen**: Health, Hope, **Bliss with the Bliss≥Hope alarm**, Permanent Bliss, cash, fuel
+- [x] P2.3 Vitals steppers clamped to true maxima; condition/injury/trauma chips with live effect application
+- [x] P2.4 Inventory: gear bonus + Busted state, use-limited consumables, shared-item panel, no encumbrance
+- [x] P2.5 Neurocaster panel: model, three attributes with degradation, Busted → forced-disconnect consequence
+- [x] P2.6 JSON export/import in Settings
 
 ### Phase 3 — Dice engine
 - [ ] P3.1 Pool builder: attribute + talent + gear + situational, with push (base vs gear die semantics) and Busted resolution

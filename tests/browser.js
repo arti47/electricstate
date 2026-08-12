@@ -107,10 +107,48 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
           c.health === Math.ceil((c.attrs.strength + c.attrs.agility) / 2) + 2,
           `health ${c.health} does not match the formula`);
   }
-  const homeShows = await page.evaluate(() => { location.hash = "#/home"; return true; });
+  await page.evaluate(() => { location.hash = "#/home"; });
   await page.waitForTimeout(60);
   const listed = await page.textContent("#screen");
   check(listed.includes("Test Traveler"), "new Traveler not listed on the home screen");
+
+  // open the sheet: vitals header, steppers clamped, injury flow
+  await page.click("#screen .list a");
+  await page.waitForTimeout(80);
+  const vitalsVisible = await page.evaluate(() => !document.getElementById("vitals").hidden);
+  check(vitalsVisible, "vitals header did not appear on the sheet");
+  const tiles = await page.locator("#vitals .vital .vital-label").allTextContents();
+  check(tiles.includes("Health") || tiles.includes("Hull"), `vitals missing health tile: ${tiles}`);
+  check(tiles.includes("Hope") && tiles.includes("Cash"), `vitals missing tiles: ${tiles}`);
+
+  // health cannot be pushed above its maximum or below zero
+  const raise = page.locator('#screen button[aria-label="Raise Health"]').first();
+  for (let i = 0; i < 12; i++) await raise.click();
+  const lower = page.locator('#screen button[aria-label="Lower Health"]').first();
+  for (let i = 0; i < 20; i++) await lower.click();
+  await page.waitForTimeout(60);
+  const clamped = await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    const c = Object.values(db.characters)[0];
+    const max = Math.ceil((c.attributes.strength + c.attributes.agility) / 2) + (c.talents.includes("tough") ? 2 : 0);
+    return { health: c.state.health, max };
+  });
+  check(clamped.health === 0, `health floor not enforced (${clamped.health})`);
+  const incap = await page.textContent("#screen");
+  check(incap.includes("Incapacitated"), "zero Health did not surface the Incapacitated note");
+
+  // apply an injury from the picker
+  await page.click('#screen a:has-text("Add injury or trauma")');
+  await page.waitForTimeout(80);
+  await page.click('#screen button:has-text("Choose")');
+  await page.waitForTimeout(80);
+  await page.click(".modal .list button");
+  await page.waitForTimeout(100);
+  const withInjury = await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    return Object.values(db.characters)[0].conditions.length;
+  });
+  check(withInjury === 1, `injury not applied (${withInjury} conditions)`);
 
   check(errors.length === 0, `${viewport.width}px: console errors: ${errors.join(" | ")}`);
   await page.close();

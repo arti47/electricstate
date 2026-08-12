@@ -43,6 +43,9 @@ export function rulesScreen() {
   });
   wrap.append(el("div", { class: "field" }, input), results);
 
+  const focus = sessionStorage.getItem("ruleFocus");
+  if (focus) sessionStorage.removeItem("ruleFocus");
+
   function render(q = "") {
     results.replaceChildren();
     const hits = searchLibrary(q);
@@ -56,6 +59,12 @@ export function rulesScreen() {
     }
   }
   render();
+  if (focus) {
+    requestAnimationFrame(() => {
+      const target = results.querySelector(`#rule-${focus}`);
+      if (target) { target.scrollIntoView({ block: "center" }); target.style.borderColor = "var(--accent)"; }
+    });
+  }
   return wrap;
 }
 

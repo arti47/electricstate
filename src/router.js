@@ -3,6 +3,7 @@ import { $, $$, el } from "./core.js";
 import { Settings } from "./settings.js";
 import { homeScreen, rulesScreen, diceScreen, soloScreen, gmScreen, settingsScreen, rollLogScreen } from "./screens.js";
 import { wizardScreen, journeyScreen, tensionScreen } from "./wizard.js";
+import { sheetScreen, injuryScreen, clearVitals } from "./sheet.js";
 
 const ROUTES = [
   { path: "home", tab: "home", render: homeScreen },
@@ -15,7 +16,8 @@ const ROUTES = [
   { path: "create", tab: "home", render: wizardScreen },
   { path: "journey", tab: "home", render: journeyScreen },
   { path: "tension", tab: "home", render: tensionScreen },
-  { path: "sheet", tab: "home", render: () => notYet("Character sheet", "Phase 2") }
+  { path: "sheet", tab: "home", render: (id) => (id ? sheetScreen(id) : notYet("Character sheet", "Phase 2")) },
+  { path: "injury", tab: "home", render: (id) => (id ? injuryScreen(id) : notYet("Injuries", "Phase 2")) }
 ];
 
 function notYet(what, phase) {
@@ -33,13 +35,14 @@ export function syncTabs() {
 
 export function render() {
   const raw = (location.hash || "#/home").replace(/^#\/?/, "");
-  const [path] = raw.split("/");
+  const [path, param] = raw.split("/");
   const route = ROUTES.find((r) => r.path === path) || ROUTES[0];
 
   if (route.gate && !route.gate()) { location.hash = "#/home"; return; }
 
   const screen = $("#screen");
-  screen.replaceChildren(route.render());
+  if (path !== "sheet" && path !== "injury") clearVitals();
+  screen.replaceChildren(route.render(param));
   screen.focus({ preventScroll: true });
   window.scrollTo(0, 0);
 
