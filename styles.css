@@ -175,6 +175,17 @@ a { color: inherit; }
 .btn-block { width: 100%; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--gap); }
+.chip {
+  min-height: 34px; padding: 0 12px;
+  background: var(--bg-sunk); color: var(--ink-dim);
+  border: 1px solid var(--line); border-radius: 999px;
+  font: 600 .72rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #10120f; }
+.chip .count { opacity: .7; margin-left: 6px; font-family: var(--mono); }
+
 input, select, textarea {
   width: 100%; min-height: var(--tap);
   /* 16px minimum: anything smaller makes iOS zoom the viewport on focus. */

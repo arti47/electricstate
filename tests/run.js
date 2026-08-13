@@ -638,6 +638,31 @@ await test("legacy solo Stops migrate into the shared list", () => {
   assert.equal(store.getJourney().solo.stop, null, "and is no longer duplicated in solo state");
 });
 
+await test("the roll log attributes each roll and filters by Traveler", () => {
+  store.resetAll();
+  const a = store.saveCharacter({ name: "Cade", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  const b = store.saveCharacter({ name: "Courtney", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+
+  store.logRoll({ by: "Cade", label: "Fight", dice: [6, 2], outcome: "hit" });
+  store.logRoll({ by: "Courtney", label: "Sneak", dice: [1, 3], outcome: "seen" });
+  store.logRoll({ label: "Initiative", dice: [4, 5], outcome: "Travelers act first" });
+
+  const log = store.getRollLog();
+  assert.equal(log.length, 3);
+  assert.equal(log.find((r) => r.by === "Cade").byId, a.id, "a name is resolved to a Traveler id at write time");
+  assert.equal(store.rollLogKey(log.find((r) => r.label === "Initiative")), "table",
+    "a roll with nobody behind it belongs to the table");
+
+  assert.equal(store.filterRollLog("all").length, 3);
+  assert.equal(store.filterRollLog(a.id).length, 1);
+  assert.equal(store.filterRollLog(b.id)[0].label, "Sneak");
+  assert.equal(store.filterRollLog("table")[0].label, "Initiative");
+
+  // Renaming must not orphan the rolls already recorded under the old name.
+  store.saveCharacter({ ...store.getCharacter(a.id), name: "Cade the Elder" });
+  assert.equal(store.filterRollLog(a.id).length, 1, "the id outlives the name");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

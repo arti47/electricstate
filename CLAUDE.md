@@ -155,5 +155,14 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   ("What this does") from `ui.js` — first-time players can learn a surface without leaving it.
 - **Tutorial at `#/tutorial`**: seven table steps plus four solo steps, each saying what to tap and
   why the game asks for it. Linked from the home screen when no Traveler exists, and from Settings.
-- Verification: `npm test` = 38 invariants + browser smoke.
+- **Audit follow-ups.** Drone Pilot damage model (`hull`, no death rolls, no rest healing), combat
+  tracker wired to the dice engine, one shared Stop record in `src/stops.js` used by both the GM
+  screen and solo play, and a roll log that knows who rolled.
+- **Roll log is attributed and filterable.** `logRoll` resolves the caller's display name to a
+  Traveler id at write time, so a rename never orphans past rolls; `#/log` shows filter chips
+  (All · each Traveler · Table for rolls that belong to nobody), stamps each row with who and when,
+  and can be cleared. Rolls with no person behind them — initiative, vehicle accidents, chase
+  obstacles — group under Table by design.
+- Verification: `npm test` = 61 invariants + browser smoke; `node tests/audit.js` clicks every
+  control on every screen and flags errors, unclickable controls and silent no-ops.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

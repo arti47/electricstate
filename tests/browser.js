@@ -235,6 +235,25 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const logText = await page.textContent("#screen");
   check(/success/.test(logText), "roll log did not render the entry");
 
+  // the log filters by whoever rolled
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    db.rollLog.unshift(
+      { id: "x1", ts: Date.now(), by: "Somebody Else", label: "Their roll", dice: [3], outcome: "missed" },
+      { id: "x2", ts: Date.now(), label: "Initiative", dice: [4], outcome: "Travelers act first" });
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    location.hash = "#/home";
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/log"; });
+  await page.waitForTimeout(80);
+  const chips = await page.$$("#screen .chip");
+  check(chips.length >= 3, `roll log showed ${chips.length} filter chips, expected one per roller plus All`);
+  await page.click('#screen .chip:has-text("Table")');
+  await page.waitForTimeout(80);
+  const filtered = await page.textContent("#screen .list");
+  check(/Initiative/.test(filtered) && !/Their roll/.test(filtered), "filtering by Table did not narrow the log");
+
   // journey: roll a destination and route features
   await page.evaluate(() => { location.hash = "#/journey"; });
   await page.waitForTimeout(80);

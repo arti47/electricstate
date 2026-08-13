@@ -1,7 +1,8 @@
 // Top-level screen renderers. Phase 1-3 screens (wizard, sheet, roller) mount here later.
 import { $, el } from "./core.js";
 import { Settings, TOGGLES, set as setSetting, get as getSetting } from "./settings.js";
-import { listCharacters, exportJSON, importJSON, getRollLog, resetAll } from "./store.js";
+import { listCharacters, exportJSON, importJSON, getRollLog, rollLogKey, filterRollLog,
+         clearRollLog, resetAll } from "./store.js";
 import { searchLibrary } from "./rules.js";
 import { showToast, confirmModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
@@ -119,18 +120,85 @@ function ruleGroup(title, entries, searching, focus) {
   return group;
 }
 
+const clockTime = (ts) => ts
+  ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  : "";
+
 export function rollLogScreen() {
-  const log = getRollLog();
-  const wrap = el("div", {}, el("h1", {}, "Roll log"));
-  if (!log.length) { wrap.append(el("p", { class: "empty" }, "No rolls recorded yet.")); return wrap; }
-  const list = el("ul", { class: "list" });
-  for (const r of log) {
-    list.append(el("li", {}, el("div", { class: "row", style: "padding:10px 4px" },
-      el("div", { class: "card-row" }, el("strong", {}, r.label || "Roll"), el("span", { class: "mono faint" }, (r.dice || []).join(" "))),
-      el("div", { class: "faint" }, r.outcome || ""))));
-  }
-  wrap.append(el("div", { class: "card" }, list));
-  return wrap;
+  const host = el("div");
+  let filter = "all";
+
+  const render = () => {
+    const log = getRollLog();
+    const wrap = el("div", {}, el("h1", {}, "Roll log"));
+    wrap.append(explain("Every roll the app has made, newest first, and only the last hundred are kept. With more than one Traveler in play, filter by who rolled — rolls that belong to the table rather than a person sit under Table."));
+
+    if (!log.length) {
+      wrap.append(el("p", { class: "empty" }, "No rolls recorded yet."));
+      host.replaceChildren(wrap);
+      return;
+    }
+
+    const chars = listCharacters();
+    const nameFor = (key) => {
+      if (key === "table") return "Table";
+      if (key.startsWith("name:")) return key.slice(5);
+      return chars.find((c) => c.id === key)?.name || "Unnamed";
+    };
+
+    const counts = new Map();
+    for (const r of log) counts.set(rollLogKey(r), (counts.get(rollLogKey(r)) || 0) + 1);
+    if (filter !== "all" && !counts.has(filter)) filter = "all";
+
+    if (counts.size > 1) {
+      const chips = el("div", { class: "chip-row" });
+      const chip = (key, label, count) => el("button", {
+        class: "chip", type: "button", "aria-pressed": String(filter === key),
+        onclick: () => { filter = key; render(); }
+      }, label, el("span", { class: "count" }, String(count)));
+
+      chips.append(chip("all", "All", log.length));
+      // Travelers in creation order first, then anyone the log knows only by name,
+      // then the table's own rolls.
+      const ordered = [
+        ...chars.map((c) => c.id).filter((id) => counts.has(id)),
+        ...[...counts.keys()].filter((k) => k.startsWith("name:")),
+        ...(counts.has("table") ? ["table"] : [])
+      ];
+      for (const key of ordered) chips.append(chip(key, nameFor(key), counts.get(key)));
+      wrap.append(chips);
+    }
+
+    const shown = filterRollLog(filter);
+    const list = el("ul", { class: "list" });
+    for (const r of shown) {
+      list.append(el("li", {}, el("div", { class: "row", style: "padding:10px 4px" },
+        el("div", { class: "card-row" },
+          el("strong", {}, r.label || "Roll"),
+          el("span", { class: "mono faint" }, (r.dice || []).join(" "))),
+        el("div", { class: "card-row" },
+          el("span", { class: "faint" }, r.outcome || ""),
+          el("span", { class: "faint" }, [r.by || "Table", clockTime(r.ts)].filter(Boolean).join(" · "))))));
+    }
+    wrap.append(el("div", { class: "card" }, list));
+
+    wrap.append(el("div", { class: "btn-row" },
+      el("button", {
+        class: "btn btn-danger",
+        onclick: async () => {
+          if (!(await confirmModal("Clear the roll log?", "Every recorded roll is discarded. Nothing else changes.", "Clear"))) return;
+          clearRollLog();
+          filter = "all";
+          render();
+          showToast("Roll log cleared");
+        }
+      }, "Clear log")));
+
+    host.replaceChildren(wrap);
+  };
+
+  render();
+  return host;
 }
 
 export function settingsScreen() {

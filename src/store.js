@@ -94,9 +94,25 @@ export function saveJourney(j) { load(); db.journey = j; persist(); return j; }
 const ROLL_LOG_CAP = 100;
 export function logRoll(entry) {
   load();
-  db.rollLog.unshift({ id: uid(), ts: Date.now(), ...entry });
+  const record = { id: uid(), ts: Date.now(), ...entry };
+  // Callers pass a display name; resolve it to an id once, at write time, so the
+  // log can still be filtered by Traveler after a rename or a duplicate name.
+  if (record.by && !record.byId) {
+    const match = Object.values(db.characters).find((c) => c.name === record.by);
+    if (match) record.byId = match.id;
+  }
+  db.rollLog.unshift(record);
   if (db.rollLog.length > ROLL_LOG_CAP) db.rollLog.length = ROLL_LOG_CAP;
   persist();
+}
+
+/** Group key for one entry: a Traveler id, a bare name, or the table itself. */
+export const rollLogKey = (entry) =>
+  entry.byId || (entry.by ? `name:${entry.by}` : "table");
+
+export function filterRollLog(key) {
+  const log = getRollLog();
+  return !key || key === "all" ? log : log.filter((r) => rollLogKey(r) === key);
 }
 export const getRollLog = () => load().rollLog;
 export function clearRollLog() { load(); db.rollLog = []; persist(); }
