@@ -13,7 +13,7 @@ import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
          GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS, ANYTHING_WORDS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
-import { showToast, modal, confirmModal, explain } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 
 const STEPS = ["archetype", "attributes", "talents", "identity", "gear", "journey", "review"];
@@ -461,12 +461,18 @@ function build(rerender) {
     el("p", { class: "faint" }, `Step ${draft.step + 1} of ${STEPS.length}`),
     body,
     issues.length ? el("div", { class: "card" }, ...issues.map((i) => el("p", { class: "faint" }, i))) : null,
-    el("div", { class: "btn-row", style: "margin-top:16px" },
+    draft.step === 0 ? el("div", { class: "btn-row" }, el("button", { class: "btn", onclick: choosePregen }, "Use a pregen")) : null);
+
+  // Seven steps, and Next sat below the content of each one.
+  wrap.append(...actionBar({
+    lead: el("span", { class: "pool" }, `${draft.step + 1}/${STEPS.length}`, el("small", {}, titles[step])),
+    children: [
       draft.step > 0 ? el("button", { class: "btn", onclick: () => { draft.step--; rerender(); } }, "Back") : null,
       draft.step < STEPS.length - 1
         ? el("button", { class: "btn btn-primary", disabled: issues.length > 0, onclick: () => { draft.step++; rerender(); } }, "Next")
-        : el("button", { class: "btn btn-primary", onclick: finish }, "Create Traveler"),
-      draft.step === 0 ? el("button", { class: "btn", onclick: choosePregen }, "Use a pregen") : null));
+        : el("button", { class: "btn btn-primary", onclick: finish }, "Create Traveler")
+    ]
+  }));
   return wrap;
 }
 

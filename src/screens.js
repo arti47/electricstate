@@ -249,14 +249,13 @@ export function settingsScreen() {
   const toggles = el("div", { class: "card" });
   for (const t of TOGGLES) {
     const current = t.flag === "mentalTrauma" ? Settings.mentalTrauma() : !!getSetting(t.flag);
-    toggles.append(el("div", { class: "field" },
-      el("div", { class: "card-row" },
-        el("div", {}, el("strong", {}, t.label), el("div", { class: "faint" }, t.blurb)),
-        el("input", {
-          type: "checkbox", checked: current, "aria-label": t.label,
-          style: "width:auto;min-height:auto",
-          onchange: (e) => { setSetting(t.flag, e.target.checked); window.dispatchEvent(new CustomEvent("hashchange")); }
-        }))));
+    // A label, so the whole row is the target — everywhere else in the app already is one.
+    toggles.append(el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:10px 0" },
+      el("span", {}, el("strong", {}, t.label), el("div", { class: "faint" }, t.blurb)),
+      el("input", {
+        type: "checkbox", checked: current, "aria-label": t.label,
+        onchange: (e) => { setSetting(t.flag, e.target.checked); window.dispatchEvent(new CustomEvent("hashchange")); }
+      })));
   }
   wrap.append(el("h2", {}, "Features"), toggles);
 

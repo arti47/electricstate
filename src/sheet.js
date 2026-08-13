@@ -127,8 +127,9 @@ function build(ch, rerender) {
   }
   wrap.append(talents);
 
-  // --- dream, flaw, goal, threat
-  wrap.append(el("div", { class: "card" },
+  // --- dream, flaw, goal, threat: written at creation, read often, edited rarely
+  wrap.append(el("details", { class: "card phase-fold" },
+    el("summary", {}, "Dream, Flaw, Goal and Threat"),
     field("Dream", ch.dream, (v) => patch((c) => { c.dream = v; })),
     field("Flaw", ch.flaw, (v) => patch((c) => { c.flaw = v; })),
     field("Goal", ch.goal, (v) => patch((c) => { c.goal = v; })),
@@ -149,8 +150,8 @@ function build(ch, rerender) {
   // --- tension
   wrap.append(tensionCard(ch));
 
-  wrap.append(el("div", { class: "card" },
-    el("h3", {}, "Notes"),
+  wrap.append(el("details", { class: "card phase-fold" },
+    el("summary", {}, "Notes"),
     el("textarea", { rows: 4, "aria-label": "Notes", onchange: (e) => patch((c) => { c.notes = e.target.value; }) }, ch.notes || "")));
 
   wrap.append(el("button", {
@@ -323,7 +324,7 @@ function neurocasterCard(ch, patch) {
       el("strong", {}, "On your head right now"),
       el("div", { class: "faint" }, `${penalty} dice to real-world actions needing mobility or vision, and you act in one realm per round.`)),
     el("input", {
-      type: "checkbox", style: "width:auto;min-height:auto", checked: !!ch.state.wearingCaster,
+      type: "checkbox",checked: !!ch.state.wearingCaster,
       "aria-label": "Wearing the neurocaster",
       onchange: (e) => patch((c) => { c.state.wearingCaster = e.target.checked; })
     })));

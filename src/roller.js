@@ -214,7 +214,7 @@ function build(rerender) {
       ...talents.map((t) => el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
         el("span", {}, el("strong", {}, t.name), el("div", { class: "faint" }, t.effect.when || "")),
         el("input", {
-          type: "checkbox", style: "width:auto;min-height:auto",
+          type: "checkbox",
           checked: pending.talents.includes(t.id),
           onchange: (e) => {
             pending.talents = e.target.checked ? [...pending.talents, t.id] : pending.talents.filter((x) => x !== t.id);
@@ -365,7 +365,7 @@ function toggleRow(label, key, blurb, rerender) {
   return el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:6px 0" },
     el("span", {}, el("strong", {}, label), el("div", { class: "faint" }, blurb)),
     el("input", {
-      type: "checkbox", style: "width:auto;min-height:auto", checked: !!pending[key],
+      type: "checkbox",checked: !!pending[key],
       "aria-label": label,
       onchange: (e) => { pending[key] = e.target.checked; pending.result = null; rerender(); }
     }));

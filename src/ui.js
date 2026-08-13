@@ -84,3 +84,14 @@ export function promptModal(title, { label = "", value = "", placeholder = "" } 
     actions: [{ label: "Save", value: "__ok", class: "btn-primary" }, { label: "Cancel", value: undefined }]
   }).then((v) => (v === "__ok" ? input.value.trim() : undefined));
 }
+
+/**
+ * The controls a screen exists to press, pinned above the tab bar. Returns the spacer and
+ * the bar together, so a caller cannot forget the spacer and have the bar cover its own
+ * last card. Pass a lead element (a pool size, a shift name) to sit left of the buttons.
+ */
+export function actionBar({ lead = null, children = [] } = {}) {
+  const bar = el("div", { class: "actionbar" },
+    el("div", { class: "actionbar-inner" }, lead, ...children.filter(Boolean)));
+  return [el("div", { class: "actionbar-spacer" }), bar];
+}

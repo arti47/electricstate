@@ -5,7 +5,7 @@ import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIR
 import { maxHope, maxHealth, tracksBliss } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent } from "./rules.js";
-import { showToast, modal, explain } from "./ui.js";
+import { showToast, modal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { Settings } from "./settings.js";
 
@@ -106,7 +106,7 @@ function build(rerender) {
     el("p", { class: "faint" }, "The helmet is on: real-world actions needing mobility or vision lose dice, and you act in one realm per round. Take it off on the sheet when you are done."),
     el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;margin-top:8px" },
       el("span", {}, el("strong", {}, "Plugged into a terminal"), el("div", { class: "faint" }, `+${WIRED_BONUS} dice to everything`)),
-      el("input", { type: "checkbox", checked: session.wired, style: "width:auto;min-height:auto", onchange: (e) => { session.wired = e.target.checked; } })),
+      el("input", { type: "checkbox", checked: session.wired,onchange: (e) => { session.wired = e.target.checked; } })),
     isLost(ch) ? el("p", { class: "faint", style: "color:var(--danger)" },
       "Bliss has caught Hope. You can still act in here — you simply cannot leave on your own.") : null));
 
@@ -164,11 +164,6 @@ function build(rerender) {
 
   if (spec.id === "avatarCombat") wrap.append(avatarCombatCard(ch, rerender));
 
-  wrap.append(el("button", {
-    class: "btn btn-primary btn-block",
-    onclick: () => doNeuroRoll(ch, rerender)
-  }, "Roll"));
-
   if (session.rolls.length) {
     const log = el("div", { class: "card" }, el("h3", {}, "This task"));
     for (const r of session.rolls) {
@@ -186,6 +181,13 @@ function build(rerender) {
   wrap.append(scriptedExperienceCard(ch, rerender));
   wrap.append(el("p", { class: "faint" },
     "While wearing a neurocaster you act either out here or in there each round — never both."));
+
+  // A Stretch per roll, and the roll was below the task card, the helpers and the fold.
+  wrap.append(...actionBar({
+    lead: el("span", { class: "pool" }, `${session.progress}/${session.difficulty}`,
+      el("small", {}, `${spec.attr} + ${spec.gear}`)),
+    children: [el("button", { class: "btn btn-primary", onclick: () => doNeuroRoll(ch, rerender) }, "Roll")]
+  }));
   return wrap;
 }
 

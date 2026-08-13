@@ -342,6 +342,35 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const filtered = await page.textContent("#screen .list");
   check(/Initiative/.test(filtered) && !/Their roll/.test(filtered), "filtering by Table did not narrow the log");
 
+  // The action a screen exists for must be reachable without scrolling, and every
+  // checkbox must have a finger-sized target rather than a 22px box.
+  for (const [route, expect] of [["dice", "Roll"], ["time", "Shift"], ["neuro", "Roll"], ["create", "Next"]]) {
+    await page.evaluate((r) => { location.hash = `#/${r}`; }, route);
+    await page.waitForTimeout(120);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const reach = await page.evaluate((label) => {
+      const nav = document.querySelector(".tabbar").getBoundingClientRect();
+      const btns = [...document.querySelectorAll("#screen .btn-primary")]
+        .filter((b) => !b.closest("details:not([open])"));
+      const wanted = btns.find((b) => b.textContent.trim().startsWith(label)) || btns[0];
+      if (!wanted) return null;
+      const r = wanted.getBoundingClientRect();
+      return { text: wanted.textContent.trim().slice(0, 20), top: Math.round(r.top), limit: Math.round(nav.top) };
+    }, expect);
+    check(reach !== null, `${route} has no primary action`);
+    check(reach && reach.top < reach.limit,
+      `${route}: "${reach && reach.text}" starts ${reach && reach.top - reach.limit}px below the fold`);
+  }
+
+  await page.evaluate(() => { location.hash = "#/settings"; });
+  await page.waitForTimeout(100);
+  const tinyTargets = await page.evaluate(() =>
+    [...document.querySelectorAll("#screen input[type=checkbox]")]
+      .map((c) => ({ label: c.getAttribute("aria-label") || "", h: Math.round((c.closest("label") || c).getBoundingClientRect().height) }))
+      .filter((x) => x.h < 40));
+  check(tinyTargets.length === 0,
+    `settings toggles with a target under 40px: ${tinyTargets.map((t) => `${t.label} ${t.h}px`).join(", ")}`);
+
   // journey: roll a destination and route features
   await page.evaluate(() => { location.hash = "#/journey"; });
   await page.waitForTimeout(80);

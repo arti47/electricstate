@@ -225,8 +225,6 @@ function buildVehicle(rerender) {
   const driver = el("select", { "aria-label": "Driver" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")));
   wrap.append(el("div", { class: "field" }, el("label", {}, "Driving"), driver));
 
-  wrap.append(hullCard(j, v, chars, rerender));
-
   const terrain = el("select", { "aria-label": "Terrain" },
     el("option", { value: "road" }, "On the road"),
     el("option", { value: "boat" }, "On water"),
@@ -245,6 +243,8 @@ function buildVehicle(rerender) {
       el("button", { class: "btn btn-primary", onclick: () => ram(v, rerender) }, "Ram something"))));
 
   wrap.append(chaseCard(j, v, chars, driver, rerender));
+  // Damage and repairs are between-scene work, so they sit under the rolls you make in one.
+  wrap.append(hullCard(j, v, chars, rerender));
 
   return wrap;
 }
@@ -308,8 +308,8 @@ function hullCard(j, v, chars, rerender) {
   const mechanics = chars.length
     ? el("select", { "aria-label": "Who works on it" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")))
     : null;
-  const tools = el("input", { type: "checkbox", checked: true, style: "width:auto;min-height:auto", "aria-label": "Vehicle tools to hand" });
-  const part = el("input", { type: "checkbox", style: "width:auto;min-height:auto", "aria-label": "Spare part to hand" });
+  const tools = el("input", { type: "checkbox", checked: true,"aria-label": "Vehicle tools to hand" });
+  const part = el("input", { type: "checkbox","aria-label": "Spare part to hand" });
 
   const setHull = (next) => {
     const journey = getJourney() || {};

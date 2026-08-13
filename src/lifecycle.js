@@ -6,7 +6,7 @@ import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, 
 import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, exportJSON, importJSON } from "./store.js";
 import { talent as findTalent } from "./rules.js";
-import { showToast, modal, confirmModal, explain } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
 
@@ -260,7 +260,7 @@ function build(rerender) {
   const optionRow = (label, key, blurb) => el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:6px 0" },
     el("span", {}, el("strong", {}, label), blurb ? el("div", { class: "faint" }, blurb) : null),
     el("input", {
-      type: "checkbox", checked: opts[key], style: "width:auto;min-height:auto",
+      type: "checkbox", checked: opts[key],
       onchange: (e) => { opts[key] = e.target.checked; }
     }));
 
@@ -274,11 +274,6 @@ function build(rerender) {
     optionRow("Travelled", "travelled", "Burns fuel."),
     optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast.")));
 
-  // The three you press all evening, then the ones you press once.
-  wrap.append(el("div", { class: "btn-row" },
-    el("button", { class: "btn", onclick: () => fire("stretch", opts, rerender) }, "End Stretch"),
-    el("button", { class: "btn btn-primary", onclick: () => fire("shift", opts, rerender) }, "End Shift"),
-    el("button", { class: "btn", onclick: () => fire("day", opts, rerender) }, "End Day")));
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "Bigger boundaries"),
     el("p", { class: "faint" }, "End of session is the debrief where Travelers improve. A week is the interval mental trauma recovers on. Ending the Journey rolls each Traveler's epilogue and closes the campaign."),
     el("div", { class: "btn-row" },
@@ -318,6 +313,17 @@ function build(rerender) {
       onclick: () => { undoLast(); showToast("Reverted."); rerender(); }
     }, "Undo the last boundary"));
   }
+
+  // Seven option rows pushed these off the bottom of the screen; they are the point of it.
+  const clock = getJourney() || {};
+  wrap.append(...actionBar({
+    lead: el("span", { class: "pool" }, clock.shift || "Morning", el("small", {}, `Day ${clock.day || 1}`)),
+    children: [
+      el("button", { class: "btn", onclick: () => fire("stretch", opts, rerender) }, "Stretch"),
+      el("button", { class: "btn btn-primary", onclick: () => fire("shift", opts, rerender) }, "Shift"),
+      el("button", { class: "btn", onclick: () => fire("day", opts, rerender) }, "Day")
+    ]
+  }));
   return wrap;
 }
 
