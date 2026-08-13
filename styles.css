@@ -144,6 +144,25 @@ a { color: inherit; }
 .vital.is-danger .vital-value { color: var(--danger); }
 .vital.is-neuro .vital-value { color: var(--neuro); }
 
+/* Hidden GM content: blurred until tapped. Still selectable by a screen reader — the
+   point is a glance across the table, not secrecy from the person holding the phone. */
+.spoil {
+  filter: blur(5px); cursor: pointer; user-select: none;
+  background: var(--bg-sunk); border-radius: 4px;
+}
+
+/* The name of whoever the vitals bar is currently about, and a way to change it. */
+.vital-switch {
+  grid-column: 1 / -1; background: var(--bg-sunk);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 34px; padding: 6px 10px; width: 100%;
+  border: 0; border-bottom: 1px solid var(--line-soft);
+  color: var(--ink); font: 600 .82rem/1 var(--font-head); letter-spacing: .04em;
+  cursor: pointer;
+}
+button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
+.vital-switch.is-static { cursor: default; color: var(--ink-dim); }
+
 /* A phase card that folds away: same skin as a card, summary as its heading. */
 .phase-fold > summary {
   list-style: none; cursor: pointer;
@@ -236,6 +255,9 @@ a { color: inherit; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #10120f; }
 .btn-danger { color: var(--danger); border-color: var(--danger); }
 .btn-block { width: 100%; }
+/* A stepper at its floor, an archetype already taken: still there, visibly not pressable. */
+.btn:disabled, button:disabled { opacity: .38; cursor: default; }
+.btn:disabled:hover { border-color: var(--line); }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--gap); }
@@ -272,6 +294,8 @@ input[type="checkbox"] {
   padding: 12px 4px; min-height: var(--tap);
   background: none; border: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: none;
 }
+
+.list button.row.is-here { color: var(--accent); }
 
 .empty { text-align: center; color: var(--ink-dim); padding: 32px 16px; }
 .empty p { max-width: 34ch; margin: 0 auto .75rem; }

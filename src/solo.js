@@ -11,7 +11,7 @@ import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATION
 import { getJourney, saveJourney, listCharacters } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
-import { showToast, modal, explain } from "./ui.js";
+import { showToast, modal, explain, actionBar } from "./ui.js";
 
 const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" };
 
@@ -231,10 +231,11 @@ function build(rerender) {
       el("ol", {}, ...SOLO_PREP_STEPS.map((x) => el("li", { class: "faint" }, x))))));
 
   // ------------------------------------------------------------- 2 on the road
-  wrap.append(phase("2 · On the road",
+  // Between Stops, not during one: folded like prep, so the Stop you are in stays on top.
+  wrap.append(foldedPhase("2 · On the road",
     "Between Stops. Encounters can be driven past — they are mood, not obligation.",
     row(
-      act("Minor encounter", () => encounter(rerender), true),
+      act("Minor encounter", () => encounter(rerender)),
       act("Arrive at what time?", async () => {
         const { card, deck } = drawFrom(state().deck);
         if (!card) { showToast("The deck is spent — reshuffle."); return; }
@@ -282,7 +283,7 @@ function build(rerender) {
   wrap.append(phase("4 · Playing the Stop",
     `Draw when you need input. Face cards fire events by suit. ${s.deck.length} cards left — do not reshuffle until it is spent.`,
     row(
-      act("Draw a card", () => draw(rerender), true),
+      act("Draw a card", () => draw(rerender)),
       act("Tilt", () => tilt(rerender)),
       act("Generate an NPC", () => npc(rerender)),
       act("Conversation", async () => {
@@ -368,6 +369,16 @@ function build(rerender) {
       : null));
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "When you are stuck"),
     el("ul", { class: "list" }, ...SOLO_UNSTICK.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
+
+  // The deck is the whole loop, and drawing from it sat six cards of prep down the page.
+  // It is pinned now, with what is left of the deck beside it — that count is the pacing.
+  wrap.append(...actionBar({
+    lead: el("span", { class: "pool" }, String(s.deck.length), el("small", {}, "cards left")),
+    children: [
+      el("button", { class: "btn btn-primary", onclick: () => draw(rerender) }, "Draw a card"),
+      el("button", { class: "btn", onclick: () => tilt(rerender) }, "Tilt")
+    ]
+  }));
   return wrap;
 }
 

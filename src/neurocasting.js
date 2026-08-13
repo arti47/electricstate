@@ -153,9 +153,11 @@ function build(rerender) {
     el("span", {}, "Helpers in here",
       el("div", { class: "faint" }, "+1 die each, up to three. They can do nothing else.")),
     el("div", { class: "btn-row" },
-      el("button", { class: "btn", "aria-label": "Fewer helpers", onclick: () => { session.helpers = Math.max(0, (session.helpers || 0) - 1); rerender(); } }, "−"),
+      el("button", { class: "btn", "aria-label": "Fewer helpers", disabled: (session.helpers || 0) <= 0,
+        onclick: () => { session.helpers = Math.max(0, (session.helpers || 0) - 1); rerender(); } }, "−"),
       el("span", { class: "mono", style: "min-width:3ch;text-align:center" }, String(session.helpers || 0)),
-      el("button", { class: "btn", "aria-label": "More helpers", onclick: () => { session.helpers = Math.min(3, (session.helpers || 0) + 1); rerender(); } }, "+"))));
+      el("button", { class: "btn", "aria-label": "More helpers", disabled: (session.helpers || 0) >= 3,
+        onclick: () => { session.helpers = Math.min(3, (session.helpers || 0) + 1); rerender(); } }, "+"))));
 
   card.append(el("div", { class: "card-row" },
     el("span", { class: "faint" }, `${spec.attr} + ${spec.gear} · one Stretch per roll`),

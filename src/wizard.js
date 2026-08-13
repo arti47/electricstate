@@ -604,7 +604,7 @@ function buildJourney(rerender) {
       ...VEHICLES.map((v) => el("option", { value: v.id }, `${v.name}${v.price ? ` — $${v.price.toLocaleString()}` : ""}`)));
     vehicleCard.append(el("div", { class: "field" }, select),
       el("button", {
-        class: "btn btn-primary btn-block",
+        class: "btn btn-block",
         onclick: () => {
           const base = VEHICLES.find((v) => v.id === select.value);
           if (!base) { showToast("Pick a vehicle first."); return; }
@@ -641,14 +641,23 @@ function buildJourney(rerender) {
           }
         }, "Add"),
         el("button", {
-          class: "btn btn-primary", onclick: () => {
+          class: "btn", onclick: () => {
             const item = pick(SHARED_ITEMS);
             save({ sharedItems: [...(j.sharedItems || []), item] });
           }
         }, "Roll D66")));
   }
   wrap.append(itemsCard);
-  wrap.append(el("a", { class: "btn btn-block", href: "#/home" }, "Done"));
+
+  // The Journey is a form you fill in over a few minutes, so what it needs is a running
+  // statement of what is still missing and one way out — both pinned, not at the bottom
+  // of a page that grows every time you roll something.
+  const missing = [!j.destination && "a destination", !j.vehicle && "a vehicle",
+    (j.sharedItems || []).length < 3 && `${3 - (j.sharedItems || []).length} more shared items`].filter(Boolean);
+  wrap.append(...actionBar({
+    lead: el("span", { class: "faint" }, missing.length ? `Still needs ${missing.join(", ")}` : "Ready to set out"),
+    children: [el("a", { class: "btn btn-primary", href: "#/home" }, "Done")]
+  }));
   return wrap;
 }
 

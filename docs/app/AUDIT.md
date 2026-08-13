@@ -359,3 +359,51 @@ pool.
 ## Result
 
 77 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.
+
+---
+
+# Twelfth pass — the things a table does that the app did not
+
+This one did not start from a rules reading or a screen walk. It started from the question the
+last eleven passes never asked: what does a group actually do with this app across a campaign,
+rather than within one screen?
+
+## Findings
+
+| # | Finding | Fix |
+|---|---|---|
+| 80 | **One game per device.** A second Journey meant erasing the first. The store had exactly one bag of characters, and nothing above it. | Schema 2: campaigns. Characters, Journey, roll log and session record live inside a campaign; `activeCampaignId` says which is in play. A schema 1 save migrates into one campaign with everything intact, and the last campaign can never be deleted out from under the player. |
+| 81 | **Deleting was final.** Delete a Traveler, clear the log, erase everything — no way back, on a device with no server behind it. | `snapshot(label)` before every destructive action, one step of undo, and Settings names what it would take back. Erasing everything is covered too. |
+| 82 | **The debrief asked what the session was about and had nothing to answer with.** The roll log says what you rolled; nothing said what happened. | `noteEvent` records what each Shift, Day and Session boundary actually changed. The debrief shows the session's record before rolling advancement, then clears it. |
+| 83 | **Solo runs two to four Travelers and every screen had its own select.** The persistent header — the one thing always on screen — did not even say whose numbers it was showing. | The header names the Traveler. With two or more it is a switcher: on the dice screen it changes who the pool belongs to in place, elsewhere it opens their sheet. |
+| 84 | **Threats arrive as "Law Enforcement 1, 2, 3"** and get real names at the table within thirty seconds. | Rename, on the combatant. |
+| 85 | **`Settings.hideGmContent` existed and nothing consumed it** — the defect class this project keeps finding, this time in a setting rather than a data table. | `ui.spoiler()`. Prepared Stops and unfired Countdown steps arrive blurred and unblur on a tap, so one phone can go round a table. |
+| 86 | **Steppers stayed pressable at their limits.** A "−" at zero looks like a control and behaves like a broken one. | Disabled at floor and ceiling, in all three stepper helpers. Bliss's floor is Permanent Bliss, by rule. |
+| 87 | **Pinch-zoom is switched off** so a stray gesture cannot derail a roll — which takes it away from anyone who needs it. | A text-size setting inside the app, plus a screen wake lock and a plain-text export of a sheet. |
+
+## Measurement, made permanent
+
+The tenth and eleventh passes each built a throwaway probe and then threw it away, which is why
+the same defect classes kept coming back. Both are committed now, and a third with them:
+
+- **`probe-layout`** — where each route's primary action sits and how big every target is,
+  across fresh, mid-session and stress states. It found five buried primary actions on its
+  first run: the Journey screen had no single action at all and marked two buried buttons
+  primary; solo marked two.
+- **`probe-flow`** — the taps each session journey costs from a cold start, with a budget per
+  journey and an assertion that it still arrives.
+- **`probe-pwa`** — forces a genuinely new registration, proves the previous build's cache is
+  deleted on activate, and boots the app with the network switched off.
+
+`tests/fixtures.js` now owns the static server, the browser-side store helper and the three
+seed states. No test reaches into the raw store shape any more — when the store grew a campaign
+container, every test that did broke at once, which is the argument for the seam.
+
+A unit test asserts the service-worker shell lists every file in `src/` and every `data*.js`,
+and that the app and worker agree on `CACHE_VERSION`. A bumped app with a stale worker leaves
+players on the old build, silently.
+
+## Result
+
+90 invariants, browser smoke clean at 360 and 390px, layout and flow probes clean across three
+seed states, PWA probe clean, button audit clean across all 18 routes.

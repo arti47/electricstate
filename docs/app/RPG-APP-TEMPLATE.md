@@ -1109,16 +1109,35 @@ realistic state and a script that reports numbers rather than opinions. **Commit
 the reference build these were written as scratch files and deleted three times, so every
 pass paid to rebuild them and no two passes measured quite the same thing.
 
-- `tests/fixtures/*.json` — three seed states, loaded by harnesses and probes alike:
-  **fresh** (nothing created), **mid-session** (a full party, a journey, a fight running,
+- `tests/fixtures.js` — **one seam, not a pile of JSON.** It owns the static server, a
+  browser-side store helper that reads and writes the save whatever schema it is in, and
+  three seed states: **fresh** (nothing created), **mid-session** (a full party, a journey,
   a couple of conditions), **stress** (what a table has by session three — see §11.2.6).
-- `tests/probe-layout.mjs` — prints the §6.7 table for every route: height in viewports,
-  control count, primary-action offset, smallest tap target, overflow at each width.
-- `tests/probe-flow.mjs` — walks a scripted session and prints the tap count and route
-  changes for each common sequence (make an attack, resolve damage, end the day).
+  Make it a module, not fixture files: the helper travels with the seeds, and tests stop
+  reaching into the raw save shape. In the reference build every test that did reach in
+  broke on the same afternoon, when the store grew a campaign container.
+- `tests/probe-layout.mjs` — prints the §6.7 table for every route **× every seed**: control
+  count, primary-action offset against the fold, smallest tap target, overflow at each width.
+  Run against one state it proves nothing; the buried actions it found were all in states
+  the empty app never reaches.
+- `tests/probe-flow.mjs` — each common sequence as a list of taps from a cold start, with a
+  **tap budget** and an assertion that it still arrives (make an attack, resolve damage,
+  end the day, switch character, look up a rule).
+- `tests/probe-pwa.mjs` — if the app is installable, the two things that must hold are that
+  a new build actually replaces the old one and that it boots with no network. Force a
+  genuinely new registration (register a distinct script URL — re-registering the same URL
+  hands back the doomed registration and never re-installs), assert the previous build's
+  cache is deleted on activate, then take the network away and reload.
 
-A probe prints; it does not assert. That is the point — you read the table and notice the
-outlier. Once a number is known-good, it graduates into harness B as an assertion.
+**A probe prints its table and then asserts the rules that are already known-good**, with a
+`--report` flag to print only. The reference build started with print-only probes and they
+were ignored; the table is for noticing new outliers, the assertions are for stopping the
+known defects from coming back. A probe that cannot fail is documentation.
+
+**Pin the shell against drift.** A unit test should assert the service-worker precache list
+covers every source and data file on disk, and that the app and the worker agree on the cache
+version — a bumped app with a stale worker leaves installed players on the old build, and
+nothing else in the suite will notice.
 
 ### 11.2 Pass types — run all of them, in this order
 
@@ -1252,6 +1271,12 @@ guessed at. Treat it as a menu to decide from at Stage B, not as scope: each ent
 the gap actually was, so you can judge whether the game you are building has it too.
 
 ### 14.1 Gaps the reference build actually hit
+
+All twelve were built in the end, and what that cost is the useful part: the ones that were
+**architecture wearing a feature's clothes** (1, 2, 3) touched every module and needed a
+schema migration; the ones that were **one control in the right place** (4, 5, 6, 8, 10, 11)
+took an afternoon each. The order below is roughly the order to decide them in, and items 1
+to 3 are the ones to decide at Stage B rather than discover at hardening.
 
 1. **A campaign list.** The build assumed **one campaign per device** — `getJourney()`
    returns *the* journey. Running a second game means wiping the first, and there is no way

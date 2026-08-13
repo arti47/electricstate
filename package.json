@@ -6,6 +6,12 @@
   "description": "Player-character companion app for The Electric State RPG. Dev tooling only — the app itself has no build step.",
   "scripts": {
     "test": "node tests/run.js && node tests/browser.js",
+    "audit": "node tests/audit.js",
+    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-pwa.mjs",
+    "probe:layout": "node tests/probe-layout.mjs",
+    "probe:flow": "node tests/probe-flow.mjs",
+    "probe:pwa": "node tests/probe-pwa.mjs",
+    "verify": "npm test && npm run probe && npm run audit",
     "serve": "python3 -m http.server 8080"
   },
   "devDependencies": {

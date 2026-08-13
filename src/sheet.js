@@ -10,7 +10,15 @@ import { describeTalent } from "./wizard.js";
 import { showToast, confirmModal, modal, promptModal, explain } from "./ui.js";
 
 // ---------------------------------------------------------------- vitals header
-export function renderVitals(ch) {
+/**
+ * The bar that follows you around the app.
+ *
+ * `onSwitch` is how a screen says "I can show a different Traveler without navigating" —
+ * the dice screen passes one. Without it, switching goes to that Traveler's sheet. Solo
+ * play runs two to four Travelers and every screen had its own select; this is the one
+ * control that is always on screen.
+ */
+export function renderVitals(ch, { onSwitch = null } = {}) {
   const host = $("#vitals");
   if (!host) return;
   if (!ch) { host.hidden = true; host.replaceChildren(); return; }
@@ -37,12 +45,42 @@ export function renderVitals(ch) {
   if (usesCash(ch)) tiles.push(tile("Cash", `$${ch.inventory?.cash ?? 0}`));
   if (journey?.vehicle) tiles.push(tile("Fuel", `${journey.fuel ?? 0}g`, (journey.fuel ?? 0) <= 2 ? "is-danger" : ""));
 
-  host.replaceChildren(...tiles);
+  host.replaceChildren(...[switcher(ch, onSwitch), ...tiles].filter(Boolean));
   host.hidden = false;
 
   if (lost) host.append(el("div", { class: "vital is-danger", style: "grid-column:1/-1" },
     el("span", { class: "vital-label" }, "Lost in the Electric State"),
     el("span", { class: "vital-value" }, "cannot disconnect")));
+}
+
+function switcher(ch, onSwitch) {
+  const all = listCharacters();
+  // With one Traveler the header still says whose numbers these are; it just has nowhere
+  // to go, so it is a label rather than a button that would do nothing.
+  if (all.length < 2) return el("div", { class: "vital-switch is-static" }, ch.name || "Unnamed");
+  return el("button", {
+    class: "vital-switch", "aria-label": `Showing ${ch.name || "Unnamed"} — switch Traveler`,
+    onclick: async () => {
+      const body = el("ul", { class: "list" });
+      for (const other of all) {
+        body.append(el("li", {}, el("button", {
+          class: "row" + (other.id === ch.id ? " is-here" : ""),
+          onclick: () => {
+            document.querySelector(".modal-backdrop")?.remove();
+            document.body.style.removeProperty("overflow");
+            if (other.id === ch.id) return;
+            if (onSwitch) onSwitch(other.id);
+            else location.hash = `#/sheet/${other.id}`;
+          }
+        },
+          el("div", { class: "card-row" },
+            el("strong", {}, other.name || "Unnamed"),
+            el("span", { class: "mono faint" },
+              `${other.state?.health ?? "?"}/${maxHealth(other)} · ${other.state?.hope ?? "?"}/${maxHope(other)}`)))));
+      }
+      await modal({ title: "Which Traveler?", body, actions: [{ label: "Cancel", value: false }] });
+    }
+  }, ch.name || "Unnamed");
 }
 
 export function clearVitals() { renderVitals(null); }
@@ -83,7 +121,8 @@ function build(ch, rerender) {
       (v) => patch((c) => { c.state.hope = clamp(v, 0, pMax); }), "hope"),
     tracksBliss(ch)
       ? stepper("Bliss", ch.state.bliss, null,
-          (v) => patch((c) => { c.state.bliss = Math.max(c.state.permanentBliss || 0, v); }), "bliss")
+          (v) => patch((c) => { c.state.bliss = Math.max(c.state.permanentBliss || 0, v); }), "bliss",
+          ch.state.permanentBliss || 0)   // permanent Bliss is the floor, by rule
       : el("p", { class: "faint" }, "You are a drone: no Bliss, no hunger, no cash."),
     tracksBliss(ch)
       ? stepper("Permanent Bliss", ch.state.permanentBliss, null,
@@ -179,15 +218,23 @@ function build(ch, rerender) {
   return wrap;
 }
 
-function stepper(label, value, max, onChange, kind) {
+/** A clamped stepper. At its floor or ceiling the button that cannot move is disabled,
+ *  because a control that looks pressable and does nothing reads as a broken app. */
+function stepper(label, value, max, onChange, kind, min = 0) {
   const v = value ?? 0;
   return el("div", { class: "card-row", style: "padding:6px 0" },
     el("div", {}, el("strong", {}, label),
       max != null ? el("span", { class: "faint" }, ` / ${max}`) : null),
     el("div", { class: "btn-row" },
-      el("button", { class: "btn", "aria-label": `Lower ${label}`, onclick: () => onChange(v - 1) }, "−"),
+      el("button", {
+        class: "btn", "aria-label": `Lower ${label}`,
+        disabled: min != null && v <= min, onclick: () => onChange(v - 1)
+      }, "−"),
       el("span", { class: "mono", style: "min-width:2.5ch;text-align:center;font-size:1.2rem" }, v),
-      el("button", { class: "btn", "aria-label": `Raise ${label}`, onclick: () => onChange(v + 1) }, "+")));
+      el("button", {
+        class: "btn", "aria-label": `Raise ${label}`,
+        disabled: max != null && v >= max, onclick: () => onChange(v + 1)
+      }, "+")));
 }
 
 function statusNotes(ch, hMax, pMax, rerender) {

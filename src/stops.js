@@ -5,6 +5,7 @@ import { el, uid, d6, d66, randomInt } from "./core.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, COUNTDOWN_ELEMENTS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney } from "./store.js";
+import { spoiler } from "./ui.js";
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
 const d6Pick = (table) => table[d6() - 1];
@@ -128,7 +129,7 @@ export function stopCard(stop, { onCountdown, onResolve, compact = false } = {})
   const list = el("ol", {});
   stop.countdown.forEach((step, i) => {
     list.append(el("li", { class: i < done ? "" : "faint", style: i < done ? "color:var(--danger)" : "" },
-      i < done ? `${step} — fired` : step));
+      i < done ? `${step} — fired` : spoiler(step)));
   });
   card.append(list);
 

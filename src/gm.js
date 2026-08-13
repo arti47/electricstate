@@ -11,7 +11,7 @@ import { listCharacters, getJourney, saveJourney } from "./store.js";
 import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveStop, removeStop,
          advanceCountdown, resolveStop, stopCard } from "./stops.js";
 import { maxHealth, maxHope } from "./derived.js";
-import { showToast, modal, promptModal, explain } from "./ui.js";
+import { showToast, modal, promptModal, explain, spoiler } from "./ui.js";
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
 const d6Pick = (table) => table[d6() - 1];
@@ -79,7 +79,11 @@ function stopBuilder(rerender) {
         el("div", { class: "btn-row" },
           !isActive ? el("button", { class: "btn", onclick: () => { setActiveStop(stop.id); rerender(); } }, "Play this") : null,
           el("button", { class: "btn", onclick: () => { removeStop(stop.id); rerender(); } }, "Remove"))),
-      el("div", { class: "faint" }, `${stop.setting.terrain} · ${stop.blocker} · Countdown ${stop.countdownProgress}/${stop.countdown.length}`),
+      // A Stop that is not in play yet is prep, and prep is exactly what a passed-around
+      // phone should not show.
+      el("div", { class: "faint" }, isActive
+        ? `${stop.setting.terrain} · ${stop.blocker} · Countdown ${stop.countdownProgress}/${stop.countdown.length}`
+        : spoiler(`${stop.setting.terrain} · ${stop.blocker} · Countdown ${stop.countdownProgress}/${stop.countdown.length}`)),
       isActive
         ? stopCard(stop, {
             onCountdown: async (s2) => {

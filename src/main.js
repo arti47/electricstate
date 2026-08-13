@@ -2,10 +2,16 @@
 import { CACHE_VERSION } from "./core.js";
 import { startRouter } from "./router.js";
 import { applyTheme } from "./screens.js";
-import { Settings, set as setSetting } from "./settings.js";
+import { Settings, set as setSetting, applyTextScale, applyWakeLock } from "./settings.js";
 import { showToast } from "./ui.js";
 
 applyTheme();
+applyTextScale();
+applyWakeLock();
+
+// The lock drops whenever the tab is hidden; take it back when the player returns.
+document.addEventListener("visibilitychange", applyWakeLock);
+window.addEventListener("settingschange", () => { applyTextScale(); applyWakeLock(); });
 
 document.getElementById("themeToggle")?.addEventListener("click", () => {
   const order = ["system", "dark", "light"];

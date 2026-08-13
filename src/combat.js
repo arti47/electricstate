@@ -257,6 +257,14 @@ function combatantCard(combatant, c, rerender) {
       }
     }, "Attack this"),
     ch ? el("a", { class: "btn", href: `#/sheet/${ch.id}` }, "Sheet") : null,
+    // "Law Enforcement 1, 2, 3" gets real names at the table within thirty seconds.
+    !ch ? el("button", {
+      class: "btn", onclick: async () => {
+        const v = await promptModal("Name this one", { label: "Name", value: combatant.name });
+        if (v == null || v === "") return;
+        update({ name: v });
+      }
+    }, "Rename") : null,
     !ch ? el("button", {
       class: "btn", onclick: async () => {
         const v = await promptModal("Damage the threat", { label: "Points of damage", value: "1" });

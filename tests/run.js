@@ -952,6 +952,117 @@ await test("the roll log counts d6 faces and ignores everything else", () => {
   assert.deepEqual(screens.faceDistribution([]).counts, [0, 0, 0, 0, 0, 0]);
 });
 
+// --------------------------------------------------- the shell, and what it ships
+
+await test("the service worker caches every file the app actually loads", () => {
+  const sw = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
+  const shell = [...sw.matchAll(/"\.\/([^"]+)"/g)].map((m) => m[1]);
+  const onDisk = [
+    ...readdirSync(new URL("../src", import.meta.url)).filter((f) => f.endsWith(".js")).map((f) => `src/${f}`),
+    ...readdirSync(new URL("..", import.meta.url)).filter((f) => /^data.*\.js$/.test(f))
+  ];
+  const missing = onDisk.filter((f) => !shell.includes(f));
+  assert.deepEqual(missing, [], `not in the service worker shell: ${missing.join(", ")}`);
+  const stale = shell.filter((f) => /^(src\/|data)/.test(f) && !onDisk.includes(f));
+  assert.deepEqual(stale, [], `shell lists files that no longer exist: ${stale.join(", ")}`);
+});
+
+await test("the app and the service worker agree on the cache version", () => {
+  const sw = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
+  const inSw = /CACHE_VERSION = "([^"]+)"/.exec(sw)?.[1];
+  assert.equal(inSw, core.CACHE_VERSION,
+    "a bumped app version with a stale worker version leaves players on the old build");
+});
+
+// ------------------------------------------------------------------- campaigns
+
+await test("a second Journey is separate from the first, and switching returns to it", () => {
+  store.resetAll();
+  const first = store.activeCampaignId();
+  const a = makeChar({ name: "First game" });
+  const second = store.createCampaign("Second Journey").id;
+  assert.equal(store.listCharacters().length, 0, "a new campaign starts empty");
+  makeChar({ name: "Second game" });
+  assert.deepEqual(store.listCharacters().map((c) => c.name), ["Second game"]);
+  store.switchCampaign(first);
+  assert.deepEqual(store.listCharacters().map((c) => c.name), ["First game"]);
+  assert.equal(store.getCharacter(a.id).name, "First game");
+  store.renameCampaign(second, "Renamed");
+  assert.ok(store.listCampaigns().some((c) => c.name === "Renamed"));
+  store.deleteCampaign(second);
+  assert.equal(store.listCampaigns().length, 1);
+  assert.equal(store.activeCampaignId(), first, "deleting the other campaign left this one in play");
+});
+
+await test("the last campaign cannot be deleted out from under the player", () => {
+  store.resetAll();
+  store.deleteCampaign(store.activeCampaignId());
+  assert.ok(store.listCampaigns().length >= 1, "there is always a game to play");
+  assert.ok(store.activeCampaign(), "and it is the active one");
+});
+
+await test("a schema 1 save migrates into a single campaign with everything intact", () => {
+  store.resetAll();
+  const legacy = {
+    schema: 1,
+    characters: { z1: { id: "z1", name: "Legacy", archetype: "veteran",
+      attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 }, talents: [], conditions: [],
+      tension: {}, inventory: { items: [], cash: 0 }, state: { health: 3, hope: 3, bliss: 0 } } },
+    journey: { destination: "Somewhere", fuel: 5 },
+    rollLog: [{ id: "L1", ts: 1, label: "Strength", dice: [6], outcome: "1 success" }]
+  };
+  store.importJSON(JSON.stringify(legacy));
+  assert.equal(store.listCampaigns().length, 1);
+  assert.equal(store.getCharacter("z1").name, "Legacy");
+  assert.equal(store.getJourney().destination, "Somewhere");
+  assert.equal(store.getRollLog().length, 1);
+});
+
+// ------------------------------------------------------------------ undo, record
+
+await test("a destructive action can be taken back", () => {
+  store.resetAll();
+  const ch = makeChar({ name: "Doomed" });
+  store.deleteCharacter(ch.id);
+  assert.equal(store.getCharacter(ch.id), null);
+  assert.equal(store.canUndo(), true);
+  assert.match(store.undoLabel(), /Doomed|Traveler/i, "undo says what it would take back");
+  assert.equal(store.undoLast(), true);
+  assert.equal(store.getCharacter(ch.id).name, "Doomed");
+  assert.equal(store.canUndo(), false, "undo is a single step, not a stack");
+});
+
+await test("the session record collects what happened and the debrief clears it", () => {
+  store.resetAll();
+  const ch = makeChar();
+  store.saveCharacter({ ...ch, state: { ...ch.state, health: 1 } });
+  lifecycle.advanceTime("shift", { resting: true, fed: true });
+  const record = store.getSessionLog();
+  assert.ok(record.length >= 1, "the Shift wrote nothing to the record");
+  assert.equal(record[0].kind, "shift");
+  store.clearSessionLog();
+  assert.deepEqual(store.getSessionLog(), []);
+});
+
+await test("a data check reports the game rather than silently repairing it", () => {
+  store.resetAll();
+  makeChar();
+  const report = store.checkData();
+  assert.equal(report.campaigns, 1);
+  assert.equal(report.characters, 1);
+  assert.equal(typeof report.repaired, "boolean");
+});
+
+await test("the readable export names the Traveler and their numbers", () => {
+  store.resetAll();
+  makeChar({ name: "Exported", dream: "Get out", flaw: "Stubborn" });
+  const text = screens.readableExport();
+  assert.match(text, /Exported/i);
+  assert.match(text, /Health/);
+  assert.match(text, /Hope/);
+  assert.match(text, /Get out/, "the Dream is part of the sheet, not just the numbers");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

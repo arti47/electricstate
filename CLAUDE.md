@@ -206,8 +206,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   discarding Threat health, the talent picker describes what it offers and puts the archetype's
   three first, and a Traveler can **invent a talent** as p.65 allows — stored on the character and
   resolved through `talent(id, ch)`.
-- Verification: `npm test` = 81 invariants + browser smoke; `node tests/audit.js` clicks every
-  control on every screen and flags errors, unclickable controls and silent no-ops.
+- Verification: `npm test` = 90 invariants + browser smoke; `npm run probe` = layout, flow and
+  PWA probes; `npm run audit` clicks every control on every screen and flags errors, unclickable
+  controls and silent no-ops. `npm run verify` runs all four.
 - **Dice are cryptographic.** All randomness routes through `core.randomInt`, which draws from
   `crypto.getRandomValues` with rejection sampling — `value % max` is biased whenever max does
   not divide 2^32, which is exactly the accusation a dice roller must be able to answer.
@@ -216,4 +217,34 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **The roll log is the fairness record.** A collapsed panel counts every d6 face the app has
   rolled, with percentages against the even 16.7%, once there are 20+ dice to talk about.
   Values above 6 (D66, D100) are excluded rather than folded into a d6 histogram.
+- **Store schema 2 — campaigns.** `data.campaigns[id]` holds characters, journey, rollLog and
+  sessionLog; `activeCampaignId` says which is in play. A schema 1 save migrates into a single
+  campaign with everything intact. Settings offers Play / Rename / Delete and "Start another
+  Journey"; the last campaign can never be deleted out from under the player.
+- **One-step undo covers every destructive action.** `snapshot(label)` before deleting a
+  Traveler, deleting a campaign, clearing the log, erasing everything or crossing a time
+  boundary; `undoLast()` restores and clears. Settings shows the pending label.
+- **The session record feeds the debrief.** `noteEvent(kind, text)` writes what each boundary
+  actually changed; the debrief shows the session's record before rolling advancement and
+  clears it afterwards. Cap 200 entries.
+- **The vitals header names who it is about.** With two or more Travelers it is a switcher —
+  solo play runs 2–4 and every screen had its own select. On the dice screen it changes who the
+  pool belongs to in place; elsewhere it opens that Traveler's sheet.
+- **Steppers disable at their limits** rather than sitting there unpressable-but-pressable.
+  Bliss's floor is Permanent Bliss, by rule.
+- Settings also carries text scale (pinch-zoom is off, so the app gives it back), a screen wake
+  lock, a plain-text sheet export, a data check, and **Hide GM content** — prepared Stops and
+  unfired Countdown steps arrive blurred and unblur on a tap, via `ui.spoiler()`.
+- **Tests go through one seam.** `tests/fixtures.js` owns the static server, the browser-side
+  `__game` store helper and three seed states (fresh / mid-session / stress). No test reaches
+  into the raw store shape — the day the store grew a campaign container, every one that did
+  broke at once.
+- **Three probes, committed.** `probe-layout` measures where each route's primary action sits
+  and how big every target is, across all three seeds (it found five buried primaries on its
+  first run); `probe-flow` counts the taps each session journey costs and asserts it still
+  arrives; `probe-pwa` forces a real reinstall, proves the old build's cache is deleted, and
+  boots the app with the network off.
+- A unit test asserts the service-worker shell lists every file in `src/` and every `data*.js`,
+  and that `core.CACHE_VERSION` matches the worker's — a bumped app with a stale worker leaves
+  players on the old build.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

@@ -1,31 +1,19 @@
 // Browser smoke test: boot the app, walk every tab, assert zero console errors
 // and zero horizontal overflow at phone widths.
 import { chromium } from "playwright-core";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { serve, CHROMIUM, GAME_HELPERS } from "./fixtures.js";
 
-const ROOT = new URL("..", import.meta.url).pathname;
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };
+const { base, close } = await serve();
+const server = { close };
 
-const server = createServer(async (req, res) => {
-  try {
-    const path = normalize(decodeURIComponent(req.url.split("?")[0]));
-    const file = join(ROOT, path === "/" ? "index.html" : path);
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream" });
-    res.end(await readFile(file));
-  } catch { res.writeHead(404).end("not found"); }
-});
-await new Promise((r) => server.listen(0, r));
-const base = `http://127.0.0.1:${server.address().port}`;
-
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await chromium.launch({ executablePath: CHROMIUM });
 const failures = [];
 const check = (cond, msg) => { if (!cond) failures.push(msg); };
 
 for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
   const page = await browser.newPage({ viewport });
+  // The store's shape is the store's business; tests go through one seam.
+  await page.addInitScript(GAME_HELPERS);
   const errors = [];
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   page.on("pageerror", (e) => errors.push(e.message));
@@ -97,20 +85,16 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const noBadge = await page.evaluate(() => !document.querySelector("#screen .subnav-badge"));
   check(noBadge, "combat badge shows with no fight running");
   await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1")) || { schema: 1, characters: {}, rollLog: [] };
-    db.journey = { ...(db.journey || {}), combat: { active: true, round: 3, startingSide: "travelers", combatants: [] } };
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    __game.edit((g) => {
+      g.journey = { ...(g.journey || {}), combat: { active: true, round: 3, startingSide: "travelers", combatants: [] } };
+    });
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.evaluate(() => { location.hash = "#/dice"; });
   await page.waitForTimeout(100);
   const badge = await page.textContent("#screen .subnav-badge").catch(() => null);
   check(badge === "R3", `combat badge showed "${badge}", expected R3`);
-  await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    db.journey.combat = null;
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
-  });
+  await page.evaluate(() => { __game.edit((g) => { g.journey.combat = null; }); });
   await page.reload({ waitUntil: "networkidle" });
   await page.click('#screen .subnav-item[href="#/combat"]');
   await page.waitForTimeout(80);
@@ -164,7 +148,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(themed !== null, "theme toggle did not set data-theme");
 
   // walk the creation wizard end to end and assert the character persists
-  await page.evaluate(() => { localStorage.removeItem("electricState.v1"); location.hash = "#/create"; });
+  await page.evaluate(() => { __game.reset(); location.hash = "#/create"; });
   await page.reload({ waitUntil: "networkidle" });
   await page.evaluate(() => { location.hash = "#/create"; });
   await page.waitForTimeout(80);
@@ -210,9 +194,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(120);
 
   const saved = await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1") || "{}");
-    const list = Object.values(db.characters || {});
-    return list.map((c) => ({
+    return __game.characters().map((c) => ({
       name: c.name, archetype: c.archetype, talents: c.talents.length,
       attrs: c.attributes, health: c.state?.health, hope: c.state?.hope
     }));
@@ -223,12 +205,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   // ready — the state where the next-step nudge returns nothing. That is exactly where a
   // bare append(null) printed the word "null" above the New Traveler button.
   for (const journey of [null, { destination: "The coast", vehicle: { name: "Van", hull: 6 } }]) {
-    await page.evaluate((j) => {
-      const db = JSON.parse(localStorage.getItem("electricState.v1"));
-      db.journey = j;
-      localStorage.setItem("electricState.v1", JSON.stringify(db));
-      location.hash = "#/home";
-    }, journey);
+    await page.evaluate((j) => { __game.write({ journey: j }); location.hash = "#/home"; }, journey);
     await page.reload({ waitUntil: "networkidle" });
     await page.evaluate(() => { location.hash = "#/home"; });
     await page.waitForTimeout(80);
@@ -265,15 +242,17 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(tiles.includes("Health") || tiles.includes("Hull"), `vitals missing health tile: ${tiles}`);
   check(tiles.includes("Hope") && tiles.includes("Cash"), `vitals missing tiles: ${tiles}`);
 
-  // health cannot be pushed above its maximum or below zero
+  // Health cannot be pushed above its maximum or below zero, and at either limit the
+  // button that cannot do anything is disabled rather than left looking pressable.
   const raise = page.locator('#screen button[aria-label="Raise Health"]').first();
-  for (let i = 0; i < 12; i++) await raise.click();
+  for (let i = 0; i < 12 && (await raise.isEnabled()); i++) await raise.click();
+  check(!(await raise.isEnabled()), "Raise Health is still pressable at the maximum");
   const lower = page.locator('#screen button[aria-label="Lower Health"]').first();
-  for (let i = 0; i < 20; i++) await lower.click();
+  for (let i = 0; i < 20 && (await lower.isEnabled()); i++) await lower.click();
+  check(!(await lower.isEnabled()), "Lower Health is still pressable at zero");
   await page.waitForTimeout(60);
   const clamped = await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    const c = Object.values(db.characters)[0];
+    const c = __game.first();
     const max = Math.ceil((c.attributes.strength + c.attributes.agility) / 2) + (c.talents.includes("tough") ? 2 : 0);
     return { health: c.state.health, max };
   });
@@ -288,10 +267,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(80);
   await page.click(".modal .list button");
   await page.waitForTimeout(100);
-  const withInjury = await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    return Object.values(db.characters)[0].conditions.length;
-  });
+  const withInjury = await page.evaluate(() => __game.first().conditions.length);
   check(withInjury === 1, `injury not applied (${withInjury} conditions)`);
 
   // dice engine: roll, then confirm the log recorded it
@@ -302,7 +278,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const resultText = await page.textContent("#screen");
   check(/success|Failure/.test(resultText), "dice screen showed no result");
 
-  const logged = await page.evaluate(() => JSON.parse(localStorage.getItem("electricState.v1")).rollLog.length);
+  const logged = await page.evaluate(() => __game.read().rollLog.length);
   check(logged >= 1, "roll was not written to the log");
 
   // Roll sits in a bar above the tab bar, reachable without scrolling the builder
@@ -321,11 +297,11 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
 
   // a worn neurocaster takes dice off the pool, and unticking it gives them back
   await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    const ch = Object.values(db.characters)[0];
-    ch.neurocaster = "stimulusTlePro";
-    ch.state.wearingCaster = true;
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    __game.edit((g) => {
+      const ch = Object.values(g.characters)[0];
+      ch.neurocaster = "stimulusTlePro";
+      ch.state.wearingCaster = true;
+    });
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.evaluate(() => { location.hash = "#/dice"; });
@@ -345,11 +321,11 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
 
   // the log filters by whoever rolled
   await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    db.rollLog.unshift(
-      { id: "x1", ts: Date.now(), by: "Somebody Else", label: "Their roll", dice: [3], outcome: "missed" },
-      { id: "x2", ts: Date.now(), label: "Initiative", dice: [4], outcome: "Travelers act first" });
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    __game.edit((g) => {
+      g.rollLog.unshift(
+        { id: "x1", ts: Date.now(), by: "Somebody Else", label: "Their roll", dice: [3], outcome: "missed" },
+        { id: "x2", ts: Date.now(), label: "Initiative", dice: [4], outcome: "Travelers act first" });
+    });
     location.hash = "#/home";
   });
   await page.reload({ waitUntil: "networkidle" });
@@ -394,19 +370,19 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   // dense state: a full log pages rather than running to eight screens, and combatants
   // who have taken their turn collapse to a line
   await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    db.rollLog = Array.from({ length: 100 }, (_, i) => ({
-      id: "r" + i, ts: Date.now() - i * 60000, by: "Test Traveler", label: "Strength",
-      dice: [6, 2, 3], outcome: "1 success"
-    }));
-    const me = Object.values(db.characters)[0];
-    db.journey = { ...(db.journey || {}), combat: { active: true, round: 2, startingSide: "travelers",
-      combatants: [
-        { id: me.id, kind: "traveler", name: me.name, side: "travelers", zone: 1, acted: false, realm: "real" },
-        ...Array.from({ length: 6 }, (_, i) => ({ id: "x" + i, kind: "threat", name: "Law Enforcement " + i,
-          threatId: "lawEnforcement", side: "enemies", zone: 2, acted: i < 4, health: 4 }))
-      ] } };
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    __game.edit((g) => {
+      g.rollLog = Array.from({ length: 100 }, (_, i) => ({
+        id: "r" + i, ts: Date.now() - i * 60000, by: "Test Traveler", label: "Strength",
+        dice: [6, 2, 3], outcome: "1 success"
+      }));
+      const me = Object.values(g.characters)[0];
+      g.journey = { ...(g.journey || {}), combat: { active: true, round: 2, startingSide: "travelers",
+        combatants: [
+          { id: me.id, kind: "traveler", name: me.name, side: "travelers", zone: 1, acted: false, realm: "real" },
+          ...Array.from({ length: 6 }, (_, i) => ({ id: "x" + i, kind: "threat", name: "Law Enforcement " + i,
+            threatId: "lawEnforcement", side: "enemies", zone: 2, acted: i < 4, health: 4 }))
+        ] } };
+    });
   });
   await page.reload({ waitUntil: "networkidle" });
 
@@ -512,12 +488,10 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   // The dice are cryptographic and the log carries the evidence: a distribution panel
   // once there is enough of a sample to mean anything.
   await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    db.rollLog = Array.from({ length: 30 }, (_, i) => ({
+    __game.write({ rollLog: Array.from({ length: 30 }, (_, i) => ({
       id: "d" + i, ts: Date.now(), by: "Test Traveler", label: "Strength",
       dice: [1 + (i % 6), 1 + ((i + 3) % 6)], outcome: "rolled"
-    }));
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    })) });
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.evaluate(() => { location.hash = "#/log"; });
@@ -536,8 +510,8 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   // A Stop's setting values are sentences. Laid out as a card-row they centre against
   // their label and a two-line value straddles it, so they are stacked definition rows.
   await page.evaluate(() => {
-    const db = JSON.parse(localStorage.getItem("electricState.v1"));
-    db.journey = { ...(db.journey || {}), activeStopId: "s-fmt", stops: [{
+    __game.edit((g) => {
+    g.journey = { ...(g.journey || {}), activeStopId: "s-fmt", stops: [{
       id: "s-fmt", name: "The Stop", createdAt: Date.now(),
       setting: { terrain: "Forest", population: "Densely populated. Hundreds or even thousands.",
         communications: "Isolated. Small road passing by. One neurocaster terminal.",
@@ -548,7 +522,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
       locations: ["Market"], mood: ["Neurograph towers"],
       countdown: ["A", "B", "C"], countdownProgress: 0, threat: null, resolved: false
     }] };
-    localStorage.setItem("electricState.v1", JSON.stringify(db));
+    });
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.evaluate(() => { location.hash = "#/solo"; });
@@ -570,6 +544,45 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.click('#screen button:text-is("Blocker")');
   await page.waitForTimeout(60);
   check(/Blocker:/.test(await page.textContent("#screen")), "GM table roll produced no output");
+
+  // Hide GM content: a phone that gets passed around must not show what has not happened.
+  await page.evaluate(() => {
+    localStorage.setItem("electricState.v1.settings",
+      JSON.stringify({ solo: true, gmScreen: true, theme: "dark", hideGmContent: true }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/solo"; });
+  await page.waitForTimeout(150);
+  const hidden = await page.evaluate(() => ({
+    spoilers: document.querySelectorAll("#screen .spoil").length,
+    blurred: [...document.querySelectorAll("#screen .spoil")]
+      .every((n) => /blur/.test(getComputedStyle(n).filter))
+  }));
+  check(hidden.spoilers >= 1, "hideGmContent is on but nothing is hidden");
+  check(hidden.blurred, "a hidden element is not actually blurred");
+  await page.click("#screen .spoil");
+  await page.waitForTimeout(80);
+  const revealed = await page.evaluate(() => document.querySelectorAll("#screen .spoil").length);
+  check(revealed === hidden.spoilers - 1, `tapping a spoiler did not reveal it (${hidden.spoilers} then ${revealed})`);
+
+  await page.evaluate(() => {
+    localStorage.setItem("electricState.v1.settings", JSON.stringify({ solo: true, gmScreen: true, theme: "dark" }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/solo"; });
+  await page.waitForTimeout(120);
+  check(await page.evaluate(() => !document.querySelector("#screen .spoil")),
+    "content stays hidden with the setting off");
+
+  // The vitals header carries whoever it is about, and a way to change them.
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(120);
+  const switcher = await page.evaluate(() => {
+    const b = document.querySelector("#vitals .vital-switch");
+    return b ? { text: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height) } : null;
+  });
+  check(switcher !== null, "the vitals header does not say who it is about");
+  check(switcher && switcher.h >= 24, `the Traveler switcher is only ${switcher && switcher.h}px tall`);
 
   // zoom is locked off
   const zoom = await page.evaluate(() => {

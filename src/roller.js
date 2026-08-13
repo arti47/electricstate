@@ -302,8 +302,8 @@ function build(rerender) {
 
   // gear + modifier
   wrap.append(el("div", { class: "card" },
-    numberRow("Gear dice", pending.gear, (v) => { pending.gear = Math.max(0, v); pending.result = null; rerender(); }),
-    numberRow("Helpers", pending.helpers || 0, (v) => { pending.helpers = clamp(v, 0, 3); pending.result = null; rerender(); }),
+    numberRow("Gear dice", pending.gear, (v) => { pending.gear = Math.max(0, v); pending.result = null; rerender(); }, { min: 0 }),
+    numberRow("Helpers", pending.helpers || 0, (v) => { pending.helpers = clamp(v, 0, 3); pending.result = null; rerender(); }, { min: 0, max: 3 }),
     numberRow("Modifier", pending.modifier, (v) => { pending.modifier = v; pending.result = null; rerender(); })));
 
   // opposed
@@ -351,13 +351,19 @@ function build(rerender) {
     el("div", { class: "actionbar-inner" },
       el("span", { class: "pool" }, `${pool.base + pool.gear}`,
         el("small", {}, `${pool.base} base · ${pool.gear} gear`)),
-      el("button", { class: "btn btn-primary", onclick: () => doRoll(ch, pool, rerender, false) }, "Roll"),
+      // The same pool gets rolled three times running in a fight — say so, so the button
+      // reads as a repeat rather than as something that might have kept the old result.
+      el("button", { class: "btn btn-primary", onclick: () => doRoll(ch, pool, rerender, false) },
+        pending.result ? "Roll again" : "Roll"),
       Settings.manualDice()
         ? el("button", { class: "btn", onclick: () => doRoll(ch, pool, rerender, true) }, "Enter dice")
         : null)));
 
-  // The sheet's own header follows the Traveler you are rolling for.
-  renderVitals(ch);
+  // The sheet's own header follows the Traveler you are rolling for, and switching in it
+  // switches who the pool belongs to rather than throwing you onto their sheet.
+  renderVitals(ch, {
+    onSwitch: (id) => { pending.charId = id; pending.result = null; pending.talents = []; rerender(); }
+  });
   return wrap;
 }
 
@@ -371,13 +377,19 @@ function toggleRow(label, key, blurb, rerender) {
     }));
 }
 
-function numberRow(label, value, onChange) {
+function numberRow(label, value, onChange, { min = null, max = null } = {}) {
   return el("div", { class: "card-row", style: "padding:6px 0" },
     el("span", {}, label),
     el("div", { class: "btn-row" },
-      el("button", { class: "btn", "aria-label": `Lower ${label}`, onclick: () => onChange(value - 1) }, "−"),
+      el("button", {
+        class: "btn", "aria-label": `Lower ${label}`,
+        disabled: min != null && value <= min, onclick: () => onChange(value - 1)
+      }, "−"),
       el("span", { class: "mono", style: "min-width:3ch;text-align:center" }, value > 0 ? `+${value}` : value),
-      el("button", { class: "btn", "aria-label": `Raise ${label}`, onclick: () => onChange(value + 1) }, "+")));
+      el("button", {
+        class: "btn", "aria-label": `Raise ${label}`,
+        disabled: max != null && value >= max, onclick: () => onChange(value + 1)
+      }, "+")));
 }
 
 async function doRoll(ch, pool, rerender, manual, burst = 1) {

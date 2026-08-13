@@ -1,10 +1,13 @@
 // Top-level screen renderers. Phase 1-3 screens (wizard, sheet, roller) mount here later.
 import { $, el, add } from "./core.js";
-import { Settings, TOGGLES, set as setSetting, get as getSetting } from "./settings.js";
+import { Settings, TOGGLES, TEXT_SCALES, set as setSetting, get as getSetting,
+         applyTextScale } from "./settings.js";
 import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLogKey,
-         filterRollLog, clearRollLog, resetAll } from "./store.js";
+         filterRollLog, clearRollLog, resetAll, listCampaigns, activeCampaignId,
+         createCampaign, switchCampaign, renameCampaign, deleteCampaign, checkData,
+         canUndo, undoLast, undoLabel } from "./store.js";
 import { searchLibrary } from "./rules.js";
-import { showToast, confirmModal, explain } from "./ui.js";
+import { showToast, confirmModal, promptModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
 import { TRAUMA_CONSENT_NOTE } from "../data-tables.js";
 
@@ -295,7 +298,17 @@ export function settingsScreen() {
   },
     ...[["system", "Follow system"], ["dark", "Always dark"], ["light", "Always light"]]
       .map(([v, l]) => el("option", { value: v, selected: Settings.theme() === v }, l)));
-  wrap.append(el("div", { class: "card" }, el("div", { class: "field" }, el("label", {}, "Theme"), theme)));
+  const scale = el("select", {
+    "aria-label": "Text size",
+    onchange: (e) => { setSetting("textScale", Number(e.target.value)); applyTextScale(); }
+  }, ...TEXT_SCALES.map((t) => el("option", { value: t.value, selected: Settings.textScale() === t.value }, t.label)));
+
+  wrap.append(el("div", { class: "card" },
+    el("div", { class: "field" }, el("label", {}, "Theme"), theme),
+    el("div", { class: "field" }, el("label", {}, "Text size"), scale,
+      el("p", { class: "faint" }, "Pinch-zoom is off so a stray gesture cannot derail a roll. This is how you make the type bigger instead."))));
+
+  wrap.append(campaignCard());
 
   const toggles = el("div", { class: "card" });
   for (const t of TOGGLES) {
@@ -329,12 +342,123 @@ export function settingsScreen() {
       el("div", { class: "btn-row" },
         el("button", { class: "btn", onclick: doExport }, "Export JSON"),
         el("button", { class: "btn", onclick: doImport }, "Import JSON"),
-        el("a", { class: "btn", href: "#/log" }, "Roll log"),
+        el("button", { class: "btn", onclick: doExportReadable }, "Export as text"),
+        el("a", { class: "btn", href: "#/log" }, "Roll log")),
+      el("div", { class: "btn-row", style: "margin-top:8px" },
+        el("button", { class: "btn", onclick: doCheckData }, "Check my data"),
         el("button", { class: "btn btn-danger", onclick: doReset }, "Erase all"))));
 
   wrap.append(el("p", { class: "faint", style: "margin-top:24px" },
     "A personal play aid built from the owner's own copy of the rules. Not affiliated with the publisher."));
   return wrap;
+}
+
+/** One game per device was the old assumption; a finished Journey is worth keeping. */
+function campaignCard() {
+  const list = listCampaigns();
+  const activeId = activeCampaignId();
+  const card = el("div", { class: "card" }, el("h3", {}, "Journeys"),
+    el("p", { class: "faint" }, "Each one keeps its own Travelers, Journey, rolls and record. Switching does not touch the others."));
+
+  for (const c of list) {
+    const isActive = c.id === activeId;
+    const chars = Object.keys(c.characters || {}).length;
+    card.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+      el("div", { class: "card-row" },
+        el("span", {}, el("strong", {}, c.name), isActive ? el("span", { class: "faint" }, " · in play") : null,
+          el("div", { class: "faint" }, `${chars} Traveler${chars === 1 ? "" : "s"}${c.journey?.destination ? ` · ${c.journey.destination}` : ""}`)),
+        el("div", { class: "btn-row" },
+          !isActive ? el("button", {
+            class: "btn", onclick: () => { switchCampaign(c.id); showToast(`Now playing ${c.name}.`); location.hash = "#/home"; }
+          }, "Play") : null,
+          el("button", {
+            class: "btn", onclick: async () => {
+              const name = await promptModal("Rename", { label: "Name", value: c.name });
+              if (name) { renameCampaign(c.id, name); window.dispatchEvent(new CustomEvent("hashchange")); }
+            }
+          }, "Rename"),
+          list.length > 1 || chars ? el("button", {
+            class: "btn btn-danger", onclick: async () => {
+              const ok = await confirmModal(`Delete ${c.name}?`,
+                `${chars} Traveler${chars === 1 ? "" : "s"}, the Journey and every roll in it go with it. You can undo this once, from here.`, "Delete");
+              if (!ok) return;
+              deleteCampaign(c.id);
+              showToast(`${c.name} deleted — undo is on this screen.`);
+              window.dispatchEvent(new CustomEvent("hashchange"));
+            }
+          }, "Delete") : null))));
+  }
+
+  card.append(el("button", {
+    class: "btn btn-block", style: "margin-top:8px",
+    onclick: async () => {
+      const name = await promptModal("New Journey", { label: "Name it", value: "" });
+      if (!name) return;
+      createCampaign(name);
+      showToast(`${name} started.`);
+      location.hash = "#/home";
+    }
+  }, "Start another Journey"));
+
+  if (canUndo()) {
+    card.append(el("button", {
+      class: "btn btn-block", style: "margin-top:8px",
+      onclick: () => { undoLast(); showToast("Reverted."); window.dispatchEvent(new CustomEvent("hashchange")); }
+    }, `Undo${undoLabel() ? ` — ${undoLabel()}` : ""}`));
+  }
+  return card;
+}
+
+/**
+ * A character you cannot hand to someone, print, or read without the app is a character
+ * you only half own. Plain text, because it survives everything.
+ */
+export function readableExport() {
+  const j = getJourney();
+  const lines = [];
+  const rule = (s) => lines.push("", s, "=".repeat(s.length));
+
+  rule("THE JOURNEY");
+  lines.push(`From: ${j?.start || "—"}`, `To: ${j?.destination || "—"}`,
+    `Vehicle: ${j?.vehicle?.label || j?.vehicle?.name || "—"}`,
+    `Fuel: ${j?.fuel ?? "—"} · Day ${j?.day ?? 1}, ${j?.shift || "Morning"}`);
+  if (j?.sharedItems?.length) lines.push(`Shared: ${j.sharedItems.map((i) => i.name || i).join(", ")}`);
+
+  for (const c of listCharacters()) {
+    rule(String(c.name || "Unnamed").toUpperCase());
+    const arch = ARCHETYPES.find((a) => a.id === c.archetype);
+    lines.push(`${arch?.name || "—"}${c.song ? ` · ${c.song}` : ""}`);
+    lines.push(`Strength ${c.attributes.strength}  Agility ${c.attributes.agility}  ` +
+               `Wits ${c.attributes.wits}  Empathy ${c.attributes.empathy}`);
+    lines.push(`Health ${c.state.health}  Hope ${c.state.hope}  Bliss ${c.state.bliss}` +
+               (c.state.permanentBliss ? ` (${c.state.permanentBliss} permanent)` : ""));
+    if (c.talents?.length) lines.push(`Talents: ${c.talents.join(", ")}`);
+    if (c.dream) lines.push(`Dream: ${c.dream}`);
+    if (c.flaw) lines.push(`Flaw: ${c.flaw}`);
+    if (c.goal) lines.push(`Goal: ${c.goal}`);
+    if (c.threat) lines.push(`Threat: ${c.threat}`);
+    if (c.conditions?.length) lines.push(`Conditions: ${c.conditions.map((x) => x.name).join(", ")}`);
+    const items = (c.inventory?.items || []).map((i) => i.name + (i.bonus ? ` (+${i.bonus})` : ""));
+    if (items.length) lines.push(`Gear: ${items.join(", ")}`);
+    lines.push(`Cash: $${c.inventory?.cash ?? 0}`);
+    if (c.notes) lines.push("", c.notes);
+  }
+  return lines.join("\n").trim() + "\n";
+}
+
+function doExportReadable() {
+  const blob = new Blob([readableExport()], { type: "text/plain" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: `electric-state-${new Date().toISOString().slice(0, 10)}.txt` });
+  document.body.append(a); a.click(); a.remove();
+  showToast("Readable sheet exported.");
+}
+
+async function doCheckData() {
+  const r = checkData();
+  await confirmModal("Data checked",
+    `${r.campaigns} Journey${r.campaigns === 1 ? "" : "s"}, ${r.characters} Traveler${r.characters === 1 ? "" : "s"}, ` +
+    `${r.rolls} logged roll${r.rolls === 1 ? "" : "s"}. ` +
+    (r.repaired ? "Some records needed repairing and were fixed." : "Nothing needed repairing."), "Good");
 }
 
 function doExport() {

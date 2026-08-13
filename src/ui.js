@@ -1,5 +1,6 @@
 // Themed modal, toast, confirm and prompt. No native alert/confirm/prompt anywhere.
 import { $, el } from "./core.js";
+import { Settings } from "./settings.js";
 
 let openModals = 0;
 
@@ -65,6 +66,22 @@ export function explain(text, label = "What this does") {
   return el("details", { class: "explain" },
     el("summary", {}, label),
     typeof text === "string" ? el("p", {}, text) : text);
+}
+
+/**
+ * Content the table is not supposed to have read yet — a prepared Stop, a Countdown step
+ * that has not fired. With "Hide GM content" on it arrives blurred and unblurs on a tap,
+ * so one phone can be passed around a table without spoiling what is coming.
+ */
+export function spoiler(content, label = "Tap to reveal") {
+  const node = content instanceof Node ? content : el("span", {}, String(content));
+  if (!Settings.hideGmContent()) return node;
+  const wrap = el("span", {
+    class: "spoil", role: "button", tabindex: "0", title: label, "aria-label": label,
+    onclick: () => wrap.classList.remove("spoil"),
+    onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); wrap.classList.remove("spoil"); } }
+  }, node);
+  return wrap;
 }
 
 export const confirmModal = (title, message, confirmLabel = "Confirm") =>

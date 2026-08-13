@@ -4,25 +4,15 @@ import { el, d6, uid, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
          ARCHETYPES, TALENTS, TENSION } from "../data.js";
 import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
-import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, exportJSON, importJSON } from "./store.js";
+import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent,
+         getSessionLog, clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
 import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
 
-// ------------------------------------------------------------------ undo stack
-let undoSnapshot = null;
-
-function snapshot() {
-  undoSnapshot = { data: exportJSON(), label: null };
-}
-export function undoLast() {
-  if (!undoSnapshot) return false;
-  importJSON(undoSnapshot.data);
-  undoSnapshot = null;
-  return true;
-}
-export const canUndo = () => !!undoSnapshot;
+// Undo lives in the store now, so every destructive action shares one stack.
+export { undoLast, canUndo } from "./store.js";
 
 // ------------------------------------------------------------------- bundles
 /**
@@ -47,7 +37,7 @@ function exposure(ch, hMax, name) {
 }
 
 export function advanceTime(unit, options = {}) {
-  snapshot();
+  snapshot(`end of ${unit}`);
   const notes = [];
   const journey = getJourney() || {};
 
@@ -161,6 +151,8 @@ export function advanceTime(unit, options = {}) {
   }
 
   if (!notes.length) notes.push("Nothing changed.");
+  // The debrief asks what the session was about; this is where the answer accumulates.
+  noteEvent(unit, notes.filter((n) => n !== "Nothing changed.").join(" "));
   return notes;
 }
 
@@ -392,6 +384,21 @@ async function debrief(rerender) {
   const chars = listCharacters();
   if (!chars.length) { showToast("No Travelers to debrief."); return; }
 
+  // "Say how this Traveler followed their Dream this session" is a memory test three weeks
+  // after the fact. The app watched the whole thing; show it before asking.
+  const record = getSessionLog();
+  if (record.length) {
+    const body = el("div", {}, el("p", { class: "faint" }, "What the app saw happen since the last debrief."));
+    for (const e of record.slice(0, 20)) {
+      body.append(el("div", { style: "padding:4px 0;border-top:1px solid var(--line-soft)" },
+        el("strong", {}, e.kind), el("div", { class: "faint" }, e.text || "—")));
+    }
+    await modal({
+      title: "This session", body,
+      actions: [{ label: "Debrief", value: true, class: "btn-primary" }]
+    });
+  }
+
   for (const ch of chars) {
     if (ch.state?.improvementLocked) {
       await modal({
@@ -403,6 +410,7 @@ async function debrief(rerender) {
     }
     await debriefOne(ch);
   }
+  clearSessionLog();   // the record covers one session; the next one starts empty
   rerender();
 }
 
