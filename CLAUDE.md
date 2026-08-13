@@ -199,6 +199,13 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   Checkboxes were 13px because an inline style beat the stylesheet; Settings toggles were not
   wrapped in labels. The sheet folds Dream/Flaw/Goal/Threat and Notes. The section nav carries a
   round badge while a fight is running.
-- Verification: `npm test` = 76 invariants + browser smoke; `node tests/audit.js` clicks every
+- **Eleventh pass — under load (8 findings).** Stress state (4 Travelers, 5 conditions and 8 items
+  each, 10 combatants, 100 log entries) at 320/390/768px. The log now pages at 25; combatants who
+  have acted collapse to a line; the solo record folds; the sheet gets a jump row. Flow: a
+  stabilized Traveler is offered the D66 injury the rules require, ending a fight confirms before
+  discarding Threat health, the talent picker describes what it offers and puts the archetype's
+  three first, and a Traveler can **invent a talent** as p.65 allows — stored on the character and
+  resolved through `talent(id, ch)`.
+- Verification: `npm test` = 77 invariants + browser smoke; `node tests/audit.js` clicks every
   control on every screen and flags errors, unclickable controls and silent no-ops.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

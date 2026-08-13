@@ -133,7 +133,7 @@ function build(ch, rerender) {
   const talents = el("div", { class: "card", id: "sec-talents" }, el("h3", {}, "Talents"));
   if (!ch.talents?.length) talents.append(el("p", { class: "faint" }, "None yet."));
   for (const id of ch.talents || []) {
-    const t = findTalent(id);
+    const t = findTalent(id, ch);
     if (!t) continue;
     talents.append(el("div", { style: "padding:6px 0" },
       el("strong", {}, t.name), el("div", { class: "faint" }, describeTalent(t))));

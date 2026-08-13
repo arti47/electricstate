@@ -319,3 +319,43 @@ that would have caught all of the above.
 ## Result
 
 76 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.
+
+# Eleventh pass — under load, and the last flow gaps
+
+Two questions this time. Does the interface hold up under a real session's accumulated state,
+and are there sequences that still dead-end?
+
+## Under load
+
+The probe seeded what a table actually has by the third session: four Travelers carrying five
+conditions and eight items each, ten combatants in round seven, six Stops, thirty solo events,
+and a full hundred-entry roll log. Then it walked the screens at 320, 390 and 768px.
+
+Nothing overflowed at any width. Three screens buckled under their own content instead.
+
+| # | Finding | Fix |
+|---|---|---|
+| 72 | **The roll log rendered all hundred entries** — fifteen screens at 320px, with the filter chips and the clear button stranded at the far end. | Pages at 25, with the rest on request. Fifteen screens to 2.8. |
+| 73 | **Ten combatants meant ten identical cards**, six screens of them, when the only ones that matter are those who have not gone. | Whoever has taken their turn collapses to a line — 90px against 203px. |
+| 74 | Solo's event record sat open above the fold as a wall of history. | Folded. It is a record, not a control. |
+| 75 | The sheet is long by nature and the thing you want is rarely at the top. | A jump row — the same pill nav as everywhere else — straight to Attributes, Talents, Conditions, Neurocaster, Gear or Tension. |
+
+## Flow gaps
+
+| # | Finding | Fix |
+|---|---|---|
+| 76 | **Surviving a death roll is what triggers the D66 serious injury**, and the Stabilized modal simply congratulated you. Dying offered nothing either. | Stabilized offers the injury roll; death offers the wizard. |
+| 77 | **Ending a fight silently discarded every Threat's remaining health**, with no undo anywhere in combat. | It confirms, saying how many are already down and that the Incapacitated still owe an injury roll. |
+| 78 | **The talent picker listed forty-six bare names.** Nothing said what any of them did, and the archetype's own three were buried in the alphabet. | The archetype's three come first and are labelled; the selected talent describes itself. |
+| 79 | **You could not invent a talent**, though page 65 says "any talent listed on page 56 or even create a new one". | An invented talent is named, given the situation it applies to, and worth two dice unless you say otherwise. It lives on the character, resolves through `talent(id, ch)`, and is tappable on a roll like any other. |
+
+## Guards
+
+The browser smoke seeds a hundred log entries and a seven-strong fight, then checks the log
+renders at most a page with a way to see more, and that the combatants who acted are the
+compact ones. A unit test pins invented talents resolving from the character and reaching the
+pool.
+
+## Result
+
+77 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.

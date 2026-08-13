@@ -91,7 +91,7 @@ export const isInstantKill = (damage, maxHp) => damage >= maxHp * DEATH.instantK
 /** Talents that could plausibly apply to a roll on this attribute, for tap-to-use. */
 export function applicableTalents(ch, attr) {
   return (ch.talents || [])
-    .map(findTalent)
+    .map((id) => findTalent(id, ch))
     .filter((t) => t && t.effect?.kind === "dice" && (!t.effect.attr || t.effect.attr === attr));
 }
 
@@ -186,7 +186,7 @@ function build(rerender) {
 
   // Talents that swap one attribute for another: Menacing threatens on Strength,
   // Techno babbler argues on Wits, both in place of Empathy.
-  const swaps = (ch.talents || []).map(findTalent)
+  const swaps = (ch.talents || []).map((id) => findTalent(id, ch))
     .filter((t) => t?.effect?.rule === "substituteAttribute" && t.effect.from === pending.attr);
   if (swaps.length) {
     const card = el("div", { class: "card" }, el("h3", {}, "Instead of that"));
@@ -317,7 +317,7 @@ function build(rerender) {
 
   // pool preview
   const mods = conditionModifiers(ch, { attr: pending.attr });
-  const talentDice = pending.talents.reduce((sum, id) => sum + (findTalent(id)?.effect.bonus || 0), 0);
+  const talentDice = pending.talents.reduce((sum, id) => sum + (findTalent(id, ch)?.effect.bonus || 0), 0);
   const tension = pending.opposedId ? tensionToward(ch, pending.opposedId) : 0;
   const weaponGear = chosen && chosen.gearBonusSource !== "neurocasterNetwork" ? (chosen.bonus || 0) : 0;
   const ambushMod = pending.ambush && (pending.range || "engaged") === "engaged" ? -3 : 0;

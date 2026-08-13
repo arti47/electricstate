@@ -1,8 +1,8 @@
 // Scene/session lifecycle, rest and recovery, and the advancement debrief (Phase 4).
 // The app owns the boundaries: each one fires a bundle, shows what it did, and can be undone once.
-import { el, d6, rollDice, countSixes, clamp } from "./core.js";
+import { el, d6, uid, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
-         TALENTS, TENSION } from "../data.js";
+         ARCHETYPES, TALENTS, TENSION } from "../data.js";
 import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, exportJSON, importJSON } from "./store.js";
 import { talent as findTalent } from "./rules.js";
@@ -466,18 +466,77 @@ async function improvementRoll(ch, attrId, index) {
     return;
   }
 
-  const available = TALENTS.filter((t) => !(current.talents || []).includes(t.id));
-  const pick = el("select", { "aria-label": "New talent" }, ...available.map((t) => el("option", { value: t.id }, t.name)));
+  // Forty-six names in a select tells you nothing about what any of them do. The
+  // archetype's own three come first, and the chosen one describes itself.
+  const arch = ARCHETYPES.find((a) => a.id === current.archetype);
+  const owned = new Set(current.talents || []);
+  const suggested = (arch?.talents || []).filter((id) => !owned.has(id));
+  const available = [
+    ...suggested.map((id) => findTalent(id)),
+    ...TALENTS.filter((t) => !owned.has(t.id) && !suggested.includes(t.id))
+  ].filter(Boolean);
+
+  const pick = el("select", { "aria-label": "New talent" },
+    ...available.map((t) => el("option", { value: t.id },
+      suggested.includes(t.id) ? `${t.name} — from your archetype` : t.name)));
+  const detail = el("p", { class: "faint" }, describeTalent(available[0]));
+  pick.addEventListener("change", () => {
+    detail.textContent = describeTalent(available.find((t) => t.id === pick.value));
+  });
+
   const body = el("div", {},
     el("p", {}, `Rolled ${die} against ${value} — no attribute gain, but experience turns into a talent. Justify it from something that happened in play.`),
-    el("div", { class: "field" }, pick));
+    el("div", { class: "field" }, pick),
+    detail);
   const confirmed = await modal({
     title: index ? `Improvement ${index} of 3` : "Improvement", body,
-    actions: [{ label: "Take it", value: true, class: "btn-primary" }, { label: "Skip", value: false }]
+    actions: [
+      { label: "Take it", value: "take", class: "btn-primary" },
+      { label: "Invent one", value: "invent" },
+      { label: "Skip", value: false }
+    ]
   });
   if (!confirmed) return;
+
   const next = structuredClone(listCharacters().find((c) => c.id === ch.id));
+  if (confirmed === "invent") {
+    const invented = await inventTalent();
+    if (!invented) return;
+    next.customTalents = [...(next.customTalents || []), invented];
+    next.talents = [...(next.talents || []), invented.id];
+    saveCharacter(next);
+    showToast(`${invented.name} learned.`);
+    return;
+  }
   next.talents = [...(next.talents || []), pick.value];
   saveCharacter(next);
   showToast(`${findTalent(pick.value)?.name} learned.`);
+}
+
+/** "You can choose any talent listed on page 56 or even create a new one" (p.65). */
+async function inventTalent() {
+  const name = el("input", { "aria-label": "Talent name", placeholder: "Wheelman" });
+  const when = el("input", { "aria-label": "When it applies", placeholder: "keeping a vehicle on the road in bad weather" });
+  const dice = el("input", { type: "checkbox", checked: true, "aria-label": "Gives two dice" });
+
+  const ok = await modal({
+    title: "Invent a talent",
+    body: el("div", {},
+      el("p", { class: "faint" }, "The book allows one of your own, so long as you can justify it from play. Most printed talents are worth two dice in a named situation."),
+      el("div", { class: "field" }, el("label", {}, "Name"), name),
+      el("div", { class: "field" }, el("label", {}, "When it applies"), when),
+      el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
+        el("span", {}, "Worth two dice", el("div", { class: "faint" }, "Leave it off for a talent that changes a rule instead.")),
+        dice)),
+    actions: [{ label: "Learn it", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!ok || !name.value.trim()) return null;
+
+  const text = when.value.trim();
+  return {
+    id: `custom-${uid()}`, name: name.value.trim(), invented: true,
+    effect: dice.checked
+      ? { kind: "dice", bonus: 2, when: text }
+      : { kind: "rule", rule: "invented", when: text }
+  };
 }

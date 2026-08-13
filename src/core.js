@@ -1,6 +1,6 @@
 // Foundational constants, DOM helpers and raw dice. No imports.
 
-export const CACHE_VERSION = "es-v35";
+export const CACHE_VERSION = "es-v36";
 export const STORAGE_KEY = "electricState.v1";
 
 export const $ = (sel, root = document) => root.querySelector(sel);

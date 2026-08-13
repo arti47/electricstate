@@ -877,6 +877,25 @@ await test("the home screen names the next step in the book's own creation order
   assert.ok(b.id, "two Travelers were needed for the Tension step");
 });
 
+const rules = await import("../src/rules.js");
+
+await test("an invented talent resolves from the character that made it up", () => {
+  const invented = { id: "custom-1", name: "Wheelman", invented: true,
+    effect: { kind: "dice", bonus: 2, when: "keeping a vehicle on the road" } };
+  const ch = { id: "a", name: "Driver", archetype: "veteran", talents: ["tough", "custom-1"],
+    customTalents: [invented], attributes: { strength: 3, agility: 4, wits: 3, empathy: 3 } };
+
+  assert.equal(rules.talent("custom-1"), null, "the book's list does not know it");
+  assert.equal(rules.talent("custom-1", ch).name, "Wheelman", "the character does");
+  assert.equal(rules.talent("tough", ch).id, "tough", "printed talents still resolve");
+
+  // It has to reach the pool, or inventing one is decoration.
+  const usable = roller.applicableTalents(ch, "agility").map((t) => t.id);
+  assert.ok(usable.includes("custom-1"), "an invented dice talent is tappable on a roll");
+  assert.ok(!roller.applicableTalents({ ...ch, customTalents: [] }, "agility").some((t) => t.id === "custom-1"),
+    "and vanishes if the character no longer carries it");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

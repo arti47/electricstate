@@ -4,7 +4,12 @@ import { TALENTS, ARCHETYPES, WEAPONS, NEUROCASTERS, ATTRIBUTES, RANGES, BELOW_M
 import { SERIOUS_INJURIES, MENTAL_TRAUMAS, GEAR, SHARED_ITEMS, SERVICES } from "../data-tables.js";
 import { BY_ID as LIBRARY_BY_ID, LIBRARY } from "../data-library.js";
 
-export const talent = (id) => TALENTS.find((t) => t.id === id) || null;
+/**
+ * A talent by id. The book lets a Traveler invent one at a debrief ("or even create a
+ * new one"), so an invented talent lives on the character and is resolved from there.
+ */
+export const talent = (id, ch = null) =>
+  TALENTS.find((t) => t.id === id) || (ch?.customTalents || []).find((t) => t.id === id) || null;
 export const talentByName = (name) => {
   const n = String(name).toLowerCase();
   return TALENTS.find((t) => t.name.toLowerCase() === n || (t.aliases || []).some((a) => a.toLowerCase() === n)) || null;
