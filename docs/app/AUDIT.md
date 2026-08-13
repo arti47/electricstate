@@ -505,6 +505,7 @@ across the app.
 | 101 | The vitals header left a blank slab whenever the tile count did not divide the column count — five tiles in a six-column auto-fit grid. | Flex, with each tile `flex: 1 1 60px`. |
 | 102 | The section nav scrolls inside itself, so the pill at the right edge was hard-clipped and read as broken. | A mask fades the last 24px, which is what "there is more this way" looks like. |
 | 103 | "He has acted" as a button label is a sentence about someone, where a button wants an instruction. | "Turn spent". |
+| 104 | **The gender switch shared a line with the archetype and the favourite song**, so it sat in a different place on every sheet and dropped onto a line of its own whenever the song title was long — reported as "it shifts to a new line for some character sheets". A control whose position depends on someone else's data has no position. | Its own row, left-aligned at the content edge with the pronouns beside it. The browser guard renders the same sheet with an empty song and with the longest title in the book and asserts the switch has not moved. |
 
 ## Result
 

@@ -278,5 +278,6 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   never three loose boxes with gaps. `.btn-grid` — actions of equal standing in equal cells,
   with an odd last child spanning the row; a wrapped `.btn-row` leaves an orphan that wraps its
   own label. `.vitals` is flex, not grid: auto-fit left a blank slab whenever the tile count
-  did not divide the column count.
+  did not divide the column count. A control shares a line only with fixed-length content:
+  the gender switch sat beside the archetype and the song and therefore moved sheet to sheet.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

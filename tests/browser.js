@@ -654,6 +654,28 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     };
   });
   check(genderControl !== null, "the sheet has no gender control");
+
+  // It sits on a row of its own, so its place does not move with the length of a song
+  // title. Two very different sheets, same left edge, never orphaned onto a line alone.
+  const places = [];
+  for (const song of ["", "We Gotta Get Outta This Place, The Animals"]) {
+    await page.evaluate(([id, s]) => { __game.edit((g) => { g.characters[id].song = s; }); }, [sheetId, song]);
+    await page.reload({ waitUntil: "networkidle" });
+    await page.evaluate((id) => { location.hash = `#/sheet/${id}`; }, sheetId);
+    await page.waitForTimeout(180);
+    places.push(await page.evaluate(() => {
+      const seg = document.querySelector("#screen .seg").getBoundingClientRect();
+      const pron = document.querySelector("#screen .identity-pronouns").getBoundingClientRect();
+      const h1 = document.querySelector("#screen h1").getBoundingClientRect();
+      return { left: Math.round(seg.left), edge: Math.round(h1.left), withPronouns: Math.abs(seg.top - pron.top) < 20 };
+    }));
+  }
+  check(places.every((p) => p.left === p.edge),
+    `the gender switch is not at the content edge: ${JSON.stringify(places)}`);
+  check(places[0].left === places[1].left,
+    `the gender switch moves with the length of the text above it: ${JSON.stringify(places)}`);
+  check(places.every((p) => p.withPronouns),
+    "the gender switch and its pronouns split across two lines");
   check(genderControl && !genderControl.inFold, "the gender control is hidden inside a collapsed panel");
   check(genderControl && genderControl.aboveFold, "the gender control is below the fold");
   check(genderControl && genderControl.height >= 24, `the gender control is only ${genderControl?.height}px tall`);

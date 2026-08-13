@@ -109,16 +109,17 @@ function build(ch, rerender) {
     el("div", { class: "card-row" },
       el("h1", { style: "margin:0" }, ch.name || "Unnamed"),
       el("a", { class: "btn", href: "#/home" }, "Back")),
+    el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
+    // Its own row. Sharing a line with the archetype and a song title meant the switch
+    // sat somewhere different on every sheet, and dropped to a second line on the long ones.
     el("div", { class: "identity" },
-      el("span", { class: "faint" },
-        [arch?.name, ch.song].filter(Boolean).join(" · "),
-        el("span", { class: "identity-pronouns" }, `${subj(ch)} · ${obj(ch)} · ${poss(ch)}`)),
       el("div", { class: "seg", role: "group", "aria-label": "Gender" },
         ...GENDERS.map((g) => el("button", {
           class: "seg-item" + (genderOf(ch) === g.id ? " is-on" : ""),
           "aria-pressed": genderOf(ch) === g.id ? "true" : "false",
           onclick: () => patch((c) => { c.gender = g.id; })
-        }, g.label)))),
+        }, g.label))),
+      el("span", { class: "identity-pronouns" }, `${subj(ch)} · ${obj(ch)} · ${poss(ch)}`)),
     explain("Everything about this Traveler, and everything that happens. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply dice penalties to rolls automatically, and gear degrades as you push rolls with it."),
     ch.descriptorWords?.length ? el("p", { class: "faint" }, ch.descriptorWords.join(" · ")) : null);
 
