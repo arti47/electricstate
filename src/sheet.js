@@ -209,6 +209,15 @@ function statusNotes(ch, hMax, pMax, rerender) {
             }
           }, "Repair the drone")
         : null,
+      action === "pullOut" && (ch.talents || []).includes("neuroresistant") && !ch.state.neuroresistantUsed
+        ? el("button", {
+            class: "btn btn-block", style: "margin-top:8px",
+            onclick: async () => {
+              const { neuroresistantEscape } = await import("./roller.js");
+              await neuroresistantEscape(ch, rerender);
+            }
+          }, "Neuroresistant: one Wits roll to leave")
+        : null,
       action === "pullOut"
         ? el("button", {
             class: "btn btn-danger btn-block", style: "margin-top:8px",

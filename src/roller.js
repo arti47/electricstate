@@ -96,6 +96,22 @@ export function applicableTalents(ch, attr) {
 }
 
 /**
+ * Base damage for the attack on the table: the weapon's own, or a bare fist —
+ * which a Dirty fighter throws harder than anyone else.
+ */
+export function baseDamage(ch, weaponId = null) {
+  const weapon = weaponId ? findWeapon(weaponId) : WEAPONS.find((w) => w.unarmed);
+  if (!weapon) return 1;
+  const dirty = TALENTS.find((t) => t.effect?.rule === "unarmedDamage");
+  if (weapon.unarmed && (ch?.talents || []).includes(dirty?.id)) return dirty.effect.value;
+  return weapon.damage ?? 1;
+}
+
+/** Every extra 6 beyond the first is another point of damage. */
+export const damageWithExtras = (ch, weaponId, sixes) =>
+  baseDamage(ch, weaponId) + Math.max(0, (sixes || 0) - 1);
+
+/**
  * What the helmet costs out here. Zero unless one is actually on their head —
  * the Stimulus GO is the light one at −1, everything else is −2 (p.92).
  */
@@ -168,6 +184,29 @@ function build(rerender) {
         onclick: () => { pending.attr = a.id; pending.talents = []; pending.result = null; rerender(); }
       }, `${a.label} ${ch.attributes[a.id]}`)))));
 
+  // Talents that swap one attribute for another: Menacing threatens on Strength,
+  // Techno babbler argues on Wits, both in place of Empathy.
+  const swaps = (ch.talents || []).map(findTalent)
+    .filter((t) => t?.effect?.rule === "substituteAttribute" && t.effect.from === pending.attr);
+  if (swaps.length) {
+    const card = el("div", { class: "card" }, el("h3", {}, "Instead of that"));
+    for (const t of swaps) {
+      card.append(el("div", { class: "card-row" },
+        el("span", {}, el("strong", {}, t.name),
+          el("div", { class: "faint" }, `${t.effect.when} — roll ${t.effect.to}${t.effect.bonus ? ` and add ${t.effect.bonus} dice` : ""}.`)),
+        el("button", {
+          class: "btn", onclick: () => {
+            pending.attr = t.effect.to;
+            pending.talents = [];
+            pending.modifier = (pending.modifier || 0) + (t.effect.bonus || 0);
+            pending.result = null;
+            rerender();
+          }
+        }, `Use ${t.effect.to}`)));
+    }
+    wrap.append(card);
+  }
+
   // talents that could apply
   const talents = applicableTalents(ch, pending.attr);
   if (talents.length) {
@@ -220,6 +259,14 @@ function build(rerender) {
       ` · ${chosen.min} to ${chosen.max}`));
     if (rangeMod === null) weaponCard.append(el("p", { style: "color:var(--danger)" }, "Out of range — this weapon cannot reach that far."));
     else if (rangeMod < 0) weaponCard.append(el("p", { class: "faint" }, `${rangeMod} dice for firing inside its minimum range.`));
+    // A gun used at arm's length is still a gun, but it is Strength that lands the shot.
+    if (chosen.min !== "engaged" && (pending.range || "engaged") === "engaged" && pending.attr !== "strength") {
+      weaponCard.append(el("div", { class: "card-row" },
+        el("span", { class: "faint" }, "A firearm in close combat hits on Strength, not Agility."),
+        el("button", {
+          class: "btn", onclick: () => { pending.attr = "strength"; pending.talents = []; pending.result = null; rerender(); }
+        }, "Use Strength")));
+    }
     if (chosen.fullAuto) weaponCard.append(toggleRow("Full auto", "fullAuto", "On a hit you may fire again, up to three bursts. Empties the magazine.", rerender));
     // You cannot ambush someone already fighting: anyone in the tracker is in active combat.
     if (combat?.active) {
@@ -514,7 +561,10 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
   kindSelect.addEventListener("change", () => {
     if (target) dicePool.value = String(defencePool(target, kindSelect.value));
   });
-  const damage = el("input", { type: "number", value: String(findWeapon(pending.weaponId)?.damage ?? 1), min: "0", "aria-label": "Base damage" });
+  const damage = el("input", {
+    type: "number", min: "0", "aria-label": "Base damage",
+    value: String(baseDamage(attacker, pending.weaponId))
+  });
 
   const go = await modal({
     title: `You rolled ${attackerSixes}`,
@@ -706,7 +756,12 @@ export async function rallyDialog(target, onDone) {
 // ================================================================ damage flow
 export async function damageDialog(ch, onDone) {
   const combatTarget = pending?.targetId ? findCombatant(pending.targetId) : null;
-  const amount = el("input", { type: "number", value: "1", min: "0", "aria-label": "Damage" });
+  // Default to what this attack actually did: the weapon's damage plus every extra 6.
+  const sixes = pending?.result ? successes(pending.result) : 0;
+  const amount = el("input", {
+    type: "number", min: "0", "aria-label": "Damage",
+    value: String(sixes ? damageWithExtras(ch, pending.weaponId, sixes) : 1)
+  });
   const armor = el("select", { "aria-label": "Armor or cover" },
     el("option", { value: "0" }, "None"),
     ...BODY_ARMOR.map((a) => el("option", { value: a.armor }, `${a.name} (${a.armor})`)),
@@ -934,6 +989,43 @@ export async function repairDialog(ch, ref, onDone) {
 }
 
 /** Forcing someone out of the Electric State: Hope to zero, and a mental trauma. */
+/**
+ * Neuroresistant: one Wits roll to walk out of a neuroscape even with Bliss at or above
+ * Hope. One roll only — the app remembers it until Bliss falls back below Hope (p.93).
+ */
+export async function neuroresistantEscape(ch, onDone) {
+  const current = getCharacter(ch.id);
+  if (current.state.neuroresistantUsed) { showToast("That roll has already been made."); return; }
+
+  const go = await modal({
+    title: "Pull yourself out",
+    body: el("div", {},
+      el("p", { class: "faint" }, "Neuroresistant buys one Wits roll to leave under your own power. One 6 is enough. There is no second attempt."),
+      el("p", {}, `Rolling ${current.attributes.wits} dice.`)),
+    actions: [{ label: "Roll Wits", value: true, class: "btn-primary" }, { label: "Not yet", value: false }]
+  });
+  if (!go) return;
+
+  const dice = rollDice(Math.max(1, current.attributes.wits));
+  const out = countSixes(dice) > 0;
+  const next = structuredClone(current);
+  next.state.neuroresistantUsed = true;
+  if (out) next.state.wearingCaster = false;
+  saveCharacter(next);
+  logRoll({ by: ch.name, label: "Neuroresistant escape", dice, outcome: out ? "walked out" : "still in there" });
+
+  await modal({
+    title: out ? "Out" : "Still in there",
+    body: el("div", {},
+      el("p", { class: "mono faint" }, dice.join(" ")),
+      el("p", {}, out
+        ? "You take the helmet off yourself. Nothing else is lost."
+        : "It does not let go. Someone else will have to pull it off you.")),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+  onDone?.();
+}
+
 export async function forcedDisconnect(ch) {
   const sure = await confirmModal("Pull the helmet off?",
     "They cannot leave on their own. Forcing them out drops their Hope to zero and inflicts a mental trauma — but the alternative is dying of thirst in there.", "Pull them out");

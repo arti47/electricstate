@@ -2,7 +2,7 @@
 // One task component serves neurocasting difficulties, countdowns, healing clocks and diseases.
 import { el, uid, rollDice, countSixes, d6, clamp } from "./core.js";
 import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js";
-import { THREATS } from "../data-npcs.js";
+import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
 import { maxHealth } from "./derived.js";
 import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
@@ -44,6 +44,9 @@ export function endCombat() { writeCombat(null); }
 
 export const findCombatant = (id) => (getCombat()?.combatants || []).find((c) => c.id === id) || null;
 
+/** Anything with a stat block that can stand opposite the Travelers, animals included. */
+export const bestiaryEntry = (id) => [...THREATS, ...ANIMALS].find((t) => t.id === id) || null;
+
 /** Defence pool for a combatant: their own attribute if a Traveler, the block's if a Threat. */
 export function defencePool(combatant, kind = "close") {
   if (!combatant) return 4;
@@ -51,7 +54,7 @@ export function defencePool(combatant, kind = "close") {
     const ch = getCharacter(combatant.id);
     return ch ? ch.attributes[kind === "close" ? "strength" : "agility"] : 4;
   }
-  const threat = THREATS.find((t) => t.id === combatant.threatId);
+  const threat = bestiaryEntry(combatant.threatId);
   if (!threat) return 4;
   return (kind === "close" ? threat.strength : threat.agility) ?? 4;
 }
@@ -236,7 +239,8 @@ function combatantCard(combatant, c, rerender) {
 
 async function addThreat(rerender) {
   const select = el("select", { "aria-label": "Threat" },
-    ...THREATS.filter((t) => !t.unstatted).map((t) => el("option", { value: t.id }, t.name)));
+    ...THREATS.filter((t) => !t.unstatted).map((t) => el("option", { value: t.id }, t.name)),
+    el("optgroup", { label: "Animals" }, ...ANIMALS.map((a) => el("option", { value: a.id }, a.name))));
   const count = el("input", { type: "number", value: "1", min: "1", "aria-label": "How many" });
   const body = el("div", {},
     el("div", { class: "field" }, el("label", {}, "Threat"), select),
@@ -244,7 +248,7 @@ async function addThreat(rerender) {
   const go = await modal({ title: "Add a threat", body, actions: [{ label: "Add", value: true, class: "btn-primary" }, { label: "Cancel", value: false }] });
   if (!go) return;
 
-  const t = THREATS.find((x) => x.id === select.value);
+  const t = bestiaryEntry(select.value);
   const c = combat();
   const many = Math.max(1, Number(count.value) || 1);
   const additions = Array.from({ length: many }, (_, i) => ({

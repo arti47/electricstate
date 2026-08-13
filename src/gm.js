@@ -3,8 +3,9 @@ import { el, d6, d66, roll2d6, uid, fromRangeTable } from "./core.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, COUNTDOWN_ELEMENTS,
          COUNTDOWN_PRINCIPLE, NEUROSCAPE, NPC_REACTIONS, COMBAT_MORALE, JOURNEY_LENGTH,
-         KICKER_EXAMPLES, WHY_STICK_TOGETHER, MINOR_NPC_BASELINE, D66_ORDER } from "../data-gm.js";
-import { THREATS, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES, THREAT_ANATOMY,
+         KICKER_EXAMPLES, WHY_STICK_TOGETHER, MINOR_NPC_BASELINE, MECHANICAL_QUIRKS,
+         SESSIONS_PER_STOP, D66_ORDER } from "../data-gm.js";
+import { THREATS, ANIMALS, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES, THREAT_ANATOMY,
          THREAT_GOAL_KINDS } from "../data-npcs.js";
 import { listCharacters, getJourney, saveJourney } from "./store.js";
 import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveStop, removeStop,
@@ -100,17 +101,20 @@ function stopBuilder(rerender) {
     }
   }, "Roll up a Stop"));
   card.append(el("p", { class: "faint" }, COUNTDOWN_PRINCIPLE));
+  card.append(el("p", { class: "faint" }, `A Stop is worth ${SESSIONS_PER_STOP[0]} to ${SESSIONS_PER_STOP[1]} sessions of play.`));
   return card;
 }
 
 // ----------------------------------------------------------------- threats
 function threatCard() {
   const card = el("div", { class: "card" }, el("h3", {}, "Threats"));
-  const select = el("select", { "aria-label": "Threat" }, ...THREATS.map((t) => el("option", { value: t.id }, t.name)));
+  const select = el("select", { "aria-label": "Threat" },
+    ...THREATS.map((t) => el("option", { value: t.id }, t.name)),
+    el("optgroup", { label: "Animals" }, ...ANIMALS.map((a) => el("option", { value: a.id }, a.name))));
   const detail = el("div", { class: "faint" });
 
   const show = () => {
-    const t = THREATS.find((x) => x.id === select.value);
+    const t = [...THREATS, ...ANIMALS].find((x) => x.id === select.value);
     detail.replaceChildren();
     if (!t) return;
     if (t.unstatted) detail.append(el("p", {}, t.note));
@@ -163,7 +167,16 @@ function tablesCard() {
       roll("Conflict", () => `${d66Pick(CONFLICT_PARTIES)} vs ${d66Pick(CONFLICT_PARTIES)} over ${d66Pick(CONFLICT_SUBJECTS).toLowerCase()}`),
       roll("Electric State", () => d66Pick(ELECTRIC_STATE_ELEMENTS)),
       roll("'90s", () => d66Pick(NINETIES_NOSTALGIA)),
-      roll("Quirk", () => d66Pick(NPC_QUIRKS)),
+      // A couple of quirks carry mechanics rather than colour; say so when they land.
+      roll("Quirk", () => {
+        const q = d66Pick(NPC_QUIRKS);
+        const mech = MECHANICAL_QUIRKS[q];
+        if (!mech) return q;
+        const note = mech.realWorldPenalty
+          ? `${mech.realWorldPenalty} dice to their real-world actions`
+          : "Hope only ever comes back to them from neurine";
+        return `${q} — ${note}`;
+      }),
       roll("Reaction", () => {
         const r = roll2d6();
         return `${fromRangeTable(NPC_REACTIONS.map((x) => ({ range: x.roll, ...x })), r).reaction} (${r})`;

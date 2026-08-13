@@ -77,5 +77,8 @@ export function normalize(ch) {
   c.state.hope = clamp(c.state.hope ?? pMax, 0, pMax);
   c.state.bliss = c.state.bliss ?? 0;
   c.state.permanentBliss = c.state.permanentBliss ?? 0;
+  // The one Neuroresistant roll is spent per stretch of being lost, so it comes back
+  // as soon as Hope climbs clear of Bliss again.
+  if (c.state.neuroresistantUsed && c.state.bliss < c.state.hope) c.state.neuroresistantUsed = false;
   return c;
 }

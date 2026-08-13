@@ -734,6 +734,39 @@ await test("a solo Stop Countdown prefers the Stop's own steps over the D66 tabl
   assert.ok(spent.text.length > 0);
 });
 
+await test("a Dirty fighter hits harder bare-handed, and extra sixes still count", () => {
+  const plain = { name: "Plain", talents: [] };
+  const dirty = { name: "Dirty", talents: ["dirtyFighter"] };
+  assert.equal(roller.baseDamage(plain), 1, "a fist does one point");
+  assert.equal(roller.baseDamage(dirty), 2, "unless it belongs to a Dirty fighter");
+  const knife = data.WEAPONS.find((w) => w.id === "knife");
+  assert.equal(roller.baseDamage(dirty, knife.id), knife.damage, "the talent is unarmed only");
+  assert.equal(roller.damageWithExtras(dirty, null, 3), 4, "two extra sixes, two extra points");
+  assert.equal(roller.damageWithExtras(plain, null, 1), 1);
+  assert.equal(roller.damageWithExtras(plain, null, 0), 1, "a miss still reports the weapon's own damage");
+});
+
+await test("the Neuroresistant roll returns once Hope climbs clear of Bliss", () => {
+  const lost = derived.normalize({ name: "Devotee", attributes: { strength: 3, agility: 3, wits: 4, empathy: 4 },
+    state: { hope: 2, bliss: 3, neuroresistantUsed: true } });
+  assert.equal(lost.state.neuroresistantUsed, true, "still spent while Bliss holds them");
+  const clear = derived.normalize({ ...lost, state: { ...lost.state, bliss: 0 } });
+  assert.equal(clear.state.neuroresistantUsed, false, "and comes back when they are out from under it");
+});
+
+await test("animals stand in the bestiary beside the Threats", () => {
+  const dog = combatMod.bestiaryEntry("guardDog");
+  assert.ok(dog, "a guard dog is something you can put on the table");
+  assert.equal(combatMod.bestiaryEntry("lawEnforcement").name, "Law Enforcement");
+  assert.equal(combatMod.bestiaryEntry("nothing"), null);
+
+  store.resetAll();
+  store.saveJourney({ combat: { active: true, round: 1, startingSide: "travelers",
+    combatants: [{ id: "d1", kind: "threat", name: "Guard dog", threatId: "guardDog", health: 9, zone: 2 }] } });
+  assert.equal(combatMod.defencePool(combatMod.findCombatant("d1"), "close"), dog.strength,
+    "and it defends on its own stat block, not a guess");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);
