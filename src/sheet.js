@@ -184,10 +184,22 @@ function statusNotes(ch, hMax, pMax, rerender) {
   if (ch.state.hope === 0) notes.push(["Breakdown", "You can talk, move and flee, but cannot roll attributes or use talents until rallied.", "breakdown"]);
   if (tracksBliss(ch) && ch.state.bliss >= ch.state.hope && ch.state.hope > 0)
     notes.push(["Lost in the Electric State", "Bliss has caught your Hope. You cannot leave a neuroscape on your own — someone must pull the helmet off, and that costs everything.", "bliss", "pullOut"]);
+  if (ch.state.frozen) notes.push(["Frozen", "Whatever just happened stopped you dead. You lose your next turn — clear this once you have sat it out.", "traumaticEvent", "unfreeze"]);
   if (!notes.length) return null;
   return el("div", { style: "margin-top:8px" },
     ...notes.map(([title, text, ruleId, action]) => el("div", { class: "card", style: "border-left:3px solid var(--danger)" },
       el("strong", {}, title), el("p", { class: "faint" }, text), ruleLink(ruleId),
+      action === "unfreeze"
+        ? el("button", {
+            class: "btn btn-block", style: "margin-top:8px",
+            onclick: () => {
+              const next = structuredClone(ch);
+              next.state.frozen = false;
+              saveCharacter(next);
+              rerender();
+            }
+          }, "That turn is spent")
+        : null,
       action === "repairDrone"
         ? el("button", {
             class: "btn btn-block", style: "margin-top:8px",
@@ -274,8 +286,16 @@ function neurocasterCard(ch, patch) {
         c.state.caster = { ...state, [key]: clamp(v, 0, model[key]) };
       }), "gear"));
   }
-  card.append(el("p", { class: "faint" },
-    model.realWorldPenalty === -1 ? "Only −1 die to real-world actions while worn." : "−2 dice to real-world actions while worn."));
+  const penalty = model.realWorldPenalty ?? -2;
+  card.append(el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:8px 0" },
+    el("span", {},
+      el("strong", {}, "On your head right now"),
+      el("div", { class: "faint" }, `${penalty} dice to real-world actions needing mobility or vision, and you act in one realm per round.`)),
+    el("input", {
+      type: "checkbox", style: "width:auto;min-height:auto", checked: !!ch.state.wearingCaster,
+      "aria-label": "Wearing the neurocaster",
+      onchange: (e) => patch((c) => { c.state.wearingCaster = e.target.checked; })
+    })));
   if (busted) {
     card.append(el("p", { class: "faint", style: "color:var(--danger)" },
       "Busted: if you were inside a neuroscape, your Hope drops to zero and you roll for mental trauma."));

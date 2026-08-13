@@ -663,6 +663,77 @@ await test("the roll log attributes each roll and filters by Traveler", () => {
   assert.equal(store.filterRollLog(a.id).length, 1, "the id outlives the name");
 });
 
+await test("a reaction costs the defender their next turn", () => {
+  store.resetAll();
+  store.saveCharacter({ name: "Cade", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  combatMod.startCombat();
+  const me = combatMod.getCombat().combatants[0];
+
+  combatMod.forfeitNextTurn(me.id, "reacted");
+  assert.equal(combatMod.findCombatant(me.id).forfeit, "reacted");
+
+  combatMod.nextRound();
+  const after = combatMod.findCombatant(me.id);
+  assert.equal(after.acted, true, "they start the round already spent");
+  assert.equal(after.forfeited, "reacted", "and the card says why");
+  assert.equal(after.forfeit, null, "the debt is paid once");
+
+  combatMod.nextRound();
+  assert.equal(combatMod.findCombatant(me.id).acted, false, "the round after that they act normally");
+});
+
+await test("the neurocaster costs dice only while it is actually worn", () => {
+  const base = { name: "Wired", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } };
+  assert.equal(roller.casterDicePenalty({ ...base, neurocaster: "stimulusTlePro", state: {} }), 0,
+    "owning one is not wearing one");
+  assert.equal(roller.casterDicePenalty({ ...base, neurocaster: "stimulusTlePro", state: { wearingCaster: true } }), -2);
+  // The Stimulus GO is the light model: it only costs one die.
+  assert.equal(roller.casterDicePenalty({ ...base, neurocaster: "stimulusGo", state: { wearingCaster: true } }), -1);
+  assert.equal(roller.casterDicePenalty({ ...base, neurocaster: null, state: { wearingCaster: true } }), 0);
+});
+
+await test("a Lone wolf reduces Tension alone, and nobody else can", () => {
+  store.resetAll();
+  const wolf = store.saveCharacter({ name: "Wolf", talents: ["loneWolf"],
+    attributes: { strength: 3, agility: 3, wits: 4, empathy: 4 } });
+  const other = store.saveCharacter({ name: "Other", attributes: { strength: 3, agility: 3, wits: 4, empathy: 4 } });
+  store.saveCharacter({ ...store.getCharacter(wolf.id), tension: { [other.id]: 2 },
+    state: { ...store.getCharacter(wolf.id).state, hope: 1 } });
+  store.saveCharacter({ ...store.getCharacter(other.id), tension: { [wolf.id]: 2 } });
+
+  const alone = lifecycle.reduceTensionAlone(wolf.id, other.id);
+  assert.ok(alone.ok);
+  assert.equal(store.getCharacter(wolf.id).tension[other.id], 1, "their own Tension drops a step");
+  assert.equal(store.getCharacter(wolf.id).state.hope, 2, "and pays a Hope");
+  assert.equal(store.getCharacter(other.id).tension[wolf.id], 2, "the other side is untouched — they were not there");
+
+  assert.equal(lifecycle.reduceTensionAlone(other.id, wolf.id).ok, false, "no talent, no solo reduction");
+  assert.equal(lifecycle.reduceTension(wolf.id, wolf.id).ok, false, "you cannot talk it through with yourself");
+});
+
+await test("the solo personal Threat advances once per step from either route", () => {
+  store.resetAll();
+  store.saveJourney({ solo: { deck: soloMod.freshDeck(), events: [], history: [] } });
+  const steps = [];
+  for (let i = 0; i < 4; i++) steps.push(soloMod.advancePersonalThreat());
+  assert.deepEqual(steps.map((s) => s && s.index), [1, 2, 3, null],
+    "three steps, then it has caught up and stops");
+  assert.equal(store.getJourney().solo.personalThreatStep, 3, "the count lives on the Journey, not in the capped event list");
+});
+
+await test("a solo Stop Countdown prefers the Stop's own steps over the D66 table", async () => {
+  store.resetAll();
+  const stop = stopsMod.saveStop(stopsMod.makeStop("Rust"), { makeActive: true });
+  const first = await soloMod.nextStopCountdown();
+  assert.equal(first.text, stop.countdown[0], "the prepared step fires first");
+  assert.equal(stopsMod.activeStop().countdownProgress, 1);
+
+  for (let i = 1; i < stopsMod.COUNTDOWN_STEPS; i++) await soloMod.nextStopCountdown();
+  const spent = await soloMod.nextStopCountdown();
+  assert.equal(spent.title, "Stop Countdown", "once spent it falls back to the printed table");
+  assert.ok(spent.text.length > 0);
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

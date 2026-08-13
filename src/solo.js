@@ -4,7 +4,8 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
          NPC_MOTIVE, NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS,
          THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
          PERSONAL_THREAT_COUNTDOWN, START_SHIFT_BY_SUIT, DESTINATIONS, SOLO_PERSONAL_THREATS,
-         NINETIES_VEHICLES, SOLO_UNSTICK, SOLO_PREP_STEPS, SOLO_ARCHETYPE_HOOKS } from "../data-solo.js";
+         NINETIES_VEHICLES, SOLO_UNSTICK, SOLO_PREP_STEPS, SOLO_ARCHETYPE_HOOKS,
+         SOLO_PRINCIPLES } from "../data-solo.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney, listCharacters } from "./store.js";
@@ -105,6 +106,33 @@ function logEvent(kind, text, card = null) {
   write({ events: [{ id: uid(), kind, text, card, at: Date.now() }, ...(s.events || [])].slice(0, 30) });
 }
 
+/**
+ * The personal Threat closes distance in three steps, whether a face card fired it or
+ * you pushed the button. One counter, stored on the Journey — the event list is capped
+ * and cannot be trusted to count.
+ */
+export function advancePersonalThreat() {
+  const done = state().personalThreatStep || 0;
+  if (done >= PERSONAL_THREAT_COUNTDOWN.length) return null;
+  write({ personalThreatStep: done + 1 });
+  const step = PERSONAL_THREAT_COUNTDOWN[done];
+  return { ...step, index: done + 1, of: PERSONAL_THREAT_COUNTDOWN.length };
+}
+
+/** The live Stop's own Countdown if there is one, otherwise the printed D66 table. */
+export async function nextStopCountdown() {
+  const current = activeStop();
+  if (current && current.countdownProgress < current.countdown.length) {
+    const fired = advanceCountdown(current.id);
+    if (fired) return { text: fired.step, title: `Countdown ${fired.index} of ${fired.of}` };
+  }
+  const r = rollStopCountdown();
+  return { text: r.event, title: "Stop Countdown" };
+}
+
+const threatStepsLeft = () =>
+  PERSONAL_THREAT_COUNTDOWN.length - (state().personalThreatStep || 0);
+
 function build(rerender) {
   const s = state();
   const wrap = el("div", {}, el("h1", {}, "Solo"));
@@ -129,8 +157,29 @@ function build(rerender) {
       }),
       act("Personal Threat", async () => {
         const t = SOLO_PERSONAL_THREATS[d6() - 1];
+        write({ personalThreatStep: 0 });
         logEvent("Personal Threat", t); rerender();
-        await modal({ title: "Personal Threat", body: el("p", {}, t), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+        await modal({
+          title: "Personal Threat",
+          body: el("div", {}, el("p", {}, t),
+            el("p", { class: "faint" }, "Three steps from here: you hear about it, it makes contact, it attacks.")),
+          actions: [{ label: "Good", value: true, class: "btn-primary" }]
+        });
+      }),
+      act("Goal and Threat for your archetype", async () => {
+        const chars = listCharacters();
+        const body = el("div", {});
+        const seen = new Set();
+        for (const c of chars) {
+          const hook = SOLO_ARCHETYPE_HOOKS[c.archetype];
+          if (!hook || seen.has(c.archetype)) continue;
+          seen.add(c.archetype);
+          body.append(el("h3", {}, c.name || "Unnamed"),
+            el("p", {}, `Goal: ${hook.goal}`),
+            el("p", { class: "faint" }, `Threat: ${hook.threat}`));
+        }
+        if (!seen.size) body.append(el("p", { class: "faint" }, "No Traveler with a suggested hook yet — create one first, or roll your own Goal words on the Journey screen."));
+        await modal({ title: "The book's suggestions", body, actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }),
       act("Vehicle", async () => {
         const v = NINETIES_VEHICLES[d6() - 1];
@@ -213,23 +262,17 @@ function build(rerender) {
     "When the players stall, or a face card tells you to, move a Countdown forward.",
     row(
       act("Stop Countdown", async () => {
-        const current = activeStop();
-        // A live Stop advances its own prepared Countdown; otherwise roll the D66 table.
-        if (current && current.countdownProgress < current.countdown.length) {
-          await fireCountdown(current, rerender);
-          return;
-        }
-        const r = rollStopCountdown();
-        logEvent("Stop Countdown", r.event);
+        const fired = await nextStopCountdown();
+        logEvent("Stop Countdown", fired.text);
         rerender();
-        await modal({ title: "Stop Countdown", body: el("p", {}, r.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+        await modal({ title: fired.title, body: el("p", {}, fired.text), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }, true),
-      act("Personal Threat step", async () => {
-        const fired = (state().events || []).filter((e) => e.kind === "Personal Threat Countdown").length;
-        const stepData = PERSONAL_THREAT_COUNTDOWN[Math.min(2, fired)];
-        logEvent("Personal Threat Countdown", `Step ${stepData.step}: ${stepData.event}`);
+      act(`Personal Threat step${threatStepsLeft() ? "" : " (played out)"}`, async () => {
+        const step = advancePersonalThreat();
+        if (!step) { showToast("That Threat has played out — it has caught up with you. Invent a new one or go on without."); return; }
+        logEvent("Personal Threat Countdown", `Step ${step.index}: ${step.event}`);
         rerender();
-        await modal({ title: `Personal Threat — step ${stepData.step} of 3`, body: el("p", {}, stepData.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+        await modal({ title: `Personal Threat — step ${step.index} of ${step.of}`, body: el("p", {}, step.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }))));
 
   // ------------------------------------------------------------ 6 the session
@@ -255,6 +298,8 @@ function build(rerender) {
     wrap.append(log);
   }
 
+  wrap.append(el("details", { class: "explain" }, el("summary", {}, "How to play this way"),
+    el("ul", { class: "list" }, ...SOLO_PRINCIPLES.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "When you are stuck"),
     el("ul", { class: "list" }, ...SOLO_UNSTICK.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
   return wrap;
@@ -298,10 +343,11 @@ async function draw(rerender) {
 
   if (event?.id === "conversation") extra = `Subject: ${CONVERSATION_SUBJECTS[d6() - 1]}`;
   if (event?.id === "travelerEvent") extra = TRAVELER_EVENTS[d6() - 1].event;
-  if (event?.id === "stopCountdown") extra = rollStopCountdown().event;
+  // Both routes into a Countdown share one counter, so a card and a button cannot desync it.
+  if (event?.id === "stopCountdown") extra = (await nextStopCountdown()).text;
   if (event?.id === "personalThreat") {
-    const step = PERSONAL_THREAT_COUNTDOWN[Math.min(2, (s.history.filter((h) => h.note.includes("Personal Threat")).length))];
-    extra = step.event;
+    const step = advancePersonalThreat();
+    extra = step ? `Step ${step.index} of ${step.of}: ${step.event}` : "It has already caught up with you — that Threat has played out.";
   }
 
   write({ deck, history: [{ suit: card.suit, rank: card.rank, note }, ...s.history].slice(0, 40) });

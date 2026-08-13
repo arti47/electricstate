@@ -76,6 +76,32 @@ export function damageCombatant(id, amount) {
   return { name: combatant.name, health, kind: "threat" };
 }
 
+/**
+ * A reaction covers every attack until the defender's next turn, and costs that turn.
+ * The same flag carries a stun: both mean "does not act next round".
+ */
+export function forfeitNextTurn(id, reason = "reacted") {
+  const c = getCombat();
+  if (!c) return null;
+  const combatant = findCombatant(id);
+  if (!combatant) return null;
+  writeCombat({ ...c, combatants: c.combatants.map((x) => (x.id === id ? { ...x, forfeit: reason } : x)) });
+  return combatant;
+}
+
+/** Advance a round: everyone acts again except whoever spent their turn reacting. */
+export function nextRound(c = getCombat()) {
+  if (!c) return null;
+  const next = {
+    ...c, round: c.round + 1,
+    combatants: c.combatants.map((x) => x.forfeit
+      ? { ...x, acted: true, forfeit: null, forfeited: x.forfeit }
+      : { ...x, acted: false, forfeited: null })
+  };
+  writeCombat(next);
+  return next;
+}
+
 export function rollInitiative() {
   const a = d6(), b = d6();
   const travelers = listCharacters();
@@ -128,10 +154,7 @@ function build(rerender) {
     el("p", { class: "faint" }, `One move and one action, or two moves — the move comes first. A reaction costs your next turn but covers every attack until then.`),
     el("div", { class: "btn-row" },
       el("button", {
-        class: "btn btn-primary", onclick: () => {
-          const next = { ...c, round: c.round + 1, combatants: c.combatants.map((x) => ({ ...x, acted: false })) };
-          writeCombat(next); rerender();
-        }
+        class: "btn btn-primary", onclick: () => { nextRound(c); rerender(); }
       }, "Next round"),
       el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"),
       el("button", { class: "btn btn-danger", onclick: () => { endCombat(); rerender(); } }, "End combat"))));
@@ -155,6 +178,17 @@ function combatantCard(combatant, c, rerender) {
       el("strong", {}, combatant.name),
       ch ? el("span", { class: "mono faint" }, `${ch.state.health}/${maxHealth(ch)}`)
          : el("span", { class: "mono faint" }, `${combatant.health ?? "?"} hp`)));
+
+  if (combatant.forfeit) {
+    card.append(el("p", { class: "faint" }, combatant.forfeit === "stunned"
+      ? "Stunned — they lose their next turn."
+      : "Reacted — that costs their next turn, but it answers every attack until then."));
+  }
+  if (combatant.forfeited) {
+    card.append(el("p", { class: "faint" }, combatant.forfeited === "stunned"
+      ? "Sitting this round out: stunned."
+      : "Sitting this round out: they reacted last round."));
+  }
 
   card.append(el("div", { class: "card-row", style: "margin-top:6px" },
     el("span", { class: "faint" }, `Zone ${combatant.zone}`),

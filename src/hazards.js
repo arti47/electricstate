@@ -7,6 +7,7 @@ import { maxHealth } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { forfeitNextTurn } from "./combat.js";
 
 // ------------------------------------------------------------------- hazards
 /** Blast Power, Fire Intensity and disease Virulence all roll dice the target cannot push. */
@@ -107,7 +108,8 @@ async function applyHazard(ch, label, power, { dodgeable = false } = {}, onDone)
   const next = structuredClone(ch);
   const hMax = maxHealth(next);
   next.state.health = clamp(next.state.health - final, 0, hMax);
-  if (dodge) next.state.frozen = true;
+  // Throwing yourself clear costs the next turn, same as freezing does.
+  if (dodge) { next.state.frozen = true; forfeitNextTurn(ch.id, "frozen"); }
   saveCharacter(next);
   renderVitals(next);
   logRoll({ by: ch.name, label, dice: roll.dice, outcome: `${final} damage${dodge ? ` after dodging (${dodge.join(" ")})` : ""}` });
@@ -250,20 +252,38 @@ async function stunt(ch, vehicle, terrain, onDone) {
     return;
   }
   await modal({ title: "Lost control", body: el("p", {}, "No successes — roll on the accident table."), actions: [{ label: "Accident", value: true, class: "btn-danger" }] });
-  await accident(terrain, onDone);
+  await accident(terrain, onDone, 0, ch);
 }
 
-async function accident(terrain, onDone, modifier = 0) {
+async function accident(terrain, onDone, modifier = 0, driver = null) {
   const roll = Math.min(6, d6() + modifier);
   const table = ACCIDENTS[terrain] || ACCIDENTS.road;
   const entry = table.find((e) => e.d6 === roll) || table[table.length - 1];
   logRoll({ label: `Accident (${terrain})`, dice: [roll], outcome: entry.name });
-  await modal({
+
+  // A spin is not over: another Agility roll, and failing it rolls again at +2.
+  const spins = /^Spin/i.test(entry.name);
+  const again = await modal({
     title: entry.name,
     body: el("div", {}, el("p", {}, entry.effect),
       modifier ? el("p", { class: "faint" }, `Rolled with +${modifier} from the previous result.`) : null),
-    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    actions: spins
+      ? [{ label: "Fight the wheel", value: true, class: "btn-primary" }, { label: "Leave it", value: false }]
+      : [{ label: "Understood", value: false, class: "btn-primary" }]
   });
+
+  if (spins && again) {
+    const dice = rollDice(Math.max(1, driver?.attributes?.agility || 3));
+    const held = countSixes(dice) > 0;
+    logRoll({ by: driver?.name, label: "Control the spin", dice, outcome: held ? "brought it round" : "worse" });
+    await modal({
+      title: held ? "Brought it round" : "It gets away from you",
+      body: el("div", {}, el("p", { class: "mono faint" }, dice.join(" ")),
+        el("p", {}, held ? "The vehicle straightens out. That roll cost no action." : `Rolling again at +${ACCIDENT_REROLL_MODIFIER}.`)),
+      actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    });
+    if (!held) { await accident(terrain, onDone, modifier + ACCIDENT_REROLL_MODIFIER, driver); return; }
+  }
   onDone?.();
 }
 

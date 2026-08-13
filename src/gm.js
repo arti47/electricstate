@@ -4,7 +4,8 @@ import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATION
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, COUNTDOWN_ELEMENTS,
          COUNTDOWN_PRINCIPLE, NEUROSCAPE, NPC_REACTIONS, COMBAT_MORALE, JOURNEY_LENGTH,
          KICKER_EXAMPLES, WHY_STICK_TOGETHER, MINOR_NPC_BASELINE, D66_ORDER } from "../data-gm.js";
-import { THREATS, THREAT_RULES, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES } from "../data-npcs.js";
+import { THREATS, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES, THREAT_ANATOMY,
+         THREAT_GOAL_KINDS } from "../data-npcs.js";
 import { listCharacters, getJourney, saveJourney } from "./store.js";
 import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveStop, removeStop,
          advanceCountdown, resolveStop, stopCard } from "./stops.js";
@@ -129,6 +130,22 @@ function threatCard() {
   card.append(el("div", { class: "field" }, select), detail);
   card.append(el("p", { class: "faint" }, "Threats have no Hope, never push, and make no death rolls — you decide whether an Incapacitated Threat dies."));
   card.append(el("p", { class: "faint" }, `Minor NPCs: ${MINOR_NPC_BASELINE.allAttributes} in every attribute, optionally one talent.`));
+
+  // Building one from scratch: the four slots, which way its goal points, and a rollable ability.
+  const built = el("div", { class: "faint", "aria-live": "polite" });
+  card.append(el("details", { class: "explain" },
+    el("summary", {}, "Build a Threat"),
+    el("p", { class: "faint" }, `Four slots: ${THREAT_ANATOMY.join(", ")}.`),
+    ...THREAT_GOAL_KINDS.map((k) => el("p", { class: "faint" }, `${k.id === "atStop" ? "Aimed at the Stop" : "Aimed at the Travelers"}: ${k.blurb}`)),
+    el("p", { class: "faint" }, `Personal Threats run ${PERSONAL_THREAT_RULES.countdownSteps} steps of their own. ${PERSONAL_THREAT_RULES.principle}`),
+    el("p", { class: "faint" }, PERSONAL_THREAT_RULES.mayEnd),
+    el("div", { class: "btn-row" },
+      el("button", {
+        class: "btn",
+        onclick: () => built.replaceChildren(el("strong", {}, "Special ability: "),
+          SPECIAL_ABILITIES[Math.floor(Math.random() * SPECIAL_ABILITIES.length)])
+      }, "Roll a special ability")),
+    built));
   show();
   return card;
 }

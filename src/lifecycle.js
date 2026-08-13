@@ -143,10 +143,33 @@ export function advanceTime(unit, options = {}) {
 }
 
 // -------------------------------------------------------------- recovery: Hope
+/** A Lone wolf works it out alone: their own Tension drops a step and they regain a Hope. */
+export function reduceTensionAlone(aId, towardId) {
+  const a = listCharacters().find((c) => c.id === aId);
+  if (!a) return { ok: false, reason: "No such Traveler." };
+  if (!(a.talents || []).includes("loneWolf") || !TENSION.loneWolfMayReduceAlone) {
+    return { ok: false, reason: "Only a Lone wolf can settle it without the other person there." };
+  }
+  const mine = a.tension?.[towardId] ?? 0;
+  if (mine < TENSION.reduce.minimumTensionToReduce) return { ok: false, reason: "No Tension there to work off." };
+
+  snapshot();
+  const next = structuredClone(a);
+  const blocked = (next.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "noHopeFromTension"));
+  next.tension = { ...(next.tension || {}), [towardId]: Math.max(0, mine - 1) };
+  const notes = [`${next.name}: Tension ${mine} → ${mine - 1}.`];
+  if (blocked) notes.push(`${next.name} is too withdrawn to gain Hope this way.`);
+  else if (next.state.hope < maxHope(next)) { next.state.hope += TENSION.reduce.hopeGain; notes.push("+1 Hope."); }
+  else notes.push("Already at full Hope.");
+  saveCharacter(next);
+  return { ok: true, notes };
+}
+
 /** Reduce Tension between two Travelers: both drop one step and each regains a Hope. */
 export function reduceTension(aId, bId) {
   const a = listCharacters().find((c) => c.id === aId);
   const b = listCharacters().find((c) => c.id === bId);
+  if (aId === bId) return { ok: false, reason: "Pick two different Travelers." };
   if (!a || !b) return { ok: false, reason: "Both Travelers must exist." };
 
   const aT = a.tension?.[bId] ?? 0, bT = b.tension?.[aId] ?? 0;
@@ -246,7 +269,17 @@ function build(rerender) {
           if (!res.ok) { showToast(res.reason, "danger"); return; }
           await summary("Tension reduced", res.notes, rerender);
         }
-      }, "Reduce Tension")));
+      }, "Reduce Tension"),
+      // Lone wolf settles it without the other person in the room.
+      chars.some((c) => (c.talents || []).includes("loneWolf"))
+        ? el("button", {
+            class: "btn btn-block", style: "margin-top:8px", onclick: async () => {
+              const res = reduceTensionAlone(a.value, b.value);
+              if (!res.ok) { showToast(res.reason, "danger"); return; }
+              await summary("Worked out alone", res.notes, rerender);
+            }
+          }, "Lone wolf: settle it alone")
+        : null));
   }
 
   if (canUndo()) {

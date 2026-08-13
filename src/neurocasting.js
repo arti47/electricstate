@@ -93,9 +93,17 @@ function build(rerender) {
     return wrap;
   }
 
+  // Being in here means the helmet is on, which the real world charges you for.
+  if (!ch.state.wearingCaster) {
+    const worn = structuredClone(ch);
+    worn.state.wearingCaster = true;
+    saveCharacter(worn);
+  }
+
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" }, el("strong", {}, NEUROCASTERS.find((n) => n.id === ch.neurocaster).name),
       el("span", { class: "mono faint" }, `P${caster.processor} N${caster.network} G${caster.graphics}`)),
+    el("p", { class: "faint" }, "The helmet is on: real-world actions needing mobility or vision lose dice, and you act in one realm per round. Take it off on the sheet when you are done."),
     el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;margin-top:8px" },
       el("span", {}, el("strong", {}, "Plugged into a terminal"), el("div", { class: "faint" }, `+${WIRED_BONUS} dice to everything`)),
       el("input", { type: "checkbox", checked: session.wired, style: "width:auto;min-height:auto", onchange: (e) => { session.wired = e.target.checked; } })),

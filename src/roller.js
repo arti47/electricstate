@@ -2,7 +2,9 @@
 // Pure resolution functions live at the top so the harness can test them without a DOM.
 import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6 } from "./core.js";
 import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
-         BODY_ARMOR, COVER, NEUROCASTERS, TASER_RULE, TRAUMATIC_EVENTS, RANGES } from "../data.js";
+         BODY_ARMOR, COVER, NEUROCASTERS, NEUROCASTER_DEFAULT_PENALTY, TASER_RULE,
+         FULL_AUTO_MAX_BURSTS, TRAUMATIC_EVENTS, RANGES } from "../data.js";
+import { STUNTS } from "../data-vehicles.js";
 import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss, isDronePilot } from "./derived.js";
 import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
@@ -10,7 +12,7 @@ import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } f
 import { Settings } from "./settings.js";
 import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
-import { getCombat, findCombatant, defencePool, damageCombatant } from "./combat.js";
+import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn } from "./combat.js";
 
 // ============================================================ pure resolution
 
@@ -91,6 +93,16 @@ export function applicableTalents(ch, attr) {
   return (ch.talents || [])
     .map(findTalent)
     .filter((t) => t && t.effect?.kind === "dice" && (!t.effect.attr || t.effect.attr === attr));
+}
+
+/**
+ * What the helmet costs out here. Zero unless one is actually on their head —
+ * the Stimulus GO is the light one at −1, everything else is −2 (p.92).
+ */
+export function casterDicePenalty(ch) {
+  if (!ch?.state?.wearingCaster || !ch.neurocaster) return 0;
+  const model = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
+  return model?.realWorldPenalty ?? NEUROCASTER_DEFAULT_PENALTY;
 }
 
 export function tensionToward(ch, otherId) {
@@ -209,10 +221,32 @@ function build(rerender) {
     if (rangeMod === null) weaponCard.append(el("p", { style: "color:var(--danger)" }, "Out of range — this weapon cannot reach that far."));
     else if (rangeMod < 0) weaponCard.append(el("p", { class: "faint" }, `${rangeMod} dice for firing inside its minimum range.`));
     if (chosen.fullAuto) weaponCard.append(toggleRow("Full auto", "fullAuto", "On a hit you may fire again, up to three bursts. Empties the magazine.", rerender));
-    weaponCard.append(toggleRow("Ambush", "ambush", "An unaware target cannot fight back or dodge. Sneaking into close combat costs 3 dice.", rerender));
+    // You cannot ambush someone already fighting: anyone in the tracker is in active combat.
+    if (combat?.active) {
+      pending.ambush = false;
+      weaponCard.append(el("p", { class: "faint" }, "No ambush: everyone here is already in active combat."));
+    } else {
+      weaponCard.append(toggleRow("Ambush", "ambush", "An unaware target cannot fight back or dodge. Sneaking into close combat costs 3 dice.", rerender));
+    }
     if (chosen.special === "stun") weaponCard.append(el("p", { class: "faint" }, "No damage: the target rolls Strength at −2 dice or loses their next turn."));
   }
   wrap.append(weaponCard);
+
+  // circumstances that cost dice wherever you are: the helmet on your head, the wheel in your hands
+  const casterPenalty = casterDicePenalty(ch);
+  const circumstances = el("div", { class: "card" }, el("h3", {}, "Circumstances"));
+  if (casterPenalty) {
+    circumstances.append(toggleRow("Wearing the neurocaster",
+      "casterOn",
+      `${casterPenalty} dice on any real-world action needing mobility or vision. Untick it for something you could do blind and still.`,
+      rerender));
+  }
+  circumstances.append(toggleRow("Doing this while driving", "driving",
+    `${STUNTS.otherActionsWhileDriving} dice for anything that is not maneuvering the vehicle.`, rerender));
+  wrap.append(circumstances);
+
+  const casterMod = pending.casterOn && casterPenalty ? casterPenalty : 0;
+  const drivingMod = pending.driving ? STUNTS.otherActionsWhileDriving : 0;
 
   // gear + modifier
   wrap.append(el("div", { class: "card" },
@@ -240,6 +274,7 @@ function build(rerender) {
     talentBonus: talentDice + tension,
     gearBonus: pending.gear + weaponGear,
     modifier: pending.modifier + mods.mod + (rangeMod || 0) + ambushMod + (pending.helpers || 0)
+      + casterMod + drivingMod
   });
 
   wrap.append(el("div", { class: "card" },
@@ -250,7 +285,9 @@ function build(rerender) {
     tension ? el("div", { class: "faint" }, `Tension +${tension}`) : null,
     rangeMod ? el("div", { class: "faint" }, `Range ${rangeMod}`) : null,
     pending.helpers ? el("div", { class: "faint" }, `${pending.helpers} helping (+${pending.helpers}) — helping costs their turn in combat`) : null,
-    ambushMod ? el("div", { class: "faint" }, `Ambush ${ambushMod}`) : null));
+    ambushMod ? el("div", { class: "faint" }, `Ambush ${ambushMod}`) : null,
+    casterMod ? el("div", { class: "faint" }, `Neurocaster ${casterMod}`) : null,
+    drivingMod ? el("div", { class: "faint" }, `Driving ${drivingMod}`) : null));
 
   const legality = pushLegality(ch);
   wrap.append(el("div", { class: "btn-row" },
@@ -287,15 +324,16 @@ function numberRow(label, value, onChange) {
       el("button", { class: "btn", "aria-label": `Raise ${label}`, onclick: () => onChange(value + 1) }, "+")));
 }
 
-async function doRoll(ch, pool, rerender, manual) {
+async function doRoll(ch, pool, rerender, manual, burst = 1) {
   let supplied = null;
   if (manual) {
-    supplied = await askDice(pool.base, pool.gear, "Enter the dice you rolled");
+    supplied = await askDice(pool.base, pool.gear, burst > 1 ? `Burst ${burst} — enter the dice` : "Enter the dice you rolled");
     if (!supplied) return;
   }
   pending.result = rollPool({ base: pool.base, gear: pool.gear }, supplied);
   pending.pool = pool;
-  writeLog(ch, pool, pending.result, false);
+  pending.burst = burst;
+  writeLog(ch, pool, pending.result, false, burst);
   rerender();
 }
 
@@ -351,11 +389,73 @@ function resultCard(ch, pool, legality, rerender) {
     card.append(el("p", { class: "faint" }, bits.join(" · ") || "Pushed at no cost."));
   }
 
-  card.append(el("div", { class: "btn-row", style: "margin-top:12px" },
-    el("button", { class: "btn", onclick: () => { pending.result = null; rerender(); } }, "Clear"),
-    el("button", { class: "btn", onclick: () => opposedDialog(ch, total, rerender) }, "They fight back"),
-    el("button", { class: "btn", onclick: () => damageDialog(ch, rerender) }, "Apply damage")));
+  const weapon = pending.weaponId ? findWeapon(pending.weaponId) : null;
+  const burst = pending.burst || 1;
+
+  // Full auto: a hit buys another burst, up to three rolls, at the same target or a new one.
+  if (weapon?.fullAuto && pending.fullAuto && total > 0) {
+    if (burst < FULL_AUTO_MAX_BURSTS) {
+      card.append(el("button", {
+        class: "btn btn-block", style: "margin-top:8px",
+        onclick: () => doRoll(ch, pool, rerender, Settings.manualDice(), burst + 1)
+      }, `Fire burst ${burst + 1} of ${FULL_AUTO_MAX_BURSTS}`));
+      card.append(el("p", { class: "faint" }, "Same target or another. The magazine is empty either way — reloading is an action."));
+    } else {
+      card.append(el("p", { class: "faint" }, "Three bursts is the limit. The magazine is empty; reloading is an action."));
+    }
+  }
+
+  // A taser deals no damage: the target rolls Strength at −2 or loses their next turn.
+  if (weapon?.special === "stun" && total > 0) {
+    card.append(el("button", {
+      class: "btn btn-block", style: "margin-top:8px", onclick: () => stunDialog(rerender)
+    }, "They resist the stun"));
+  }
+
+  const actions = el("div", { class: "btn-row", style: "margin-top:12px" },
+    el("button", { class: "btn", onclick: () => { pending.result = null; rerender(); } }, "Clear"));
+  if (pending.ambush) {
+    card.append(el("p", { class: "faint" }, "Ambushed — they are unaware, so they cannot fight back or dodge. They take the hit."));
+  } else {
+    actions.append(el("button", { class: "btn", onclick: () => opposedDialog(ch, total, rerender) }, "They fight back"));
+  }
+  if (weapon?.special !== "stun") {
+    actions.append(el("button", { class: "btn", onclick: () => damageDialog(ch, rerender) }, "Apply damage"));
+  }
+  card.append(actions);
   return card;
+}
+
+/** The taser: no damage, a Strength roll at −2, and a lost turn on a failure (p.81). */
+async function stunDialog(onDone) {
+  const target = pending.targetId ? findCombatant(pending.targetId) : null;
+  const pool = el("input", {
+    type: "number", min: "1", "aria-label": "Their Strength",
+    value: String(target ? defencePool(target, "close") : 3)
+  });
+  const go = await modal({
+    title: "Stunned?",
+    body: el("div", {},
+      el("p", { class: "faint" }, `They roll Strength at ${TASER_RULE.modifier} dice. No 6 and they lose their next turn.`),
+      target ? el("p", {}, el("strong", {}, target.name), el("span", { class: "faint" }, " is resisting.")) : null,
+      el("div", { class: "field" }, el("label", {}, "Their Strength"), pool)),
+    actions: [{ label: "Roll", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!go) return;
+
+  const dice = rollDice(Math.max(1, (Number(pool.value) || 1) + TASER_RULE.modifier));
+  const held = countSixes(dice) > 0;
+  if (!held && target) forfeitNextTurn(target.id, "stunned");
+  logRoll({ label: "Resist the stun", by: target?.name, dice, outcome: held ? "shook it off" : "loses their next turn" });
+  await modal({
+    title: held ? "Shook it off" : "Stunned",
+    body: el("div", {},
+      el("p", { class: "mono faint" }, dice.join(" ")),
+      el("p", {}, held ? "They stay on their feet and act as normal." : "They lose their next turn."),
+      !held && !target ? el("p", { class: "faint" }, "Nothing tracked to mark — remember it costs them their next turn.") : null),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+  onDone?.();
 }
 
 async function doPush(ch, pool, rerender) {
@@ -382,10 +482,10 @@ async function doPush(ch, pool, rerender) {
   rerender();
 }
 
-function writeLog(ch, pool, result, pushed) {
+function writeLog(ch, pool, result, pushed, burst = 1) {
   logRoll({
     by: ch.name || "Unnamed",
-    label: `${ATTRIBUTES.find((a) => a.id === pending.attr)?.label || "Roll"}${pushed ? " (pushed)" : ""}`,
+    label: `${ATTRIBUTES.find((a) => a.id === pending.attr)?.label || "Roll"}${burst > 1 ? ` — burst ${burst}` : ""}${pushed ? " (pushed)" : ""}`,
     parts: pool.parts,
     dice: [...result.base, ...result.gear],
     base: result.base, gear: result.gear,
@@ -430,6 +530,8 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
 
   const defenderDice = rollDice(Math.max(1, Number(dicePool.value) || 1));
   const defenderSixes = countSixes(defenderDice);
+  // Reacting is not free: it costs the defender their next turn, however the roll lands.
+  if (target) forfeitNextTurn(target.id, "reacted");
   const outcome = resolveOpposed(attackerSixes, defenderSixes, {
     baseDamage: Math.max(0, Number(damage.value) || 0),
     kind: kindSelect.value
@@ -512,7 +614,7 @@ export async function traumaticEventDialog(ch, onDone) {
 
   const next = structuredClone(ch);
   next.state.hope = clamp(next.state.hope - outcome.lost, 0, maxHope(next));
-  if (outcome.freeze) next.state.frozen = true;
+  if (outcome.freeze) { next.state.frozen = true; forfeitNextTurn(ch.id, "frozen"); }
   saveCharacter(next);
   renderVitals(next);
 
