@@ -254,4 +254,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   three-step countdown, stored **per Traveler** as `solo.personalThreats[charId] = {text, step}`.
   A one-counter save migrates onto the lead. A face card advances whoever holds the spotlight,
   because the card does not say whose; the button asks when more than one is running.
+- **Never remove a `.modal-backdrop` by hand.** `ui.dismissModal(value)` closes the dialog on
+  top through its real `close`, so the open-modal count stays honest. Four callers did it by
+  hand and the count drifted, which left `overflow: hidden` on the body — the app stopped
+  scrolling, and not until the *next* dialog closed. `ui.releaseScrollLock()` runs on every
+  route render as the backstop.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

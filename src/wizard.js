@@ -13,7 +13,7 @@ import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
          GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS, ANYTHING_WORDS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
-import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar, dismissModal } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 
 const STEPS = ["archetype", "attributes", "talents", "identity", "gear", "journey", "review"];
@@ -501,7 +501,7 @@ async function choosePregen() {
     const erratum = PREGEN_ERRATA.find((e) => e.id === p.id);
     body.append(el("li", {}, el("button", {
       class: "row",
-      onclick: () => { instantiatePregen(p); document.querySelector(".modal-backdrop")?.remove(); document.body.style.removeProperty("overflow"); }
+      onclick: () => { instantiatePregen(p); dismissModal(false); }
     },
       el("div", { class: "card-row" }, el("strong", {}, p.name),
         el("span", { class: "faint mono" }, `${p.health}/${p.hope}`)),

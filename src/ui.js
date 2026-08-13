@@ -22,11 +22,15 @@ export function modal({ title, body, actions = [], dismissible = true }) {
 
     const close = (value) => {
       backdrop.remove();
-      openModals--;
+      openModals = Math.max(0, openModals - 1);
       if (!openModals) document.body.style.removeProperty("overflow");
       if (prevFocus && prevFocus.focus) prevFocus.focus();
       resolve(value);
     };
+    // A caller that closes the dialog from inside its own body has to go through this,
+    // or the open-modal count drifts up and `overflow: hidden` never comes off the body —
+    // which reads as "the app will not scroll" long after the dialog has gone.
+    backdrop.__close = close;
 
     if (actions.length) {
       const row = el("div", { class: "btn-row", style: "margin-top:16px" });
@@ -56,6 +60,27 @@ export function modal({ title, body, actions = [], dismissible = true }) {
     document.body.style.overflow = "hidden";
     (box.querySelector("input, button") || box).focus();
   });
+}
+
+/**
+ * Close the dialog on top from inside its own body, resolving its promise. Never remove a
+ * `.modal-backdrop` by hand: see the note in `close` above.
+ */
+export function dismissModal(value) {
+  const stack = document.querySelectorAll("#modalRoot .modal-backdrop");
+  const top = stack[stack.length - 1];
+  if (!top) return false;
+  if (typeof top.__close === "function") top.__close(value);
+  else { top.remove(); document.body.style.removeProperty("overflow"); }
+  return true;
+}
+
+/** Nothing open means nothing may be holding the page still. The router calls this. */
+export function releaseScrollLock() {
+  if (!document.querySelector("#modalRoot .modal-backdrop")) {
+    openModals = 0;
+    document.body.style.removeProperty("overflow");
+  }
 }
 
 /**

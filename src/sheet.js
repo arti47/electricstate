@@ -7,7 +7,7 @@ import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./deriv
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
-import { showToast, confirmModal, modal, promptModal, explain } from "./ui.js";
+import { showToast, confirmModal, modal, promptModal, explain, dismissModal } from "./ui.js";
 
 // ---------------------------------------------------------------- vitals header
 /**
@@ -66,8 +66,7 @@ function switcher(ch, onSwitch) {
         body.append(el("li", {}, el("button", {
           class: "row" + (other.id === ch.id ? " is-here" : ""),
           onclick: () => {
-            document.querySelector(".modal-backdrop")?.remove();
-            document.body.style.removeProperty("overflow");
+            dismissModal(false);
             if (other.id === ch.id) return;
             if (onSwitch) onSwitch(other.id);
             else location.hash = `#/sheet/${other.id}`;
@@ -552,7 +551,7 @@ function picker(table, kind, add) {
     if (entry.name === "None") continue;
     body.append(el("li", {}, el("button", {
       class: "row",
-      onclick: () => { document.querySelector(".modal-backdrop")?.remove(); document.body.style.removeProperty("overflow"); add(entry, kind); }
+      onclick: () => { dismissModal(false); add(entry, kind); }
     },
       el("div", { class: "card-row" }, el("strong", {}, entry.name), el("span", { class: "faint mono" }, entry.roll)),
       el("div", { class: "faint" }, describeCondition(entry)))));

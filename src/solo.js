@@ -11,7 +11,7 @@ import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATION
 import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
-import { showToast, modal, explain, actionBar } from "./ui.js";
+import { showToast, modal, explain, actionBar, dismissModal } from "./ui.js";
 
 const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" };
 
@@ -103,11 +103,7 @@ async function pickTraveler(title, cast = listCharacters()) {
   const body = el("ul", { class: "list" });
   for (const c of cast) {
     body.append(el("li", {}, el("button", {
-      class: "row", onclick: () => {
-        picked = c;
-        document.querySelector(".modal-backdrop")?.remove();
-        document.body.style.removeProperty("overflow");
-      }
+      class: "row", onclick: () => { picked = c; dismissModal(false); }
     }, el("strong", {}, c.name || "Unnamed"))));
   }
   await modal({ title, body, actions: [{ label: "Cancel", value: false }] });

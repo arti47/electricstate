@@ -584,6 +584,57 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(switcher !== null, "the vitals header does not say who it is about");
   check(switcher && switcher.h >= 24, `the Traveler switcher is only ${switcher && switcher.h}px tall`);
 
+  // A dialog that closes from inside its own body used to remove the backdrop by hand and
+  // leave the open-modal count high, so `overflow: hidden` stayed on the body for the rest
+  // of the session: the app simply stopped scrolling.
+  const charId = await page.evaluate(() => Object.values(__game.read().characters)[0].id);
+  const overflowAfter = [];
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate((id) => { location.hash = `#/injury/${id}`; }, charId);
+    await page.waitForTimeout(120);
+    await page.locator('#screen button:has-text("Choose")').first().click();
+    await page.waitForTimeout(120);
+    await page.locator(".modal .list button").first().click();
+    await page.waitForTimeout(180);
+    overflowAfter.push(await page.evaluate(() => ({
+      overflow: getComputedStyle(document.body).overflow,
+      modals: document.querySelectorAll(".modal-backdrop").length
+    })));
+  }
+  check(overflowAfter.every((x) => x.modals === 0), "a modal was left on screen after choosing from it");
+  check(overflowAfter.every((x) => x.overflow !== "hidden"),
+    `the page stopped scrolling after using a dialog: ${JSON.stringify(overflowAfter)}`);
+
+  // The defect only shows on the NEXT dialog: a hand-closed one left the count high, so the
+  // following dialog's own close decremented to one and never took the lock off. Open one
+  // that closes properly and check the page is still free.
+  await page.evaluate(() => { location.hash = "#/combat"; });
+  await page.waitForTimeout(150);
+  // A fight may already be running from the density checks above; start one only if not.
+  if (await page.locator('#screen button:has-text("Start combat")').count()) {
+    await page.locator('#screen button:has-text("Start combat")').first().click();
+    await page.waitForTimeout(150);
+  }
+  await page.locator('#screen button:has-text("Add threat")').first().click();
+  await page.waitForTimeout(150);
+  await page.locator('.modal button:has-text("Cancel")').first().click();
+  await page.waitForTimeout(200);
+  const afterNormalClose = await page.evaluate(() => ({
+    overflow: getComputedStyle(document.body).overflow,
+    modals: document.querySelectorAll(".modal-backdrop").length
+  }));
+  check(afterNormalClose.modals === 0, "the second dialog stayed on screen");
+  check(afterNormalClose.overflow !== "hidden",
+    "a dialog closed from its own body left the scroll lock for the next one to inherit");
+
+  // And the router refuses to leave a lock behind, whatever put it there.
+  await page.evaluate(() => { location.hash = "#/home"; });
+  await page.waitForTimeout(120);
+  await page.evaluate(() => { document.body.style.overflow = "hidden"; location.hash = "#/rules"; });
+  await page.waitForTimeout(150);
+  check(await page.evaluate(() => getComputedStyle(document.body).overflow) !== "hidden",
+    "navigating did not clear a stuck scroll lock");
+
   // zoom is locked off
   const zoom = await page.evaluate(() => {
     const meta = document.querySelector('meta[name="viewport"]')?.content || "";

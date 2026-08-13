@@ -434,3 +434,25 @@ entry, and a legacy one-counter save migrates onto its lead and carries on from 
 ## Result
 
 92 invariants, browser smoke clean, three probes clean, button audit clean.
+
+---
+
+# Fourteenth pass — the app stopped scrolling
+
+Reported from play: at some point in a session the page simply will not scroll any more.
+
+| # | Finding | Fix |
+|---|---|---|
+| 91 | **Four dialogs closed themselves by removing `.modal-backdrop` by hand.** The modal's own bookkeeping never ran, so `openModals` drifted upward. The symptom is delayed and looks unrelated: the hand-closed dialog does clear `overflow`, but the *next* dialog to close normally decrements the count to one, the `if (!openModals)` guard fails, and `overflow: hidden` stays on the body for the rest of the session. | `ui.dismissModal(value)` closes the dialog on top through its real `close`, resolving its promise. Every hand-rolled removal now goes through it, and the decrement is clamped at zero. |
+| 92 | Nothing anywhere could recover a stuck lock. | `ui.releaseScrollLock()`, called on every route render: no backdrop on screen means nothing may be holding the page still. |
+
+## Guard
+
+The browser smoke opens and closes the injury picker three times, then opens a dialog that
+closes properly — because that second dialog is where the defect surfaces — and asserts the
+body is not locked. It also stamps a lock on by hand and asserts navigating clears it. Both
+checks were verified to fail with the defect reintroduced.
+
+## Result
+
+92 invariants, browser smoke clean, three probes clean, button audit clean.

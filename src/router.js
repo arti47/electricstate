@@ -3,6 +3,7 @@ import { $, $$, el } from "./core.js";
 import { Settings, set as setSetting } from "./settings.js";
 import { listCharacters } from "./store.js";
 import { getCombat } from "./combat.js";
+import { releaseScrollLock } from "./ui.js";
 import { homeScreen, rulesScreen, settingsScreen, rollLogScreen } from "./screens.js";
 import { soloScreen } from "./solo.js";
 import { gmScreen } from "./gm.js";
@@ -113,6 +114,10 @@ export function render() {
   const raw = (location.hash || "#/home").replace(/^#\/?/, "");
   const [path, param] = raw.split("/");
   const route = ROUTES.find((r) => r.path === path) || ROUTES[0];
+
+  // Nothing open must ever leave the page frozen. Belt and braces on top of the modal's
+  // own bookkeeping: a leaked scroll lock is indistinguishable from a broken app.
+  releaseScrollLock();
 
   const screenEl = $("#screen");
   if (route.gate && !route.gate()) {
