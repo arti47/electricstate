@@ -276,3 +276,46 @@ where the new pinned bar makes clearance worth checking.
 
 76 invariants, browser smoke clean at 360 and 390px including the new section nav and action
 bar, button audit clean across all 18 routes.
+
+# Tenth pass — measured, not read
+
+Every previous interface pass was done by reading screens. This one measured them. A probe
+seeded a realistic mid-session state — two Travelers, a Journey with a vehicle and fuel, a
+fight running into its second round, an injury with a healing clock — then walked all sixteen
+routes at 390px recording, per screen: document height in viewports, card and control counts,
+the scroll offset of the first primary action, and the effective tap target of every control.
+
+The table is what an audit by reading cannot produce. Four screens buried the one thing they
+exist to do:
+
+| Screen | Primary action | Sat at | Fold |
+|---|---|---|---|
+| Time | End Shift | 887px | 788px |
+| Neuroscape | Roll | 804px | 788px |
+| Create | Next | 826px | 788px |
+| Driving | Roll stunt | 1031px | 788px |
+
+| # | Finding | Fix |
+|---|---|---|
+| 64 | **Time buried End Shift behind seven option rows.** The screen exists to advance the clock. | The three cadence buttons pinned above the tab bar, carrying the current Shift and Day. |
+| 65 | **Neuroscape buried Roll** behind the task card, the drone picker and the helpers stepper. | Pinned, carrying progress and which attribute pair is rolling. |
+| 66 | **The wizard buried Next on every one of seven steps.** | Pinned, carrying the step number and name. |
+| 67 | **Driving buried Roll stunt** behind the repair card added in the eighth pass. | Reordered: the rolls you make in a scene come before the repairs you make between them. |
+| 68 | **Checkboxes rendered at 13px.** An inline `width:auto;min-height:auto` on every one of them overrode the stylesheet. | Removed the inline styles; 22px with `accent-color`. |
+| 69 | **Settings toggles were not wrapped in labels**, so the target was the 22px box rather than the row — on the screen where Solo and the GM screen get switched on. | Wrapped like every other option row in the app: 22px to 77px. |
+| 70 | The sheet ran 3.7 screens and 36 controls. | Dream/Flaw/Goal/Threat and Notes fold away — written at creation, read rarely, edited almost never. 3.2 screens, 30 controls. |
+| 71 | **A running fight was invisible from everywhere except the dice screen.** | The section nav carries a round badge whenever combat is active. |
+
+`actionBar()` in `ui.js` returns the spacer and the bar together, so a caller cannot forget the
+spacer and have the bar cover its own last card.
+
+## Guards
+
+The browser smoke now asserts that the primary action on the dice, time, neuro and create
+screens is above the fold without scrolling, that no Settings toggle has a target under 40px,
+and that the combat badge appears with a fight running and not otherwise. These are the checks
+that would have caught all of the above.
+
+## Result
+
+76 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.

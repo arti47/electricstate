@@ -192,6 +192,13 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - UI conventions added: `.subnav` (pill row, scrolls inside itself so the page never scrolls
   sideways), `.actionbar` (fixed above the tab bar, needs an `.actionbar-spacer` at the end of
   the screen), `.phase-fold` (a card that collapses).
+- **Tenth pass — measured layout (8 findings).** A probe seeded a mid-session state and recorded,
+  per route, where the primary action sits and how big every tap target is. Time, Neuroscape and
+  the creation wizard all buried their primary action below the fold; all three now use the
+  pinned `actionBar()`. Driving reordered so in-scene rolls precede between-scene repairs.
+  Checkboxes were 13px because an inline style beat the stylesheet; Settings toggles were not
+  wrapped in labels. The sheet folds Dream/Flaw/Goal/Threat and Notes. The section nav carries a
+  round badge while a fight is running.
 - Verification: `npm test` = 76 invariants + browser smoke; `node tests/audit.js` clicks every
   control on every screen and flags errors, unclickable controls and silent no-ops.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

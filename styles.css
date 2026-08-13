@@ -169,6 +169,11 @@ a { color: inherit; }
   white-space: nowrap;
 }
 .subnav-item.is-here { background: var(--accent); border-color: var(--accent); color: #10120f; }
+.subnav-item.is-live { border-color: var(--danger); color: var(--ink); }
+.subnav-badge {
+  margin-left: 6px; padding: 1px 5px; border-radius: 999px;
+  background: var(--danger); color: #10120f; font-family: var(--mono); font-size: .62rem;
+}
 
 /* ------------------------------------------------------------- action bar */
 /* The one control you press constantly, pinned above the tab bar. */

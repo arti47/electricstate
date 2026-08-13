@@ -92,6 +92,26 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     check(diceNav.items.includes(href), `section nav does not reach ${href}`);
   }
   check(diceNav.here === "#/dice", `section nav marks ${diceNav.here} as current, expected #/dice`);
+
+  // A running fight is state you need from anywhere, so the nav says so
+  const noBadge = await page.evaluate(() => !document.querySelector("#screen .subnav-badge"));
+  check(noBadge, "combat badge shows with no fight running");
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1")) || { schema: 1, characters: {}, rollLog: [] };
+    db.journey = { ...(db.journey || {}), combat: { active: true, round: 3, startingSide: "travelers", combatants: [] } };
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(100);
+  const badge = await page.textContent("#screen .subnav-badge").catch(() => null);
+  check(badge === "R3", `combat badge showed "${badge}", expected R3`);
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    db.journey.combat = null;
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+  });
+  await page.reload({ waitUntil: "networkidle" });
   await page.click('#screen .subnav-item[href="#/combat"]');
   await page.waitForTimeout(80);
   check(await page.evaluate(() => location.hash) === "#/combat", "section nav did not navigate");

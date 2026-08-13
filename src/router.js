@@ -2,6 +2,7 @@
 import { $, $$, el } from "./core.js";
 import { Settings, set as setSetting } from "./settings.js";
 import { listCharacters } from "./store.js";
+import { getCombat } from "./combat.js";
 import { homeScreen, rulesScreen, settingsScreen, rollLogScreen } from "./screens.js";
 import { soloScreen } from "./solo.js";
 import { gmScreen } from "./gm.js";
@@ -50,7 +51,8 @@ const SUBNAV = {
   ],
   dice: [
     ["#/dice", "Dice"],
-    ["#/combat", "Combat"],
+    // A running fight is state you need from anywhere, so the nav carries it.
+    ["#/combat", "Combat", null, () => (getCombat()?.active ? `R${getCombat().round}` : null)],
     ["#/neuro", "Neuroscape"],
     ["#/hazards", "Hazards"],
     ["#/driving", "Driving"],
@@ -64,11 +66,12 @@ function subnav(route) {
   if (items.length < 2) return null;
   const here = `#/${route.path}`;
   const nav = el("nav", { class: "subnav", "aria-label": "Section" });
-  for (const [href, label] of items) {
+  for (const [href, label, , badge] of items) {
+    const mark = badge ? badge() : null;
     nav.append(el("a", {
-      href, class: "subnav-item" + (href === here ? " is-here" : ""),
+      href, class: "subnav-item" + (href === here ? " is-here" : "") + (mark ? " is-live" : ""),
       ...(href === here ? { "aria-current": "page" } : {})
-    }, label));
+    }, label, mark ? el("span", { class: "subnav-badge" }, mark) : null));
   }
   return nav;
 }
