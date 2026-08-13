@@ -463,9 +463,17 @@ newly discovered rules ambiguities — never for permission to continue.
 
 - **No build step.** Vanilla JS, native ES modules loaded directly by the browser
   (`<script type="module" src="src/main.js">`). Clone-and-run must always work.
-- **Installable PWA:** `manifest.json`, `service-worker.js` (network-first, caches the app
-  shell + all data files, versioned `CACHE_VERSION`), an SVG icon, and an in-app
+- **Installable PWA:** `manifest.json`, `service-worker.js`, an SVG icon, and an in-app
   "Update available — reload" toast when the service worker detects new code.
+  **Mix strategies by request type**: the app shell and data files are versioned and cached
+  (`CACHE_VERSION` bumped on any shipped-file change, §10.7); navigation requests are
+  network-first with a cache fallback so a stale shell never outlives a deploy. The two
+  failure modes are equal and opposite — cache too eagerly and the app becomes a museum of
+  last month's rules; cache too little and it is useless in the basement where the game is
+  actually played. **Test the update path explicitly**: load, deploy a change, reload, assert
+  the toast appears and that accepting it yields the new version. It is the one PWA behaviour
+  that cannot be verified by looking at the running app, and the reference build never
+  tested it.
 - **Storage modes:** `localStorage` **local-only mode** works with zero configuration;
   dropping real keys into `firebase-config.js` (clearly marked placeholder block +
   `FIREBASE_ENABLED` flag) switches on cloud sync. Never commit real keys.
@@ -492,6 +500,47 @@ newly discovered rules ambiguities — never for permission to continue.
   measures), `aria-current` nav.
 - **Responsive:** phone-first; zero horizontal overflow at 320, 360 and 390px on every
   screen, in a realistic mid-campaign state (§11.2.6).
+
+
+### 5.1 Trust and ownership — **LOCKED**
+
+Two things a table will not forgive: dice it does not believe, and a character it cannot get
+back. Both are architecture, not polish.
+
+**The dice must be defensible.**
+- **Use a cryptographic source, not `Math.random()`.** `crypto.getRandomValues` is available
+  everywhere the app runs and costs nothing. `Math.random()` is unseeded, unspecified across
+  engines, and — the part that matters at a table — indefensible when somebody asks. The
+  reference build shipped `Math.random()` and had no answer.
+- **Show the dice, not the total.** Every roll displays its individual faces, which side of
+  the pool each came from, and what modified it. A result the player cannot reconstruct is a
+  result they will re-roll by hand.
+- **The roll log is the fairness record**, which is a second reason it is mandatory (§1).
+  Give it a distribution view — counts per face across the campaign — so a suspicious table
+  can check the app instead of arguing about it. It costs an afternoon and settles the
+  question permanently.
+- **Manual entry is a trust feature, not just an input mode.** A table that prefers physical
+  dice should still get every other part of the app. That is why §4.2 asks; "manual-first"
+  is a legitimate answer, not a degraded one.
+- **Never re-roll silently.** If any path can produce a second roll for one action — a
+  re-render, a double tap, a retry — the log will show it and trust evaporates. Roll once,
+  store it, render from the stored value.
+
+**The data must outlive the app.** The local-first ideals are the standard — no spinners,
+multi-device, offline, collaboration, longevity, privacy, user control — and **longevity and
+user control are the two this template holds itself to**:
+- Storage is **plain JSON**, exportable and re-importable in one tap, in a format a human can
+  read and a script can process. No proprietary container, nothing that needs the app to be
+  interpreted.
+- **The export is a supported feature, not a debug hatch.** It is tested, it round-trips, and
+  its shape is documented in the project CLAUDE.md. A character sheet the player cannot take
+  with them is a rental.
+- **Be honest about the cloud phase.** Firebase RTDB is a centralised store with
+  last-write-wins semantics. It delivers offline and multi-device; it does not deliver
+  longevity, privacy from the provider, or conflict-free collaboration. Say so in the README
+  rather than using "local-first" as a marketing word. If real collaboration matters more
+  than shipping speed, that is a CRDT decision to take deliberately at Stage B — not one to
+  discover during Phase 5.
 
 ---
 
@@ -638,9 +687,20 @@ sequence of play.
    flow (attack from the combat tracker → dice screen), the destination shows what it is
    part of and offers the way back. Never make the player re-type a number the app already
    knows.
-10. **Tap targets ≥ 44px effective.** A checkbox renders at ~13px unless styled; wrap every
-    option row in a `<label>` so the whole row is the target, and never let an inline style
-    override the stylesheet. **The harness measures the label, not the box.**
+10. **Tap targets: 44px where you can, 24px and spacing where you cannot.** WCAG 2.2 SC
+    2.5.8 (AA) sets the floor at **24×24 CSS px**, with an explicit exception when targets
+    are separated by 24px of offset; Apple's HIG asks 44pt and Material 48dp. Design to 44,
+    fall back to 24-plus-spacing for genuinely dense rows (a stat block, a d66 table), and
+    never below. A checkbox renders at ~13px unless styled: wrap every option row in a
+    `<label>` so the whole row is the target, and never let an inline style override the
+    stylesheet. **The harness measures the label, not the box.**
+11. **Vertical position follows frequency, and the bottom is prime.** About half of phone
+    use is one-handed, and the thumb's comfortable arc covers the bottom and centre; the top
+    corners are the worst reach on a modern phone. So: the constant action goes in the
+    pinned bar, navigation at the bottom, and **only low-frequency controls in the top
+    corners** (theme, settings). The corollary is a safety rule — **keep destructive actions
+    out of the thumb's resting arc.** Delete, clear and end-of-campaign controls belong at
+    the end of a scroll, not beside the button pressed forty times an evening.
 
 ### 6.4 Feedback and dialogs — **LOCKED**
 
@@ -806,7 +866,7 @@ any rules the book gates behind table agreement (§3.22) · advanced/GM automati
 
 ## 9. Build roadmap — instantiate with checkboxes in the project CLAUDE.md
 
-At Stage C start, write the project's `CLAUDE.md`: this document's §1 and §5–§14 carried
+At Stage C start, write the project's `CLAUDE.md`: this document's §1 and §5–§16 carried
 over, **§1.1 Product Decisions** (the Stage B Q&A answers), §3 replaced by the
 **completed** System Profile (with the checkpoint rulings recorded inline), the file
 tables made real, the **Data Extraction Ledger** (§9.1), this roadmap instantiated with
@@ -1225,6 +1285,15 @@ the gap actually was, so you can judge whether the game you are building has it 
 9. **A data-integrity action.** Settings should offer "check my data": run normalization,
    report what it repaired. Migrations run silently at load; when one is wrong, the player
    sees only strange numbers with no way to say what happened.
+10. **A roll-distribution view.** Counts per face across the campaign, in the roll log — the
+    fairness answer (§5.1), and cheap once the log exists.
+11. **Screen wake during a session.** A play aid that sleeps every thirty seconds is one
+    people stop picking up. The Wake Lock API handles it; make it an explicit setting, off
+    by default, because it is the player's battery.
+12. **What is visible when the device is passed.** A player-facing app with a GM screen gets
+    handed across a table. Decide whether GM-only content — prepared threats, countdown
+    steps not yet fired, secret notes — needs a quick hide, or whether the honest answer is
+    that the GM uses their own device.
 
 ### 14.2 Decisions to make consciously rather than by default
 
@@ -1294,7 +1363,64 @@ wins; the value of the table is that it tells you what to look for hardest.
 
 ---
 
-## 16. Kickoff Prompt — copy-paste this to start a project
+## 16. What companion apps get wrong — evidence from the field
+
+The template's rules come from two builds. This section comes from what players say about
+the apps they already use, and from the standards those apps are measured against. Read it
+before Stage B: it is the difference between building a competent app and building one a
+table keeps using in month three.
+
+**1. Divergence between surfaces is the loudest complaint.** The most common criticism of the
+largest commercial companion app is that its phone app and its website are different
+products — features present in one and missing in the other, sync that silently does not
+arrive, and a character edited in one place that does not update in the other mid-session.
+*What this template does about it:* one codebase, one storage layer, no "lite" surface. If
+you are ever tempted to build a reduced version of a screen for a smaller viewport, do not:
+reduce **density**, never **capability**.
+
+**2. A tablet is not a big phone.** The same app is criticised for shipping a phone layout
+scaled up, losing the information density that makes a tablet worth having at a table.
+*What this template does about it:* phone-first is the baseline, and the Stage B device
+question exists (§4.2.5). If the answer is tablet or mixed, the tablet layout must **add**
+— two columns, more visible at once, fewer taps — not stretch. A scaled-up phone layout is
+worse than no tablet support, because it looks like a decision.
+
+**3. Printing and hand-off are afterthoughts everywhere, and players notice.** Complaints
+about unreadable exported sheets are perennial. A character that cannot leave the app is a
+character the player does not fully own (§5.1). *Backlog entry §14.1.7 exists for this
+reason; treat it as more important than it looks.*
+
+**4. Sync failure is worse than no sync.** An app that shows a stale sheet during a fight
+costs more trust than one that never claimed to sync. This is the strongest argument for
+this template's ordering: local-first works completely before multiplayer is switched on,
+and Phase 5 is gated behind a real play session (§9.2).
+
+**5. Players want one app, not five.** The apps that survive at tables combine sheet, dice,
+rules reference and tracking; the ones that do one thing get replaced by paper. That is why
+§1's mandatory scope is as large as it is — a dice roller without the sheet, or a sheet
+without the rules, loses to a pencil.
+
+**6. Digital dice are trusted only if they are legible.** Players do check, and they do
+suspect. Cryptographic randomness, visible individual dice and a distribution view answer it
+(§5.1); a total with no working shown does not.
+
+**7. The accessibility floor is a published standard, not a feeling.** WCAG 2.2 AA is the
+bar: 24×24px targets with a spacing exception (2.5.8), visible focus, no colour-only
+meaning, and text that reflows. A play aid used in dim rooms by tired people at the end of a
+long day has more need of this than most software, not less.
+
+Sources: [D&D Beyond app feedback](https://www.dndbeyond.com/forums/d-d-beyond-general/d-d-beyond-feedback/d-d-beyond-mobile-app-feedback/191792-character-sheet-not-updating-in-the-app) ·
+[tablet layout complaints](https://www.dndbeyond.com/forums/d-d-beyond-general/d-d-beyond-feedback/d-d-beyond-mobile-app-feedback/125828-full-character-sheet-for-tablets-ipads) ·
+[printing complaints](https://www.dndbeyond.com/forums/d-d-beyond-general/d-d-beyond-feedback/161207-printing-dnd-beyond-characters-sheets-is-horrible) ·
+[what players want from companion apps](https://www.dungeonsolvers.com/dnd-character-sheet-apps/) ·
+[WCAG 2.2 SC 2.5.8 target size](https://wcag22aa.org/new-criteria/target-size/) ·
+[thumb-zone research](https://parachutedesign.ca/blog/thumb-zone-ux/) ·
+[local-first software](https://www.inkandswitch.com/essay/local-first/) ·
+[PWA cache pitfalls](https://iinteractive.com/resources/blog/taming-pwa-cache-behavior)
+
+---
+
+## 17. Kickoff Prompt — copy-paste this to start a project
 
 > Copy the block below into a fresh chat along with this template file and (if available)
 > the rulebook source. It is kept in sync with this template by design — if you edit one,
@@ -1337,8 +1463,8 @@ Rules & Constraints:
    consumer is a table that will be extracted and never called.
 8. Tag every rule you extract with its shape from §3.0, and give me the shape census at
    the checkpoint — it is the honest statement of what this app has to be good at.
-9. Read §15 (the system family field guide) for the family this game belongs to, and §14
-   (the improvement backlog), before proposing the roadmap — then tell me which backlog
+9. Read §15 (the system family field guide) for the family this game belongs to, §16 (what
+   companion apps get wrong) and §14 (the improvement backlog), before proposing the roadmap — then tell me which backlog
    entries this game actually needs, particularly whether it wants one campaign or many,
    since that is expensive to retrofit.
 10. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions — including
@@ -1355,6 +1481,6 @@ source).
 
 | Version | Date | Change |
 |---|---|---|
-| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. New §9.3 per-feature definition of done; §11.1 D committed probes and shared seed fixtures (fresh / mid-session / stress) so every pass measures the same thing; §14 improvement backlog — the nine gaps the reference build actually hit (campaign list, general undo, session record, character switcher, text-size control paying back the zoom lock, named combatants, human-readable export, repeat-roll, data-integrity action), the decisions to make consciously rather than by default, and the three things to leave alone. Stage B gains a seventh question: one campaign or many. **Generalised for any system:** new §3.0 rule-shape taxonomy — sixteen shapes (Modifier, Threshold, Cost, Future cost, Gate, Compulsion, Substitution, Cascade, Escalation, Once-per-X, Conversion, Blocker, Opposed, Lookup, Permission, Exception), each with its home, its silent failure mode and its test, because every finding in both reference builds was a shape implemented wrongly and shapes transfer across systems where subsystems do not; a shape census at the checkpoint; the traceability ledger gains a Shape column that determines the other four. New §15 system family field guide — d20/OSR, dice pool, PbtA/FitD, 2d20, percentile, narrative, tactical grid, investigation — each with the shapes it is dense in and its characteristic misses, plus the family-independent truths (every family has a Future-cost rule it forgets, a Threshold that is the point of the game, Once-per-X flags nothing clears, and a Permission the app silences). §13 rewritten in system-neutral terms and grown to twenty-six classes. |
+| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. New §9.3 per-feature definition of done; §11.1 D committed probes and shared seed fixtures (fresh / mid-session / stress) so every pass measures the same thing; §14 improvement backlog — the nine gaps the reference build actually hit (campaign list, general undo, session record, character switcher, text-size control paying back the zoom lock, named combatants, human-readable export, repeat-roll, data-integrity action), the decisions to make consciously rather than by default, and the three things to leave alone. Stage B gains a seventh question: one campaign or many. **Generalised for any system:** new §3.0 rule-shape taxonomy — sixteen shapes (Modifier, Threshold, Cost, Future cost, Gate, Compulsion, Substitution, Cascade, Escalation, Once-per-X, Conversion, Blocker, Opposed, Lookup, Permission, Exception), each with its home, its silent failure mode and its test, because every finding in both reference builds was a shape implemented wrongly and shapes transfer across systems where subsystems do not; a shape census at the checkpoint; the traceability ledger gains a Shape column that determines the other four. New §15 system family field guide — d20/OSR, dice pool, PbtA/FitD, 2d20, percentile, narrative, tactical grid, investigation — each with the shapes it is dense in and its characteristic misses, plus the family-independent truths (every family has a Future-cost rule it forgets, a Threshold that is the point of the game, Once-per-X flags nothing clears, and a Permission the app silences). §13 rewritten in system-neutral terms and grown to twenty-six classes. **Researched against the field:** new §5.1 trust and ownership — a cryptographic RNG rather than `Math.random()`, visible individual dice, the roll log as a fairness record, manual entry as a trust feature, never re-rolling silently; data longevity held to the local-first ideals with an honest statement of what a centralised backend does and does not deliver. §6.3.10 replaces the invented 44px rule with the actual standard (WCAG 2.2 SC 2.5.8: 24×24 with a spacing exception, 44/48 as platform guidance); §6.3.11 adds thumb-zone placement and keeps destructive actions out of the resting arc. §5 sharpens the service-worker strategy by request type and requires the update path to be tested. New §16 field evidence from what players say about existing companion apps — surface divergence, tablets treated as big phones, printing, sync failure being worse than no sync, one app not five — with sources. Backlog gains roll distribution, wake lock, and device hand-off. |
 | v2 | 2026-07-06 | Lessons from the Dune: Adventures in the Imperium reference build: new §3 slots (opposed-test sequence 3.2, meta-currencies 3.3, group entity 3.8, scene/session lifecycle 3.12, extended/progress tasks 3.13); mandatory Data Extraction Ledger (§9.1); Stage B split into checkpoint + standard product Q&A (§4.2); local-first default with First Session Playable milestone gating Phase 5; mandatory roll log, JSON export/import, persistent resource header, lifecycle confirm+undo, rules-citation links; notebook extraction warning about summarized procedures; kickoff prompt embedded (§13). |
 | v1 | — | Original template from the first reference implementation. |
