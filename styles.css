@@ -163,6 +163,20 @@ a { color: inherit; }
 button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
 .vital-switch.is-static { cursor: default; color: var(--ink-dim); }
 
+/* The line under a Traveler's name: what they are, and a switch for who they are. */
+.identity { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* A two-option switch that reads as one control rather than two buttons. */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg-item {
+  min-height: 34px; padding: 6px 14px;
+  background: var(--bg-sunk); color: var(--ink-dim);
+  border: 0; cursor: pointer;
+  font: 600 .7rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+}
+.seg-item + .seg-item { border-left: 1px solid var(--line); }
+.seg-item.is-on { background: var(--accent); color: #10120f; }
+
 /* A phase card that folds away: same skin as a card, summary as its heading. */
 .phase-fold > summary {
   list-style: none; cursor: pointer;

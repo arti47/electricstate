@@ -639,14 +639,28 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const sheetId = await page.evaluate(() => Object.values(__game.read().characters)[0].id);
   await page.evaluate((id) => { location.hash = `#/sheet/${id}`; }, sheetId);
   await page.waitForTimeout(150);
-  await page.locator("#screen details.phase-fold >> nth=0 >> summary").click();
-  await page.waitForTimeout(120);
-  const genderControls = await page.evaluate(() =>
-    [...document.querySelectorAll("#screen button")].map((b) => b.textContent.trim()));
-  check(genderControls.includes("Man") && genderControls.includes("Woman"),
-    `the sheet has no gender control: ${genderControls.slice(0, 12).join(", ")}`);
+  // It has to be visible without opening anything: it was filed inside the Dream/Flaw
+  // fold, where nobody looks for it.
+  const genderControl = await page.evaluate(() => {
+    const seg = document.querySelector("#screen .seg");
+    if (!seg) return null;
+    const r = seg.getBoundingClientRect();
+    const nav = document.querySelector(".tabbar").getBoundingClientRect();
+    return {
+      labels: [...seg.querySelectorAll("button")].map((b) => b.textContent.trim()),
+      inFold: !!seg.closest("details"),
+      aboveFold: r.top < nav.top,
+      height: Math.round(r.height)
+    };
+  });
+  check(genderControl !== null, "the sheet has no gender control");
+  check(genderControl && !genderControl.inFold, "the gender control is hidden inside a collapsed panel");
+  check(genderControl && genderControl.aboveFold, "the gender control is below the fold");
+  check(genderControl && genderControl.height >= 24, `the gender control is only ${genderControl?.height}px tall`);
+  check(genderControl && genderControl.labels.join(",") === "Man,Woman",
+    `unexpected gender options: ${genderControl?.labels.join(", ")}`);
 
-  await page.locator('#screen button:has-text("Woman")').first().click();
+  await page.locator('#screen .seg button:has-text("Woman")').first().click();
   await page.waitForTimeout(180);
   const asWoman = await page.evaluate(() => ({
     stored: Object.values(__game.read().characters)[0].gender,
@@ -654,6 +668,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   }));
   check(asWoman.stored === "female", `gender did not persist (${asWoman.stored})`);
   check(/she, her, her/.test(asWoman.text), "the sheet does not show the pronouns it will use");
+  check(/is-on/.test(await page.innerHTML("#screen .seg")), "the switch does not show which option is set");
 
   // And the app narrates with it: a Traveler at zero Health is offered a rally by name.
   await page.evaluate((id) => {

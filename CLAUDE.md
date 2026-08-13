@@ -261,7 +261,7 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   route render as the backstop.
 - **Every person the app names has a gender, and no user-facing string uses a plural pronoun
   for one person.** `ch.gender` is `"male"` or `"female"`, chosen in creation above the name and
-  editable on the sheet; `normalize()` back-fills old saves. `src/pronouns.js` is the only source
+  switched on the sheet's identity line under the Traveler's name — never inside a fold; `normalize()` back-fills old saves. `src/pronouns.js` is the only source
   of the words — `subj/obj/poss/refl`, capitalised variants, `refer(who, fallback)` when the
   subject may not be picked yet, and `neuter` (it/its) for machines. Combatants carry a gender
   too: rolled for people, `neuter` for anything with a Hull. Generated solo NPCs get a name and

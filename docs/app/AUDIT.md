@@ -471,6 +471,7 @@ knowing who it meant.
 | 94 | **The name roller produced "Cade/Courtney Draper".** The house table is written in the book's paired convention and the app handed the slash straight to the player. | The roll takes the half matching the gender. The four printed pregens name both halves explicitly in `data-pregens.js` — the book's pairs are not consistently male-first (Nancy/Pascal, Wilhemina/William), so the data says which is which, and the pregen picker offers both. |
 | 95 | **Threats and NPCs had no pronoun either.** A robot is an "it"; a patrolman is not. | Combatants carry a gender: rolled for people, `neuter` for anything with a Hull. A generated solo NPC now gets a name and a gender as well as a personality — that is the handle the table needs to talk about one. |
 | 96 | **224 plural pronouns in user-facing strings.** | All of them rewritten. Where a specific person is in scope the text asks `pronouns.js`; where none is, it names the thing ("the target", "the other driver", "the pursuer"). The Kicker and destination tables in `data-journey.js` moved to second person, which is the register the rest of the app already used — the Kicker is yours. |
+| 97 | **The gender control was inside the Dream/Flaw fold**, collapsed by default — filed under a heading nobody would open looking for it. Reported as "nowhere to edit gender in the character sheet", which is exactly right. | A two-option switch on the identity line directly under the name, always visible, with the pronouns it produces stated beside it. |
 
 ## Guard
 
@@ -479,9 +480,10 @@ fails on a plural pronoun, ignoring comments and `${expression}` interpolations.
 `npm test` and standalone as `npm run pronouns`. One allowlisted string: a 1992 Pete Rock record
 whose title the app does not get to rewrite.
 
-The browser smoke opens the sheet, switches the Traveler to Woman, and asserts both that the
-choice persists and that the status notes then read "Someone rallies her" — with no plural
-pronoun anywhere on the rendered sheet.
+The browser smoke asserts the switch is on the sheet, **not inside a collapsed panel**, above
+the fold and finger-sized; then switches the Traveler to Woman and asserts the choice persists,
+the switch shows which option is set, and the status notes read "Someone rallies her" with no
+plural pronoun anywhere on the rendered sheet.
 
 ## Result
 
