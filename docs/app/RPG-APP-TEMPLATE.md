@@ -176,6 +176,50 @@ Complete every slot below from the rulebook. The **archetype examples** exist so
 unfamiliar systems honestly instead of forcing them into another game's shape — identify
 which archetype (or novel shape) the game actually is, per slot.
 
+### 3.0 Rule shapes — classify every rule before you extract it
+
+The §3 slots ask *what subsystems the game has*. This section asks something orthogonal and
+more useful for building: **what shape is each individual rule?** Games differ enormously in
+their subsystems and barely at all in their rule shapes. Every audit finding in the
+reference builds was a shape implemented wrongly, and each shape fails in its own
+predictable way.
+
+**Tag every rule you extract with its shape.** The tag decides where it lives, what its UI
+must do, and which test proves it fires. A rule with no shape tag has not been understood
+yet.
+
+| Shape | It says | Examples across systems | Where it lives | How it fails silently | The test |
+|---|---|---|---|---|---|
+| **Modifier** | ±N to a roll under condition C | proficiency, advantage dice, a wound penalty, position/effect | `derived` — one function summing all active modifiers for a roll context | Rarely; the roller needs it to compile | Pool with and without C |
+| **Threshold** | when X ≥ Y, state S | corruption ≥ humanity, stress ≥ composure, doom track full, XP to level | Pure predicate in `derived`, surfaced in the persistent header | The state is computed but nothing displays or acts on it | Assert the predicate flips at exactly the boundary |
+| **Cost** | doing A spends B | spell slots, stress to push, momentum spend, ammo | The action's own function, before the effect | The dialog names the cost; the engine never deducts it | Resource before and after |
+| **Future cost** | doing A spends a *later* resource | reaction costs your next turn, overwatch, holding an action, a spent reaction die | A flag consumed by the turn/round advance | **The commonest inert rule.** Prose says it in three places; nothing marks it | Advance a round, assert the actor is skipped |
+| **Gate** | you may not do A while B | cannot cast in armor, cannot push while broken, no reaction while surprised | The action's legality check, not its UI | The button stays enabled and the rule lives in a tooltip | Attempt it under B, assert refusal |
+| **Compulsion** | you must do A when B | must push, must attack the nearest, must take the worst result | Same place as the gate, inverted | Implemented as a suggestion | Assert the alternative is unavailable |
+| **Substitution** | use A instead of B for C | intimidate on Strength not Charisma, a firearm in melee, an approach swap | An offer in the roller that rewrites the pool | Displayed on the sheet as text and never offered at the roll | Assert the swap changes the pool |
+| **Cascade** | on A, do it again (up to N) | full auto, exploding dice, chain lightning, a failed control roll re-rolling worse | An explicit loop with a cap and a termination condition | Implemented once; the repetition is lost | Assert N iterations and the cap |
+| **Escalation** | each occurrence is worse | doom clocks, rising DCs, stacking exhaustion, a countdown | The generic progress tracker (§3.13) | Two counters that disagree | Fire it N+1 times; assert it stops |
+| **Once-per-X** | one use per scene/session/day | second wind, an escape roll, inspiration, a talent's single reroll | A flag set on use and **cleared by the lifecycle engine** | Set and never cleared, so it works once ever | Use, boundary, use again |
+| **Conversion** | A becomes permanent B | temporary→permanent corruption, a scar, a lasting injury | The boundary that performs it, with its own roll | The temporary track decays and nothing is ever made permanent | Run the boundary; assert the permanent floor rises |
+| **Blocker** | while B, no recovery of R | disease blocks healing, hunger blocks it, cold blocks it | The recovery function, reading a flag | The flag has no setter, so the blocker never engages | Set B; assert recovery does nothing |
+| **Opposed** | both sides roll, one wins | attack vs defense, social conflict, a chase | One resolver with the tie rule and the margin rule | The tie case; the loser's banked resources | Both win/lose/tie branches |
+| **Lookup** | roll on this table | crits, injuries, oracles, encounters | Data file + one range-lookup helper | Rows unreachable at the edges of the range | Every roll in range returns a row |
+| **Permission** | you may invent/declare/choose | invent a talent, declare a stunt, name a consequence | A control, not a sentence | It reads as flavour and gets no UI | Assert the control exists and persists its result |
+| **Exception** | archetype Z ignores rule R | a construct that does not heal, an undead that ignores morale | A branch in every function R touches | The common path works; the exception is not branched everywhere | Assert Z's behaviour in each of R's call sites |
+
+**How to use this in practice**
+
+1. As you extract, write the shape tag beside every rule in the traceability ledger
+   (§9.1a). The ledger's Engine column then follows from the shape — you are not inventing
+   a home for each rule, you are applying the pattern.
+2. **Count your shapes at the checkpoint.** A game with forty Cost rules and no Future-cost
+   rules has a different risk profile from one with six Compulsions. Tell the user which
+   shapes dominate; that is the honest summary of what the app must be good at.
+3. **Audit by shape, not by chapter.** "Show me every Future-cost rule and where it is
+   enforced" finds in one pass what reading chapter by chapter misses across three.
+4. When a rule does not fit a shape, that is a finding about the *rule*, not the taxonomy —
+   look harder at the text, because you have probably summarised a procedure (§2).
+
 **3.1 Core resolution mechanic.** The dice mechanic, success criteria, crit/fumble rules,
 modifier model, the advantage mechanism, and the push/re-roll economy (with its costs and
 legality limits) if one exists. **Flag every rule that repeats itself** — "on a hit you may
@@ -371,6 +415,10 @@ Before writing any application code, present a single, readable summary containi
    extra d20 keep best/worst; push = re-roll once, take a condition").
 2. **Content inventory** — counts per category (skills, powers, monsters, gear, pregens…)
    so the user sees the extraction scale, plus anything the source did not cover.
+2a. **Rule-shape census** (§3.0) — how many rules of each shape the game has. This is the
+   honest statement of what the app must be good at, and it predicts where the audit will
+   find things: a game dense in Future-cost and Compulsion rules needs a strict engine, one
+   dense in Permission rules needs good prompts and will feel thin if you only build maths.
 3. **Blocked data** — every table you could not recover (§2.1), what you need to unblock it
    (usually a photo of one page), and which features are held back until then.
 4. **Proposals** (defaults below — present your concrete choices):
@@ -781,13 +829,15 @@ and append a changelog row; estimated counts yield to real counts (record them);
 
 The extraction ledger tracks whether a table exists. That is necessary and not sufficient:
 in the reference build every table existed and dozens of rules still did nothing. Track the
-whole path instead. **One row per rule, five columns:**
+whole path instead. **One row per rule, six columns** — the shape (§3.0) tells you what the
+other four should contain:
 
-| Rule | Data | Engine | Surface | Test |
-|---|---|---|---|---|
-| Push: 1s on base dice cost Hope | `PUSH` | `roller.resolvePush` | Dice screen result card | `pushing keeps 1s and 6s` |
-| Reacting costs your next turn | `COMBAT_REACTIONS.cost` | `combat.forfeitNextTurn` | Combatant card + opposed dialog | `a reaction costs the defender their next turn` |
-| Wearing a caster: −2 real-world | `NEUROCASTERS[].realWorldPenalty` | `roller.casterDicePenalty` | Dice circumstances card | `the neurocaster costs dice only while worn` |
+| Rule | Shape | Data | Engine | Surface | Test |
+|---|---|---|---|---|---|
+| Re-roll economy: failures on the re-roll cost the spendable resource | Cost | `PUSH` | `roller.resolvePush` | Result card | `pushing keeps its kept faces` |
+| Reacting costs your next turn | Future cost | `REACTIONS.cost` | `combat.forfeitNextTurn` | Combatant card + opposed dialog | `a reaction costs the defender their next turn` |
+| Worn gear penalises real-world actions | Modifier | `GEAR[].wornPenalty` | `derived.wornPenalty` | Circumstances card | `the penalty applies only while worn` |
+| Addiction ≥ willpower = lost | Threshold | `LOSE_CONDITION` | `derived.isLost` | Persistent header | `the predicate flips at the boundary` |
 
 - **A row with a gap is the §0 defect, visible before it ships.** Data but no engine: a
   number nobody reads. Engine but no surface: a function nobody can reach. Surface but no
@@ -1045,9 +1095,10 @@ outlier. Once a number is known-good, it graduates into harness B as an assertio
 - **Engine behaviour is where the bugs live** — gating, options, limits and sequencing:
   push legality, rest once-per-X, crit option choices, multi-attack counts, the exact
   opposed sequence including ties and resource banking, currency caps and decay, once-per-
-  scene escape hatches, lifecycle bundles, one-advance-per-X gates, and **every rule that
-  costs a turn** (reactions, freezing, stuns) — that last category is written as prose in
-  three places and enforced in none, over and over.
+  scene escape hatches, lifecycle bundles, one-advance-per-X gates, and **every Future-cost
+  rule** (§3.0) — whatever your game calls them: reactions, held actions, overwatch, a
+  spent refresh, a move that costs the next one. That last shape is written as prose in
+  three places and enforced in none, in every system family we have built for.
 - **Subsystem seams concentrate bugs.** The places where two modules meet — tracker and
   roller, solo and GM, sheet and lifecycle — are where state gets described instead of
   shared, where a value gets re-typed instead of read, and where two shapes of one record
@@ -1098,34 +1149,38 @@ scanning, from scanning to measuring, from measuring at zero state to measuring 
 
 ## 13. Known defect classes — check for each by name
 
-Every one of these shipped in a reference build and was caught late. Grep for your own
-version of each before declaring a phase done.
+Every one of these shipped in a reference build and was caught late. They are written in
+system-neutral terms: read each one against **your** game's version of the shape (§3.0),
+not against the example. Grep for your own version of each before declaring a phase done.
 
 | | Defect | How it hides | The check |
 |---|---|---|---|
 | D-1 | `node.append(x)` where `x` can be null renders the text `null` | Only in the state where the value is absent | Text-node scan (§11.1 B) |
 | D-2 | A toggle sets a flag nothing reads (full auto, ambush, a stance) | The UI describes the rule perfectly | Dead-data scan; grep the flag |
-| D-3 | A `rule`-kind ability is displayed and never fires | It appears on the sheet | Ability sweep (§11.2.3) |
-| D-4 | A state field is written and never read (`frozen`, `stunned`) | Nothing visibly breaks | Dead-data scan |
+| D-3 | An ability whose effect is a *rule* rather than a modifier is displayed and never fires | It appears on the sheet | Ability sweep (§11.2.3) |
+| D-4 | A state field is written and never read (any Future-cost or Blocker flag) | Nothing visibly breaks | Dead-data scan |
 | D-5 | Two counters for one procedure disagree | Only after both paths are used | One-record rule (§10.12) |
-| D-6 | A degradable resource has no repair path | Nobody degrades it in testing | Flow walk |
+| D-6 | A degradable or spendable resource has no path back | Nobody degrades it in testing | Flow walk |
 | D-7 | A terminal outcome offers no next step | The modal reads as complete | Flow walk (§6.3.6) |
 | D-8 | The primary action is below the fold | You always scroll during development | Measured layout (§11.2.5) |
 | D-9 | A list grows without bound | Fine with three entries | Stress state (§11.2.6) |
 | D-10 | An inline style overrides the stylesheet (13px checkboxes) | Looks deliberate | Tap-target measurement |
 | D-11 | A wrapping value straddles its label in a flex row | Only with long text | Definition rows (§6.5) |
-| D-12 | An archetype exception is not branched on everywhere | The common path works | §3.10a checklist |
+| D-12 | An Exception shape is not branched on at every call site of the rule it excepts | The common path works | §3.10a checklist |
 | D-13 | Two surfaces generate the same record in two shapes | Each works alone | One-record rule (§10.11) |
 | D-14 | A guard passes against the bug it was written for | Green is reassuring | Prove it bites (§10.6) |
 | D-15 | A fixed wait in a harness manufactures a finding | Fails once in ten runs | Poll, don't wait |
-| D-16 | A cascade rule ("roll again", "fire again") implemented as a single shot | The first roll works | Grep the source for repetition language (§3.1) |
-| D-17 | A flag is set and never cleared, so a condition becomes permanent | Only on the second occurrence | Setter/reader/clearer rule (§10.14) |
+| D-16 | A Cascade rule ("roll again", "explodes", "repeat up to N") implemented as a single shot | The first roll works | Grep the source for repetition language (§3.0) |
+| D-17 | A Once-per-X flag is set and never cleared, so the ability works once ever | Only on the second occurrence | Setter/reader/clearer rule (§10.14) |
 | D-18 | A default-off control for a rule that applies by default | The rule simply never fires | Defaults follow the fiction (§10.15) |
 | D-19 | Two modules describe the same state instead of sharing it | Each works in isolation | Seam walk (§11.3) |
 | D-20 | A rule in an appendix, sidebar or stat block is never extracted | The chapter sweep looked complete | Read boxed text (§2) |
 | D-21 | A destructive action has neither undo nor confirmation | Nobody does it during testing | Reversibility inventory (§10.18) |
 | D-22 | A permission the book grants has no control | It reads as flavour | Permissions are features (§2) |
 | D-23 | A lookup exists per data file instead of per concept | The main list works | One lookup per kind (§10.16) |
+| D-24 | A Threshold that defines the game's stakes is computed but never surfaced | The numbers are both on screen, separately | Header rule (§3.0, §6.2) |
+| D-25 | A Compulsion is implemented as a suggestion the player may ignore | The text is accurate | Assert the alternative is unavailable |
+| D-26 | A Gate lives in a tooltip while the control stays enabled | Nobody tries it under the gating condition | Attempt it under B; assert refusal |
 
 ---
 
@@ -1201,7 +1256,45 @@ the gap actually was, so you can judge whether the game you are building has it 
 
 ---
 
-## 15. Kickoff Prompt — copy-paste this to start a project
+## 15. System family field guide
+
+The reference builds are a Year Zero game and a 2d20 game. Neither is your game. This
+section maps the template onto the families you are most likely to be handed, and — more
+usefully — names **which rule shapes (§3.0) each family is dense in**, because that is where
+its audit findings will be.
+
+Use it to aim Stage A, not to skip it. If the game contradicts its family here, the game
+wins; the value of the table is that it tells you what to look for hardest.
+
+| Family | Resolution (§3.1) | Dense in | Characteristic misses |
+|---|---|---|---|
+| **d20 / OSR** | d20 + mod vs DC | Modifier, Once-per-X, Gate, Lookup | Conditions as inert checkboxes; concentration and its breaks; action economy (bonus/reaction) modelled as a note; spell components and prepared-vs-known; stacking rules for identical bonuses; per-day resets that never reset |
+| **Dice pool, count successes** (Year Zero, WoD, Blades) | pool of dN, count faces | Cost, Future cost, Threshold, Escalation | The push/stress economy charged in the UI and not in the engine; conditions that rewrite what is legal; clocks with two counters; the game's threshold lose-condition displayed but never compared |
+| **PbtA / Forged in the Dark** | 2d6+stat, tiered; position/effect | Compulsion, Permission, Escalation, Lookup | Move triggers ("when you do X, roll") implemented as a menu the player picks from, so the fiction no longer drives the roll; 7–9 costs offered as text; clocks not shared; playbook advances gated by conditions nobody checks |
+| **2d20** (Modiphius) | pool 2–5 d20 under target | Cost, Conversion, Threshold | Momentum and Threat as two economies with caps and decay — spend menus with exact costs are the whole game and the commonest gap; complications converting to Threat; buying dice before the roll rather than after |
+| **Percentile / BRP, CoC** | roll-under d100 | Modifier, Lookup, Once-per-X, Conversion | Bonus/penalty dice as tens-die keeps; pushing a roll and its consequences; sanity as a Threshold + Conversion pair; skill ticks marked at the moment of success and cashed later |
+| **Narrative / diceless / resource-bid** | spend, compare, or GM call | Permission, Cost, Gate | Almost everything is a Permission shape — these games are *mostly* the rule shape that reads as flavour and gets no control; the app risks being a notepad |
+| **Tactical grid** (4e-likes, Lancer) | d20 + mod, positioning | Modifier, Cascade, Gate, Exception | Zones vs squares; forced movement; auras and ongoing effects that tick on a specific turn; multi-part statblocks with per-phase abilities |
+| **Investigation** (GUMSHOE) | spend for certainty, roll for tests | Cost, Gate, Permission | Core clues never gated behind a roll — an app that offers a roll for them has broken the game's central rule; pool refresh schedules |
+
+**Family-independent truths worth stating once**
+
+- **Every family has a Future-cost rule and every family's implementation forgets it.**
+  Reactions, held actions, overwatch, a spent refresh, a move that costs your next one.
+- **Every family has a Threshold that is the point of the game** — hit points reaching zero
+  is one, but so is corruption, sanity, doom, heat, stress, infamy. It belongs in the
+  persistent header, compared live, whatever the game calls it.
+- **Every family has Once-per-X flags and a boundary that should clear them.** If the
+  lifecycle engine (§3.12) does not own the clearing, nothing does.
+- **Every family publishes at least one Permission** the app will otherwise silence.
+- **The more narrative the game, the more of its rules are Permission and Compulsion
+  shapes** — and the more the app's job shifts from arithmetic to *prompting*: putting the
+  question in front of the player at the moment the fiction reaches it. A narrative game's
+  app is judged on its prompts the way a crunchy game's app is judged on its maths.
+
+---
+
+## 16. Kickoff Prompt — copy-paste this to start a project
 
 > Copy the block below into a fresh chat along with this template file and (if available)
 > the rulebook source. It is kept in sync with this template by design — if you edit one,
@@ -1242,10 +1335,13 @@ Rules & Constraints:
    missing value gets queried, then asked, then marked blocked — never guessed.
 7. Every ledger row names the module that will consume the table. A table with no
    consumer is a table that will be extracted and never called.
-8. Read §14 (the improvement backlog) before proposing the roadmap, and tell me which of
-   its entries this game actually needs — particularly whether it wants one campaign or
-   many, since that is expensive to retrofit.
-9. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions — including
+8. Tag every rule you extract with its shape from §3.0, and give me the shape census at
+   the checkpoint — it is the honest statement of what this app has to be good at.
+9. Read §15 (the system family field guide) for the family this game belongs to, and §14
+   (the improvement backlog), before proposing the roadmap — then tell me which backlog
+   entries this game actually needs, particularly whether it wants one campaign or many,
+   since that is expensive to retrofit.
+10. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions — including
    the Data Extraction Ledger with every box unticked and the Rules Traceability Ledger
    with its columns defined — then stop and await my go-ahead for Stage C.
 
@@ -1259,6 +1355,6 @@ source).
 
 | Version | Date | Change |
 |---|---|---|
-| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. New §9.3 per-feature definition of done; §11.1 D committed probes and shared seed fixtures (fresh / mid-session / stress) so every pass measures the same thing; §14 improvement backlog — the nine gaps the reference build actually hit (campaign list, general undo, session record, character switcher, text-size control paying back the zoom lock, named combatants, human-readable export, repeat-roll, data-integrity action), the decisions to make consciously rather than by default, and the three things to leave alone. Stage B gains a seventh question: one campaign or many. |
+| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. New §9.3 per-feature definition of done; §11.1 D committed probes and shared seed fixtures (fresh / mid-session / stress) so every pass measures the same thing; §14 improvement backlog — the nine gaps the reference build actually hit (campaign list, general undo, session record, character switcher, text-size control paying back the zoom lock, named combatants, human-readable export, repeat-roll, data-integrity action), the decisions to make consciously rather than by default, and the three things to leave alone. Stage B gains a seventh question: one campaign or many. **Generalised for any system:** new §3.0 rule-shape taxonomy — sixteen shapes (Modifier, Threshold, Cost, Future cost, Gate, Compulsion, Substitution, Cascade, Escalation, Once-per-X, Conversion, Blocker, Opposed, Lookup, Permission, Exception), each with its home, its silent failure mode and its test, because every finding in both reference builds was a shape implemented wrongly and shapes transfer across systems where subsystems do not; a shape census at the checkpoint; the traceability ledger gains a Shape column that determines the other four. New §15 system family field guide — d20/OSR, dice pool, PbtA/FitD, 2d20, percentile, narrative, tactical grid, investigation — each with the shapes it is dense in and its characteristic misses, plus the family-independent truths (every family has a Future-cost rule it forgets, a Threshold that is the point of the game, Once-per-X flags nothing clears, and a Permission the app silences). §13 rewritten in system-neutral terms and grown to twenty-six classes. |
 | v2 | 2026-07-06 | Lessons from the Dune: Adventures in the Imperium reference build: new §3 slots (opposed-test sequence 3.2, meta-currencies 3.3, group entity 3.8, scene/session lifecycle 3.12, extended/progress tasks 3.13); mandatory Data Extraction Ledger (§9.1); Stage B split into checkpoint + standard product Q&A (§4.2); local-first default with First Session Playable milestone gating Phase 5; mandatory roll log, JSON export/import, persistent resource header, lifecycle confirm+undo, rules-citation links; notebook extraction warning about summarized procedures; kickoff prompt embedded (§13). |
 | v1 | — | Original template from the first reference implementation. |
