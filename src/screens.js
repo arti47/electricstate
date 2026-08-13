@@ -6,6 +6,7 @@ import { listCharacters, exportJSON, importJSON, getRollLog, rollLogKey, filterR
 import { searchLibrary } from "./rules.js";
 import { showToast, confirmModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
+import { TRAUMA_CONSENT_NOTE } from "../data-tables.js";
 
 export function homeScreen() {
   const wrap = el("div");
@@ -227,6 +228,19 @@ export function settingsScreen() {
         }))));
   }
   wrap.append(el("h2", {}, "Features"), toggles);
+
+  // The book asks for these before play, not after something has already landed badly.
+  wrap.append(el("div", { class: "card" },
+    el("h3", {}, "Before you play"),
+    el("p", { class: "faint" }, TRAUMA_CONSENT_NOTE),
+    el("details", { class: "explain" }, el("summary", {}, "Safety tools the book recommends"),
+      el("ul", { class: "list" },
+        el("li", {}, el("div", { style: "padding:6px 4px" }, el("strong", {}, "Lines and veils"),
+          el("div", { class: "faint" }, "Agree up front what the game will not go near, and what happens off-screen."))),
+        el("li", {}, el("div", { style: "padding:6px 4px" }, el("strong", {}, "A card anyone can play"),
+          el("div", { class: "faint" }, "Any player can stop or rewind a scene without explaining why."))),
+        el("li", {}, el("div", { style: "padding:6px 4px" }, el("strong", {}, "Debrief"),
+          el("div", { class: "faint" }, "Afterwards, check in — this game is built to go to dark places.")))))));
 
   wrap.append(el("h2", {}, "Backup"),
     el("div", { class: "card" },

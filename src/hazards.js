@@ -3,6 +3,7 @@
 import { el, rollDice, countSixes, clamp, d6, d66, fromRangeTable, rollNotation } from "./core.js";
 import { EXPLOSIVES, FIRES, DISEASES, HAZARD_RULES, FIRE_SPREAD_PER_ROUND, VEHICLES } from "../data.js";
 import { STUNTS, ACCIDENTS, RAMMING, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, ACCIDENT_REROLL_MODIFIER } from "../data-vehicles.js";
+import { GEAR, REPAIR } from "../data-tables.js";
 import { maxHealth } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, explain } from "./ui.js";
@@ -224,6 +225,8 @@ function buildVehicle(rerender) {
   const driver = el("select", { "aria-label": "Driver" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")));
   wrap.append(el("div", { class: "field" }, el("label", {}, "Driving"), driver));
 
+  wrap.append(hullCard(j, v, chars, rerender));
+
   const terrain = el("select", { "aria-label": "Terrain" },
     el("option", { value: "road" }, "On the road"),
     el("option", { value: "boat" }, "On water"),
@@ -241,11 +244,7 @@ function buildVehicle(rerender) {
     el("div", { class: "btn-row" },
       el("button", { class: "btn btn-primary", onclick: () => ram(v, rerender) }, "Ram something"))));
 
-  wrap.append(el("div", { class: "card" }, el("h3", {}, "Chase"),
-    el("p", { class: "faint" }, "Range categories only, no zones, and Speed is not used. Both sides may push."),
-    el("div", { class: "btn-row" },
-      el("button", { class: "btn btn-primary", onclick: () => obstacle(rerender) }, "Roll an obstacle"),
-      el("button", { class: "btn", onclick: () => componentDamage(rerender) }, "Component damage"))));
+  wrap.append(chaseCard(j, v, chars, driver, rerender));
 
   return wrap;
 }
@@ -298,6 +297,82 @@ async function accident(terrain, onDone, modifier = 0, driver = null) {
   onDone?.();
 }
 
+/**
+ * Hull damage lands from a dozen places — rams, collisions, potholes, gunfire — and the
+ * only way back is the same Wits roll every other repair uses (p.108). A vehicle at zero
+ * also needs a spare part before the roll means anything.
+ */
+function hullCard(j, v, chars, rerender) {
+  const hull = j.hull ?? v.hull;
+  const amount = el("input", { type: "number", value: "1", min: "1", "aria-label": "Hull damage" });
+  const mechanics = chars.length
+    ? el("select", { "aria-label": "Who works on it" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")))
+    : null;
+  const tools = el("input", { type: "checkbox", checked: true, style: "width:auto;min-height:auto", "aria-label": "Vehicle tools to hand" });
+  const part = el("input", { type: "checkbox", style: "width:auto;min-height:auto", "aria-label": "Spare part to hand" });
+
+  const setHull = (next) => {
+    const journey = getJourney() || {};
+    saveJourney({ ...journey, hull: clamp(next, 0, v.hull) });
+    rerender();
+  };
+
+  return el("div", { class: "card" }, el("h3", {}, "Hull and repairs"),
+    el("div", { class: "field" }, el("label", {}, "Damage it took"), amount),
+    el("div", { class: "btn-row" },
+      el("button", {
+        class: "btn btn-danger",
+        onclick: () => {
+          const dealt = Math.max(1, Number(amount.value) || 1);
+          const soaked = Math.max(0, dealt - (v.armor || 0));
+          setHull(hull - soaked);
+          showToast(soaked < dealt ? `Armor stopped ${dealt - soaked}. Hull ${clamp(hull - soaked, 0, v.hull)}.` : `Hull ${clamp(hull - soaked, 0, v.hull)}.`);
+        }
+      }, "Take the damage"),
+      el("button", { class: "btn", onclick: () => setHull(v.hull) }, "Back to full")),
+
+    el("div", { style: "margin-top:12px;border-top:1px solid var(--line-soft);padding-top:12px" },
+      el("p", { class: "faint" }, `A Shift of work and a Wits roll. Each 6 restores a point of Hull. ${REPAIR.vehicleAtZeroRequires === "sparePart" ? "A wrecked vehicle needs a spare part before any of it helps." : ""}`),
+      mechanics ? el("div", { class: "field" }, el("label", {}, "Who works on it"), mechanics) : null,
+      el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
+        el("span", {}, "Vehicle tools to hand", el("div", { class: "faint" }, "Their bonus becomes gear dice.")), tools),
+      el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
+        el("span", {}, "Spare part to hand", el("div", { class: "faint" }, "Only needed once it is wrecked.")), part),
+      el("button", {
+        class: "btn btn-block",
+        onclick: () => repairVehicle({
+          who: mechanics ? getCharacter(mechanics.value) : null,
+          vehicle: v, hull, tools: tools.checked, part: part.checked, setHull
+        })
+      }, "Work on it")));
+}
+
+async function repairVehicle({ who, vehicle, hull, tools, part, setHull }) {
+  if (!who) { showToast("Nobody here to do the work."); return; }
+  if (hull >= vehicle.hull) { showToast("Nothing to fix."); return; }
+  if (hull <= 0 && !part) { showToast("Wrecked: you need a spare part before the work means anything.", "danger"); return; }
+
+  const mechanic = (who.talents || []).includes("mechanic") ? 2 : 0;
+  // Reliable vehicles are the ones that let you put them back together.
+  const reliable = (vehicle.traits || []).some((t) => /reliable/i.test(t?.name || t || "")) ? 2 : 0;
+  const toolDice = tools ? (GEAR.find((g) => g.id === "toolsVehicle")?.bonus || 0) : 0;
+
+  const dice = rollDice(Math.max(1, who.attributes.wits + mechanic));
+  const gear = rollDice(Math.max(0, toolDice + reliable));
+  const restored = countSixes(dice) + countSixes(gear);
+  logRoll({ by: who.name, label: "Repair the vehicle", dice: [...dice, ...gear], outcome: restored ? `+${restored} Hull` : "no progress" });
+  if (restored) setHull(hull + restored);
+
+  await modal({
+    title: restored ? `+${restored} Hull` : "No progress",
+    body: el("div", {}, el("p", { class: "mono faint" }, [...dice, ...gear].join(" ")),
+      el("p", {}, restored
+        ? `Hull is ${Math.min(vehicle.hull, hull + restored)} of ${vehicle.hull}. Another Shift buys another roll.`
+        : "A Shift gone and nothing to show for it. Try again.")),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
+}
+
 async function ram(vehicle, onDone) {
   const targetHull = await promptHull();
   if (targetHull == null) return;
@@ -325,6 +400,99 @@ async function promptHull() {
     actions: [{ label: "Ram", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
   });
   return ok ? Number(input.value) || 0 : null;
+}
+
+// A chase is an open opposed Agility roll each round; the margin moves the range band.
+const CHASE_BANDS = ["engaged", "short", "medium", "long", "extreme"];
+
+/** Where the chase stands after one round. Positive margin favours whoever rolled it. */
+export function chaseStep(bandIndex, myExtra, theirExtra, iAmPrey) {
+  const margin = myExtra - theirExtra;
+  if (!margin) return { bandIndex, moved: 0, over: false };
+  // The prey opens the distance; the pursuer closes it.
+  const direction = iAmPrey ? 1 : -1;
+  const next = bandIndex + margin * direction * CHASE.rangeShiftPerExtraSuccess;
+  if (next > CHASE_BANDS.length - 1) return { bandIndex: CHASE_BANDS.length - 1, moved: margin, over: true, escaped: true };
+  return { bandIndex: clamp(next, 0, CHASE_BANDS.length - 1), moved: margin, over: false };
+}
+
+function chaseCard(j, v, chars, driver, rerender) {
+  const chase = j.chase || null;
+  const card = el("div", { class: "card" }, el("h3", {}, "Chase"),
+    el("p", { class: "faint" }, "Range bands only — no zones, and Speed is not used. An opposed Agility roll each round, with the vehicle's Maneuverability as gear dice. Every success beyond theirs moves you a band."));
+
+  const write = (next) => { const journey = getJourney() || {}; saveJourney({ ...journey, chase: next }); rerender(); };
+
+  if (!chase) {
+    const role = el("select", { "aria-label": "Your part in it" },
+      el("option", { value: "prey" }, "You are being chased"),
+      el("option", { value: "pursuer" }, "You are chasing them"));
+    const theirs = el("input", { type: "number", value: "4", min: "1", "aria-label": "Their dice" });
+    card.append(
+      el("div", { class: "field" }, el("label", {}, "Your part in it"), role),
+      el("div", { class: "field" }, el("label", {}, "Their Agility plus Maneuverability"), theirs),
+      el("div", { class: "btn-row" },
+        el("button", {
+          class: "btn btn-primary",
+          onclick: () => write({ role: role.value, theirDice: Math.max(1, Number(theirs.value) || 4), bandIndex: 3, round: 1 })
+        }, "Start the chase"),
+        el("button", { class: "btn", onclick: () => obstacle(rerender) }, "Roll an obstacle"),
+        el("button", { class: "btn", onclick: () => componentDamage(rerender) }, "Component damage")));
+    return card;
+  }
+
+  const band = CHASE_BANDS[chase.bandIndex];
+  const prey = chase.role === "prey";
+  card.append(el("div", { class: "card-row" },
+    el("strong", {}, `Round ${chase.round} · ${band}`),
+    el("span", { class: "faint" }, prey ? "They are behind you" : "You are behind them")));
+  if (band === "engaged") {
+    card.append(el("p", { class: "faint" }, "Engaged: the pursuer can ram, or attack in close combat."));
+  }
+  card.append(el("div", { class: "btn-row" },
+    el("button", {
+      class: "btn btn-primary",
+      onclick: () => chaseRound(getCharacter(driver.value), v, chase, write)
+    }, "Drive"),
+    el("button", { class: "btn", onclick: () => obstacle(rerender) }, "Roll an obstacle"),
+    el("button", { class: "btn", onclick: () => componentDamage(rerender) }, "Component damage"),
+    el("button", { class: "btn btn-danger", onclick: () => write(null) }, "Call it off")));
+  return card;
+}
+
+async function chaseRound(ch, vehicle, chase, write) {
+  if (!ch) { showToast("No driver selected."); return; }
+  const mine = rollDice(Math.max(1, ch.attributes.agility + Math.max(0, vehicle.maneuverability || 0)));
+  const theirs = rollDice(chase.theirDice);
+  const step = chaseStep(chase.bandIndex, countSixes(mine), countSixes(theirs), chase.role === "prey");
+
+  logRoll({ by: ch.name, label: "Chase", dice: [...mine, ...theirs],
+    outcome: step.escaped ? "broke away" : `${CHASE_BANDS[step.bandIndex]}` });
+
+  if (step.escaped) {
+    write(null);
+    await modal({
+      title: chase.role === "prey" ? "You lose them" : "They get away",
+      body: el("p", {}, "Past Extreme range the chase is over."),
+      actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    });
+    return;
+  }
+
+  write({ ...chase, bandIndex: step.bandIndex, round: chase.round + 1 });
+  await modal({
+    title: `${CHASE_BANDS[step.bandIndex]}`,
+    body: el("div", {},
+      el("p", { class: "faint" }, `You ${mine.join(" ")} · them ${theirs.join(" ")}`),
+      el("p", {}, step.moved === 0
+        ? "Neither of you gains a yard."
+        : `${Math.abs(step.moved)} clear — the gap ${(step.moved > 0) === (chase.role === "prey") ? "opens" : "closes"}.`),
+      CHASE_BANDS[step.bandIndex] === "engaged"
+        ? el("p", { class: "faint" }, "Engaged: the pursuer can ram now, or attack in close combat.")
+        : null,
+      el("p", { class: "faint" }, "Both sides may push a chase roll — a 1 on a base die still costs Hope.")),
+    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+  });
 }
 
 async function obstacle(onDone) {

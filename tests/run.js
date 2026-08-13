@@ -1,13 +1,29 @@
 // Headless regression harness. Data-layer and rules invariants run without a browser;
 // browser smoke tests attach once playwright-core is installed (npm i).
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 
 const results = [];
 const test = async (name, fn) => {
   try { await fn(); results.push(["pass", name]); }
   catch (err) { results.push(["FAIL", name, err.message]); }
 };
+
+// Runs first, and on every file: a stray paren in a screen only shows up in the browser,
+// where it reads as a hang rather than an error. Fail here instead, by name.
+await test("every source file parses", () => {
+  const files = [
+    ...readdirSync(new URL("../src", import.meta.url)).map((f) => `src/${f}`),
+    ...readdirSync(new URL("..", import.meta.url)).filter((f) => /^data.*\.js$/.test(f))
+  ].filter((f) => f.endsWith(".js"));
+  const broken = [];
+  for (const file of files) {
+    try { execFileSync(process.execPath, ["--check", new URL(`../${file}`, import.meta.url).pathname], { stdio: "pipe" }); }
+    catch (err) { broken.push(`${file}: ${String(err.stderr).split("\n").slice(0, 3).join(" ").trim()}`); }
+  }
+  assert.deepEqual(broken, [], broken.join(" | "));
+});
 
 const data = await import("../data.js");
 const tables = await import("../data-tables.js");
@@ -793,6 +809,17 @@ await test("Tilt degrees split the ranks the way the book's table does", () => {
   assert.equal(solo.RANKS.length, 13, "every rank lands in exactly one degree");
   assert.equal(soloMod.readTilt({ suit: "clubs", rank: "J" }).good, false, "clubs are bad news");
   assert.equal(soloMod.readTilt({ suit: "diamonds", rank: "J" }).good, true);
+});
+
+await test("a wrecked vehicle needs a spare part before repairs mean anything", () => {
+  // The rule lives in the data; the driving screen gates the roll on it.
+  assert.equal(tables.REPAIR.vehicleAtZeroRequires, "sparePart");
+  assert.equal(tables.REPAIR.attr, "wits");
+  assert.equal(tables.REPAIR.eachSuccessRestores, 1);
+  assert.ok(tables.GEAR.find((g) => g.id === "toolsVehicle")?.bonus > 0, "vehicle tools supply the gear dice");
+  const src = readFileSync(new URL("../src/hazards.js", import.meta.url), "utf8");
+  assert.match(src, /hull <= 0 && !part/, "the wrecked-vehicle gate is wired, not just documented");
+  assert.match(src, /Hull and repairs/, "and the vehicle has a repair surface at all");
 });
 
 const failed = results.filter((r) => r[0] === "FAIL");
