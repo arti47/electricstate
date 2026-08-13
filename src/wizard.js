@@ -1,6 +1,6 @@
 // Creation wizard (Phase 1). Follows the book's 17-step order, grouped into screens.
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
-import { el, clamp, d6, d100, fromD100, rollNotation, uid } from "./core.js";
+import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
@@ -155,8 +155,8 @@ function stepTalents(rerender) {
       }),
       el("button", {
         class: "btn", onclick: () => {
-          const pick = arch.talents[Math.floor((d6() - 1) / 2)];
-          if (!draft.talents.includes(pick)) toggleTalent(pick, allowed, rerender);
+          const suggested = arch.talents[Math.floor((d6() - 1) / 2)];
+          if (!draft.talents.includes(suggested)) toggleTalent(suggested, allowed, rerender);
           else showToast("You already have that one — pick another.");
         }
       }, "Roll D6")));
@@ -628,21 +628,21 @@ function buildJourney(rerender) {
   }
   itemsCard.append(list);
   if ((j.sharedItems || []).length < 3) {
-    const pick = el("select", { "aria-label": "Shared item" },
+    const itemSelect = el("select", { "aria-label": "Shared item" },
       el("option", { value: "" }, "Choose an item…"),
       ...SHARED_ITEMS.map((i) => el("option", { value: i.roll }, `${i.roll} · ${i.name}`)));
-    itemsCard.append(el("div", { class: "field" }, pick),
+    itemsCard.append(el("div", { class: "field" }, itemSelect),
       el("div", { class: "btn-row" },
         el("button", {
           class: "btn", onclick: () => {
-            const item = SHARED_ITEMS.find((i) => i.roll === +pick.value);
+            const item = SHARED_ITEMS.find((i) => i.roll === +itemSelect.value);
             if (!item) { showToast("Choose an item first."); return; }
             save({ sharedItems: [...(j.sharedItems || []), item] });
           }
         }, "Add"),
         el("button", {
           class: "btn btn-primary", onclick: () => {
-            const item = SHARED_ITEMS[Math.floor(Math.random() * SHARED_ITEMS.length)];
+            const item = pick(SHARED_ITEMS);
             save({ sharedItems: [...(j.sharedItems || []), item] });
           }
         }, "Roll D66")));

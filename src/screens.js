@@ -158,6 +158,43 @@ const clockTime = (ts) => ts
 
 const PAGE = 25;
 
+/**
+ * Every d6 the app has rolled, counted by face. Digital dice are trusted only if they can
+ * be checked, so the log carries its own evidence: a table can audit the app instead of
+ * arguing about it. Values above 6 are other dice (D66, D100, a damage total) and are left
+ * out rather than folded into a d6 histogram.
+ */
+export function faceDistribution(entries) {
+  const counts = [0, 0, 0, 0, 0, 0];
+  let total = 0;
+  for (const entry of entries) {
+    for (const value of entry.dice || []) {
+      if (Number.isInteger(value) && value >= 1 && value <= 6) { counts[value - 1] += 1; total += 1; }
+    }
+  }
+  return { counts, total, expected: total / 6 };
+}
+
+function distributionPanel(entries) {
+  const { counts, total } = faceDistribution(entries);
+  if (total < 20) return null;   // below this the spread says nothing and looks alarming
+
+  const most = Math.max(...counts);
+  const panel = el("details", { class: "explain" },
+    el("summary", {}, `Are these dice fair? (${total} d6 rolled)`),
+    el("p", { class: "faint" }, "Rolls come from the browser's cryptographic random source, not from Math.random. Over a campaign each face should approach one in six — but a hundred dice is a small sample, and a run of sixes is what dice do."));
+
+  for (const [i, n] of counts.entries()) {
+    const pct = ((n / total) * 100).toFixed(1);
+    panel.append(el("div", { class: "card-row", style: "padding:2px 0" },
+      el("span", { class: "mono" }, String(i + 1)),
+      el("span", { class: "bar", style: `width:${most ? (n / most) * 60 : 0}%` }),
+      el("span", { class: "mono faint" }, `${n} · ${pct}%`)));
+  }
+  panel.append(el("p", { class: "faint" }, "Even would be 16.7% each."));
+  return panel;
+}
+
 export function rollLogScreen() {
   const host = el("div");
   let filter = "all";
@@ -207,6 +244,7 @@ export function rollLogScreen() {
     // A full log is a hundred rows — eight screens of scrolling to reach the buttons
     // underneath it. Show a session's worth and let the rest be asked for.
     const all = filterRollLog(filter);
+    add(wrap, distributionPanel(all));
     const shown = all.slice(0, visible);
     const list = el("ul", { class: "list" });
     for (const r of shown) {

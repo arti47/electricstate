@@ -1,5 +1,5 @@
 // Solo play (Phase 6). The deck is the pacing timer: no reshuffle until it runs out.
-import { el, d6, d66, uid, fromRangeTable } from "./core.js";
+import { el, d6, d66, uid, shuffle, fromRangeTable } from "./core.js";
 import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EMOTION,
          NPC_MOTIVE, NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS,
          THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
@@ -19,11 +19,7 @@ const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣"
 export function freshDeck() {
   const cards = [];
   for (const suit of SUITS) for (const rank of RANKS) cards.push({ suit, rank });
-  for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cards[i], cards[j]] = [cards[j], cards[i]];
-  }
-  return cards;
+  return shuffle(cards);
 }
 
 export function drawFrom(deck) {

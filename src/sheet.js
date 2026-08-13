@@ -1,5 +1,5 @@
 // The live character sheet and the persistent vitals header (Phase 2).
-import { $, el, clamp } from "./core.js";
+import { $, el, clamp, die } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, NEUROCASTERS, TENSION, FUEL, DRONE_PILOT_RULES } from "../data.js";
 import { GEAR, SURGERY } from "../data-tables.js";
 import { BODY_ARMOR } from "../data.js";
@@ -518,6 +518,6 @@ function rollNotationSafe(notation) {
   if (!m) return null;
   const n = m[1] ? +m[1] : 1, faces = +m[2];
   let total = 0;
-  for (let i = 0; i < n; i++) total += 1 + Math.floor(Math.random() * faces);
+  for (let i = 0; i < n; i++) total += die(faces);
   return total;
 }

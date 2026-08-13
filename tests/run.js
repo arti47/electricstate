@@ -896,6 +896,62 @@ await test("an invented talent resolves from the character that made it up", () 
     "and vanishes if the character no longer carries it");
 });
 
+await test("randomness comes from the cryptographic source, not Math.random", () => {
+  const sources = readdirSync(new URL("../src", import.meta.url)).map((f) => `src/${f}`);
+  const offenders = sources.filter((f) => {
+    const text = readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+    // Strip comments before looking: core.js explains in prose why it does not use it.
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    return /Math\.random\s*\(/.test(code);
+  });
+  assert.deepEqual(offenders, [], `Math.random() in ${offenders.join(", ")}`);
+});
+
+await test("randomInt is uniform and never exceeds its bound", () => {
+  const N = 60000, faces = 6;
+  const counts = new Array(faces).fill(0);
+  for (let i = 0; i < N; i++) {
+    const v = core.randomInt(faces);
+    assert.ok(v >= 0 && v < faces, `randomInt(${faces}) returned ${v}`);
+    counts[v] += 1;
+  }
+  // Chi-square, 5 degrees of freedom. The 99.9% critical value is 20.5; a fair source
+  // clears it essentially always, and a modulo-biased one on a 6-face die would not
+  // — this test is here to pin the rejection sampling, not to prove cryptography.
+  const expected = N / faces;
+  const chi = counts.reduce((sum, n) => sum + ((n - expected) ** 2) / expected, 0);
+  assert.ok(chi < 20.5, `chi-square ${chi.toFixed(1)} over ${counts.join(",")}`);
+  assert.equal(core.randomInt(0), 0, "a zero bound is not a crash");
+  assert.equal(core.randomInt(1), 0);
+});
+
+await test("shuffle keeps every card and moves them", () => {
+  const deck = Array.from({ length: 52 }, (_, i) => i);
+  const shuffled = core.shuffle(deck);
+  assert.equal(shuffled.length, 52);
+  assert.deepEqual([...shuffled].sort((a, b) => a - b), deck, "no card gained or lost");
+  assert.deepEqual(deck, Array.from({ length: 52 }, (_, i) => i), "the original is untouched");
+  const moved = shuffled.filter((v, i) => v !== i).length;
+  assert.ok(moved > 40, `only ${moved} of 52 cards moved`);
+});
+
+const screens = await import("../src/screens.js");
+
+await test("the roll log counts d6 faces and ignores everything else", () => {
+  const dist = screens.faceDistribution([
+    { dice: [6, 6, 1, 3] },
+    { dice: [41] },              // a D66 result, not six d6 faces
+    { dice: [2] },
+    { dice: [] },
+    { dice: [87] },              // a D100 result
+    {}                           // an entry with no dice at all
+  ]);
+  assert.deepEqual(dist.counts, [1, 1, 1, 0, 0, 2], "faces 1-6 only");
+  assert.equal(dist.total, 5);
+  assert.equal(dist.expected, 5 / 6);
+  assert.deepEqual(screens.faceDistribution([]).counts, [0, 0, 0, 0, 0, 0]);
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

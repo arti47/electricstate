@@ -221,6 +221,9 @@ a { color: inherit; }
 .faint { color: var(--ink-faint); font-size: .82rem; }
 .mono { font-family: var(--mono); }
 
+/* Roll-log distribution: a bar per d6 face, so a table can check the dice. */
+.bar { height: 8px; background: var(--accent); border-radius: 2px; min-width: 2px; flex: 0 0 auto; }
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: var(--tap); padding: 0 16px;

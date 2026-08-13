@@ -509,6 +509,30 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(100);
   check(/What has happened/.test(await page.textContent("#screen")), "solo events did not persist across a reload");
 
+  // The dice are cryptographic and the log carries the evidence: a distribution panel
+  // once there is enough of a sample to mean anything.
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    db.rollLog = Array.from({ length: 30 }, (_, i) => ({
+      id: "d" + i, ts: Date.now(), by: "Test Traveler", label: "Strength",
+      dice: [1 + (i % 6), 1 + ((i + 3) % 6)], outcome: "rolled"
+    }));
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/log"; });
+  await page.waitForTimeout(120);
+  const fairness = await page.evaluate(() => {
+    const panel = [...document.querySelectorAll("#screen details.explain")]
+      .find((d) => /Are these dice fair/.test(d.textContent));
+    return panel ? { open: panel.hasAttribute("open"), bars: panel.querySelectorAll(".bar").length } : null;
+  });
+  check(fairness !== null, "roll log has no fairness panel with a full sample");
+  check(fairness && fairness.bars === 6, `fairness panel drew ${fairness && fairness.bars} bars, expected 6`);
+  check(fairness && !fairness.open, "the fairness panel should start collapsed");
+  const cryptoOnly = await page.evaluate(() => typeof crypto.getRandomValues === "function");
+  check(cryptoOnly, "no crypto.getRandomValues in this browser");
+
   // A Stop's setting values are sentences. Laid out as a card-row they centre against
   // their label and a two-line value straddles it, so they are stacked definition rows.
   await page.evaluate(() => {

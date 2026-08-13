@@ -206,6 +206,14 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   discarding Threat health, the talent picker describes what it offers and puts the archetype's
   three first, and a Traveler can **invent a talent** as p.65 allows — stored on the character and
   resolved through `talent(id, ch)`.
-- Verification: `npm test` = 77 invariants + browser smoke; `node tests/audit.js` clicks every
+- Verification: `npm test` = 81 invariants + browser smoke; `node tests/audit.js` clicks every
   control on every screen and flags errors, unclickable controls and silent no-ops.
+- **Dice are cryptographic.** All randomness routes through `core.randomInt`, which draws from
+  `crypto.getRandomValues` with rejection sampling — `value % max` is biased whenever max does
+  not divide 2^32, which is exactly the accusation a dice roller must be able to answer.
+  `Math.random()` appears nowhere in `src/`, and a test asserts that. `pick`, `shuffle` and
+  every die build on it.
+- **The roll log is the fairness record.** A collapsed panel counts every d6 face the app has
+  rolled, with percentages against the even 16.7%, once there are 20+ dice to talk about.
+  Values above 6 (D66, D100) are excluded rather than folded into a d6 histogram.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

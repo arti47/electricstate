@@ -1,5 +1,5 @@
 // GM screen (Phase 6): Stop builder, threat reference and every rollable table.
-import { el, d6, d66, roll2d6, uid, fromRangeTable } from "./core.js";
+import { el, d6, d66, roll2d6, uid, pick, fromRangeTable } from "./core.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, COUNTDOWN_ELEMENTS,
          COUNTDOWN_PRINCIPLE, NEUROSCAPE, NPC_REACTIONS, COMBAT_MORALE, JOURNEY_LENGTH,
@@ -154,7 +154,7 @@ function threatCard() {
       el("button", {
         class: "btn",
         onclick: () => built.replaceChildren(el("strong", {}, "Special ability: "),
-          SPECIAL_ABILITIES[Math.floor(Math.random() * SPECIAL_ABILITIES.length)])
+          pick(SPECIAL_ABILITIES))
       }, "Roll a special ability")),
     built));
   show();
@@ -193,8 +193,8 @@ function tablesCard() {
         return `${fromRangeTable(COMBAT_MORALE.map((x) => ({ range: x.roll, ...x })), r).reaction} (${r})`;
       }),
       roll("Neuroscape", () => `${d6Pick(NEUROSCAPE.type)} · ${d6Pick(NEUROSCAPE.theme)} · ${d6Pick(NEUROSCAPE.mood)}`),
-      roll("Countdown step", () => COUNTDOWN_ELEMENTS[Math.floor(Math.random() * COUNTDOWN_ELEMENTS.length)]),
-      roll("Kicker", () => KICKER_EXAMPLES[Math.floor(Math.random() * KICKER_EXAMPLES.length)]),
+      roll("Countdown step", () => pick(COUNTDOWN_ELEMENTS)),
+      roll("Kicker", () => pick(KICKER_EXAMPLES)),
       roll("Why together", () => d6Pick(WHY_STICK_TOGETHER))),
     out);
   return card;
