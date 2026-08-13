@@ -8,7 +8,7 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
          SOLO_PRINCIPLES, INTERNAL_THREATS_ALLOWED } from "../data-solo.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
-import { getJourney, saveJourney, listCharacters } from "./store.js";
+import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
 import { showToast, modal, explain, actionBar } from "./ui.js";
@@ -96,23 +96,87 @@ const write = (patch) => {
   saveJourney({ ...j, solo: { ...state(), ...patch } });
 };
 
+/** Which Traveler is this about? Solo runs two to four, so most things have to ask. */
+async function pickTraveler(title, cast = listCharacters()) {
+  if (cast.length < 2) return cast[0] || null;
+  let picked = null;
+  const body = el("ul", { class: "list" });
+  for (const c of cast) {
+    body.append(el("li", {}, el("button", {
+      class: "row", onclick: () => {
+        picked = c;
+        document.querySelector(".modal-backdrop")?.remove();
+        document.body.style.removeProperty("overflow");
+      }
+    }, el("strong", {}, c.name || "Unnamed"))));
+  }
+  await modal({ title, body, actions: [{ label: "Cancel", value: false }] });
+  return picked;
+}
+
 /** Records an event on the Journey so it survives the modal and the screen refresh. */
 function logEvent(kind, text, card = null) {
   const s = state();
   write({ events: [{ id: uid(), kind, text, card, at: Date.now() }, ...(s.events || [])].slice(0, 30) });
 }
 
+// ------------------------------------------------------- personal Threats
 /**
- * The personal Threat closes distance in three steps, whether a face card fired it or
- * you pushed the button. One counter, stored on the Journey — the event list is capped
- * and cannot be trusted to count.
+ * A personal Threat belongs to one Traveler, so solo runs one clock per Traveler rather
+ * than one for the table. It is the mechanical half of the Threat written on their sheet:
+ * the sheet says what it is, this says how close it has got — three steps, you hear about
+ * it, it makes contact, it attacks.
+ *
+ * Stored on the Journey as `{ [charId]: { text, step } }`, because the event list is
+ * capped and cannot be trusted to count.
  */
-export function advancePersonalThreat() {
-  const done = state().personalThreatStep || 0;
-  if (done >= PERSONAL_THREAT_COUNTDOWN.length) return null;
-  write({ personalThreatStep: done + 1 });
-  const step = PERSONAL_THREAT_COUNTDOWN[done];
-  return { ...step, index: done + 1, of: PERSONAL_THREAT_COUNTDOWN.length };
+export const PERSONAL_THREAT_STEPS = PERSONAL_THREAT_COUNTDOWN.length;
+
+export function personalThreats() {
+  const s = state();
+  if (s.personalThreats) return s.personalThreats;
+  // Older saves kept one counter for the whole party. Keep the progress; give it an owner.
+  if (s.personalThreatStep == null) return {};
+  const owner = s.leadId || listCharacters()[0]?.id || "party";
+  return { [owner]: { text: "", step: s.personalThreatStep } };
+}
+
+const writeThreats = (map) => write({ personalThreats: map, personalThreatStep: undefined });
+
+export function setPersonalThreat(charId, text) {
+  const map = { ...personalThreats(), [charId]: { text, step: 0 } };
+  writeThreats(map);
+  return map[charId];
+}
+
+/** Whoever still has a Threat that has not caught up with them. */
+export const armedThreats = () =>
+  Object.entries(personalThreats()).filter(([, t]) => (t.step || 0) < PERSONAL_THREAT_STEPS);
+
+/**
+ * Advance one Traveler's Threat. Named explicitly by the button; a face card advances the
+ * Traveler in the spotlight, or the only one armed, because the card does not say whose.
+ */
+export function advancePersonalThreat(charId = null) {
+  const map = { ...personalThreats() };
+  const armed = armedThreats();
+  if (!armed.length) return null;
+  const lead = state().leadId;
+  const chosen = (charId && map[charId] && (map[charId].step || 0) < PERSONAL_THREAT_STEPS)
+    ? charId
+    : (armed.find(([id]) => id === lead) || armed[0])[0];
+
+  const entry = map[chosen];
+  const done = entry.step || 0;
+  map[chosen] = { ...entry, step: done + 1 };
+  writeThreats(map);
+
+  const who = listCharacters().find((c) => c.id === chosen);
+  return {
+    ...PERSONAL_THREAT_COUNTDOWN[done],
+    index: done + 1, of: PERSONAL_THREAT_STEPS,
+    charId: chosen, name: who?.name || "The party", text: entry.text || ""
+  };
 }
 
 /** The live Stop's own Countdown if there is one, otherwise the printed D66 table. */
@@ -126,8 +190,39 @@ export async function nextStopCountdown() {
   return { text: r.event, title: "Stop Countdown" };
 }
 
+/** Steps still to come across every armed Threat, for the button that fires them. */
 const threatStepsLeft = () =>
-  PERSONAL_THREAT_COUNTDOWN.length - (state().personalThreatStep || 0);
+  armedThreats().reduce((n, [, t]) => n + (PERSONAL_THREAT_STEPS - (t.step || 0)), 0);
+
+/**
+ * The clocks, stated. A personal Threat that only exists as a counter is a Threat the
+ * player forgets is coming, which is the one thing it must not be.
+ */
+function personalThreatSummary() {
+  const entries = Object.entries(personalThreats());
+  if (!entries.length) return null;
+  const cast = listCharacters();
+  const box = el("div", { style: "margin-top:8px" });
+  for (const [id, t] of entries) {
+    const who = cast.find((c) => c.id === id);
+    const step = t.step || 0;
+    box.append(el("div", { class: "card-row", style: "padding:4px 0" },
+      el("span", {}, el("strong", {}, who?.name || "The party"),
+        t.text ? el("div", { class: "faint" }, t.text) : null),
+      el("span", { class: "mono faint" },
+        step >= PERSONAL_THREAT_STEPS ? "caught up" : `${step}/${PERSONAL_THREAT_STEPS}`)));
+  }
+  return box;
+}
+
+/** The phase-5 button says whose Threat is next, because it is no longer the party's. */
+function nextThreatLabel() {
+  const armed = armedThreats();
+  if (!armed.length) return "Personal Threat step (none running)";
+  if (armed.length > 1) return `Personal Threat step (${armed.length} running)`;
+  const who = listCharacters().find((c) => c.id === armed[0][0]);
+  return `Personal Threat step — ${who?.name || "the party"}`;
+}
 
 /**
  * A Stop is a spotlight, so generating one hands it to whoever has led fewest — which is
@@ -197,36 +292,70 @@ function build(rerender) {
         await modal({ title: "Destination", body: el("p", {}, d), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }),
       act("Personal Threat", async () => {
+        const cast = listCharacters();
+        const target = cast.length > 1 ? await pickTraveler("Whose personal Threat?", cast) : cast[0] || null;
+        if (cast.length > 1 && !target) return;
         const t = SOLO_PERSONAL_THREATS[d6() - 1];
-        write({ personalThreatStep: 0 });
-        logEvent("Personal Threat", t); rerender();
-        await modal({
-          title: "Personal Threat",
+        setPersonalThreat(target?.id || "party", t);
+        logEvent("Personal Threat", target ? `${target.name}: ${t}` : t);
+        rerender();
+        const chose = await modal({
+          title: `Personal Threat${target ? ` — ${target.name || "Unnamed"}` : ""}`,
           body: el("div", {}, el("p", {}, t),
-            el("p", { class: "faint" }, "Three steps from here: you hear about it, it makes contact, it attacks.")),
-          actions: [{ label: "Good", value: true, class: "btn-primary" }]
+            el("p", { class: "faint" }, "Three steps from here: you hear about it, it makes contact, it attacks."),
+            target
+              ? el("p", { class: "faint" }, "This is the clock — how close it has got. The Threat on their sheet is the description of it, and starts out whatever you wrote at creation.")
+              : null),
+          actions: [
+            target ? { label: "Write it onto their sheet", value: "sheet", class: "btn-primary" } : null,
+            { label: "Good", value: true }
+          ].filter(Boolean)
         });
+        if (chose === "sheet" && target) {
+          saveCharacter({ ...target, threat: t });
+          showToast(`${target.name || "Their"} Threat updated.`);
+          rerender();
+        }
       }),
       act("Goal and Threat for your archetype", async () => {
         const chars = listCharacters();
         const body = el("div", {});
-        const seen = new Set();
+        // The book prints a ready-made Goal and Threat per archetype (p.207-208). These
+        // fill the same two fields creation asked for, so they are offered, not just shown.
         for (const c of chars) {
           const hook = SOLO_ARCHETYPE_HOOKS[c.archetype];
-          if (!hook || seen.has(c.archetype)) continue;
-          seen.add(c.archetype);
-          body.append(el("h3", {}, c.name || "Unnamed"),
+          if (!hook) continue;
+          body.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+            el("h3", { style: "margin-top:0" }, c.name || "Unnamed"),
             el("p", {}, `Goal: ${hook.goal}`),
-            el("p", { class: "faint" }, `Threat: ${hook.threat}`));
+            el("p", { class: "faint" }, `Threat: ${hook.threat}`),
+            el("div", { class: "btn-row" },
+              el("button", {
+                class: "btn", onclick: (e) => {
+                  saveCharacter({ ...c, goal: hook.goal, threat: hook.threat });
+                  e.target.replaceWith(el("span", { class: "faint" }, "Written to their sheet."));
+                  showToast(`${c.name || "Their"} Goal and Threat set.`);
+                }
+              }, "Use both"),
+              el("button", {
+                class: "btn", onclick: (e) => {
+                  saveCharacter({ ...c, goal: hook.goal });
+                  e.target.replaceWith(el("span", { class: "faint" }, "Goal written."));
+                }
+              }, "Goal only"))));
         }
-        if (!seen.size) body.append(el("p", { class: "faint" }, "No Traveler with a suggested hook yet — create one first, or roll your own Goal words on the Journey screen."));
-        await modal({ title: "The book's suggestions", body, actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+        if (!chars.some((c) => SOLO_ARCHETYPE_HOOKS[c.archetype])) {
+          body.append(el("p", { class: "faint" }, "No Traveler with a suggested hook yet — create one first, or roll your own Goal words on the Journey screen."));
+        }
+        await modal({ title: "The book's suggestions", body, actions: [{ label: "Done", value: true, class: "btn-primary" }] });
+        rerender();
       }),
       act("Vehicle", async () => {
         const v = NINETIES_VEHICLES[d6() - 1];
         logEvent("Vehicle", v); rerender();
         await modal({ title: "Vehicle", body: el("p", {}, v), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       })),
+    personalThreatSummary(),
     el("details", { class: "explain" }, el("summary", {}, "The prep checklist"),
       el("ol", {}, ...SOLO_PREP_STEPS.map((x) => el("li", { class: "faint" }, x))))));
 
@@ -329,12 +458,31 @@ function build(rerender) {
         rerender();
         await modal({ title: fired.title, body: el("p", {}, fired.text), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }, true),
-      act(`Personal Threat step${threatStepsLeft() ? "" : " (played out)"}`, async () => {
-        const step = advancePersonalThreat();
-        if (!step) { showToast("That Threat has played out — it has caught up with you. Invent a new one or go on without."); return; }
-        logEvent("Personal Threat Countdown", `Step ${step.index}: ${step.event}`);
+      act(nextThreatLabel(), async () => {
+        const armed = armedThreats();
+        if (!armed.length) {
+          showToast("No personal Threat is running. Roll one in Before you set out.");
+          return;
+        }
+        // More than one armed and the app must not choose for you — it is someone's turn
+        // to be caught up with.
+        let whose = armed[0][0];
+        if (armed.length > 1) {
+          const cast = listCharacters().filter((c) => armed.some(([id]) => id === c.id));
+          const chosen = await pickTraveler("Whose Threat closes in?", cast);
+          if (!chosen) return;
+          whose = chosen.id;
+        }
+        const step = advancePersonalThreat(whose);
+        if (!step) { showToast("That Threat has played out — it has caught up with them."); return; }
+        logEvent("Personal Threat Countdown", `${step.name} — step ${step.index}: ${step.event}`);
         rerender();
-        await modal({ title: `Personal Threat — step ${step.index} of ${step.of}`, body: el("p", {}, step.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+        await modal({
+          title: `${step.name} — Threat step ${step.index} of ${step.of}`,
+          body: el("div", {}, el("p", {}, step.event),
+            step.text ? el("p", { class: "faint" }, step.text) : null),
+          actions: [{ label: "Good", value: true, class: "btn-primary" }]
+        });
       }))));
 
   // ------------------------------------------------------------ 6 the session

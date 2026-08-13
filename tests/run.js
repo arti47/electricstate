@@ -727,14 +727,48 @@ await test("a Lone wolf reduces Tension alone, and nobody else can", () => {
   assert.equal(lifecycle.reduceTension(wolf.id, wolf.id).ok, false, "you cannot talk it through with yourself");
 });
 
-await test("the solo personal Threat advances once per step from either route", () => {
+await test("a personal Threat belongs to one Traveler and closes in three steps", () => {
   store.resetAll();
+  const mine = makeChar({ name: "Hunted" });
+  const other = makeChar({ name: "Untroubled" });
   store.saveJourney({ solo: { deck: soloMod.freshDeck(), events: [], history: [] } });
+
+  assert.equal(soloMod.advancePersonalThreat(), null, "nothing advances before one is rolled");
+  soloMod.setPersonalThreat(mine.id, "An enemy from the past.");
+
   const steps = [];
-  for (let i = 0; i < 4; i++) steps.push(soloMod.advancePersonalThreat());
+  for (let i = 0; i < 4; i++) steps.push(soloMod.advancePersonalThreat(mine.id));
   assert.deepEqual(steps.map((s) => s && s.index), [1, 2, 3, null],
     "three steps, then it has caught up and stops");
-  assert.equal(store.getJourney().solo.personalThreatStep, 3, "the count lives on the Journey, not in the capped event list");
+  assert.deepEqual(steps.slice(0, 3).map((s) => s.name), ["Hunted", "Hunted", "Hunted"],
+    "every step names whose Threat it is");
+  assert.equal(store.getJourney().solo.personalThreats[mine.id].step, 3,
+    "the count lives on the Journey, not in the capped event list");
+  assert.equal(store.getJourney().solo.personalThreats[other.id], undefined,
+    "one Traveler's Threat does not advance another's");
+});
+
+await test("a face card advances the Traveler in the spotlight, not just the first one", () => {
+  store.resetAll();
+  const a = makeChar({ name: "First" });
+  const b = makeChar({ name: "Second" });
+  store.saveJourney({ solo: { deck: soloMod.freshDeck(), events: [], history: [], leadId: b.id } });
+  soloMod.setPersonalThreat(a.id, "A machine.");
+  soloMod.setPersonalThreat(b.id, "A personal demon.");
+  const step = soloMod.advancePersonalThreat();     // no id: the card does not say whose
+  assert.equal(step.name, "Second", "the spotlight Traveler's Threat is the one that closes in");
+  assert.equal(store.getJourney().solo.personalThreats[a.id].step, 0);
+});
+
+await test("a one-counter save migrates onto the Traveler it was about", () => {
+  store.resetAll();
+  const ch = makeChar({ name: "Legacy lead" });
+  store.saveJourney({ solo: { deck: soloMod.freshDeck(), events: [], history: [],
+    leadId: ch.id, personalThreatStep: 2 } });
+  assert.equal(soloMod.personalThreats()[ch.id].step, 2, "the progress survives");
+  const step = soloMod.advancePersonalThreat(ch.id);
+  assert.equal(step.index, 3, "and carries on from where it was");
+  assert.equal(store.getJourney().solo.personalThreatStep, undefined, "the old counter is gone");
 });
 
 await test("a solo Stop Countdown prefers the Stop's own steps over the D66 table", async () => {

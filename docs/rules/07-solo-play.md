@@ -24,7 +24,7 @@ Face cards fire events; suit selects the type. Do not reshuffle until the deck i
 | Hearts | Traveler event |
 | Diamonds | Conversation |
 
-Personal Threat Countdown (improvised to the Threat): 1 the Threat appears, 2 the conflict escalates or tilts, 3 it climaxes and resolves.
+Personal Threat Countdown (improvised to the Threat): 1 the Threat appears, 2 the conflict escalates or tilts, 3 it climaxes and resolves. Prep steps 5 and 6 are *each* Traveler's Goal and Threat, so the Countdown is per Traveler, not one clock for the party — a face card does not say whose, so it falls on whoever holds the spotlight.
 
 ## Tilts
 Draw one card to judge whether an element helps or harms, and how much.

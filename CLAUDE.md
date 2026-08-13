@@ -247,4 +247,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - A unit test asserts the service-worker shell lists every file in `src/` and every `data*.js`,
   and that `core.CACHE_VERSION` matches the worker's — a bumped app with a stale worker leaves
   players on the old build.
+- **Three things called Goal and Threat, kept distinct.** Creation writes `ch.goal` / `ch.threat`
+  (free text, house-aid seed words alongside). Solo's archetype hooks are the book's printed
+  p.207–208 suggestions for those same two fields, and now write to the sheet instead of only
+  being displayed. Solo's **personal Threat is the clock**, not the description: a D6 kind plus a
+  three-step countdown, stored **per Traveler** as `solo.personalThreats[charId] = {text, step}`.
+  A one-counter save migrates onto the lead. A face card advances whoever holds the spotlight,
+  because the card does not say whose; the button asks when more than one is running.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

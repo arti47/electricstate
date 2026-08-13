@@ -407,3 +407,30 @@ players on the old build, silently.
 
 90 invariants, browser smoke clean at 360 and 390px, layout and flow probes clean across three
 seed states, PWA probe clean, button audit clean across all 18 routes.
+
+---
+
+# Thirteenth pass — three things called Goal and Threat
+
+Raised from play rather than from a harness: solo's "Before you set out" offers *Personal Threat*
+and *Goal and Threat for your archetype*, and neither is obviously different from the Goal and
+Threat filled in at creation. Reading the code, they were three different things sharing two words.
+
+| # | Finding | Fix |
+|---|---|---|
+| 88 | **The archetype hooks were a dead end.** The book's printed per-archetype Goal and Threat (p.207–208) were shown in a modal and nothing else — you retyped them onto the sheet yourself. They fill exactly the two fields creation asked for. | Each Traveler's hook now carries **Use both** and **Goal only**, writing `ch.goal` / `ch.threat`. |
+| 89 | **The personal Threat countdown was one counter for the whole party**, while `threat` is per-Traveler and the book's prep steps 5 and 6 are *each* Traveler's Goal and Threat. Two to four Travelers, one clock, and nothing saying whose. | `solo.personalThreats[charId] = { text, step }`. Rolling one asks whose; the phase-5 button names whose is next and asks when more than one is running; a face card falls on whoever holds the spotlight, since the card does not say. A one-counter save migrates onto the lead with its progress intact. |
+| 90 | **The clocks were invisible until they fired.** A personal Threat that exists only as a counter is one the player forgets is coming, which is the one thing it must not be. | Phase 1 lists every armed Threat with its text and step. |
+
+The rolled Threat also offers to write itself onto the sheet, and says plainly that it is the
+clock while the sheet field is the description — the distinction that prompted the pass.
+
+## Guards
+
+Four unit tests: a Threat belongs to one Traveler and stops after three steps, one Traveler's
+Threat does not advance another's, a face card advances the spotlight rather than the first
+entry, and a legacy one-counter save migrates onto its lead and carries on from where it was.
+
+## Result
+
+92 invariants, browser smoke clean, three probes clean, button audit clean.
