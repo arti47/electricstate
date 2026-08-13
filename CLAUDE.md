@@ -176,6 +176,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   secondary summary agree; the transcript's table is de-interleaved and cannot settle it).
 - `tests/audit.js` polls for up to 1.5s after each click instead of waiting a fixed 220ms — the
   fixed wait manufactured a no-op finding that reproduced nowhere.
-- Verification: `npm test` = 71 invariants + browser smoke; `node tests/audit.js` clicks every
+- **Eighth pass (4 findings).** Vehicle repairs (Wits roll, tools and a Reliable trait as gear
+  dice, spare part required once wrecked), the chase movement roll itself, the book's safety
+  tools in Settings, and time-unit durations on the Time screen.
+- **`npm test` parses every source file first.** A missing paren in a screen module reaches the
+  browser as a hang, not an error — the unit harness now `node --check`s all of `src/` and
+  `data*.js` and fails by filename.
+- Verification: `npm test` = 73 invariants + browser smoke; `node tests/audit.js` clicks every
   control on every screen and flags errors, unclickable controls and silent no-ops.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

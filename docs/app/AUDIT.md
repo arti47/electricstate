@@ -211,6 +211,27 @@ The button audit reported one no-op that did not reproduce: a fixed 220 ms wait 
 with a handler that opens a modal. It now polls for up to 1.5 s, so a slow machine cannot
 manufacture a finding. Three consecutive clean runs after the change.
 
+## Eighth pass — three surfaces and a hole in the harness
+
+Reading the distilled rules against the engine a second time turned up three subsystems that
+had partial surfaces, and one harness gap that cost real time.
+
+| # | Finding | Fix |
+|---|---|---|
+| 49 | **A damaged vehicle could never be repaired.** Hull dropped from rams, collisions, potholes and gunfire; gear, neurocasters and drones all had repair paths and the vehicle had none, only a note saying it needed one. | Damage goes in through the vehicle's armor; repairs run the book's Wits roll with vehicle tools and a Reliable trait as gear dice, gated on a spare part once it is wrecked. |
+| 50 | **The chase had everything except the chase.** Obstacles and component damage were there; the opposed Agility roll that actually moves the range band was not, and `CHASE.movement` was unused. | A running chase with a range band, a roll per round, a band per extra success, an end past Extreme, and a note that Engaged is where ramming starts. |
+| 51 | **The safety tools the book recommends were absent.** Only the mental-trauma toggle hinted at them. | Lines and veils, a card anyone can play, and the debrief, in Settings beside the consent note. |
+| 52 | Time unit durations were extracted and never shown. | On the Time screen, where the boundaries are. |
+
+### The harness hole
+
+A missing closing paren in `screens.js` shipped past the unit harness, which imports data
+modules but not screen modules. In the browser it read as a page that never rendered and a
+run that hung — three separate 2–4 minute timeouts and a false trail through stale chromium
+processes before `node --check` found it in a second. The unit harness now parses every file
+under `src/` and every `data*.js` first, and fails by filename. A syntax error should cost one
+line of output, not an hour.
+
 ## Result
 
-71 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.
+73 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.

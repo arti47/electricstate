@@ -1,7 +1,8 @@
 // Scene/session lifecycle, rest and recovery, and the advancement debrief (Phase 4).
 // The app owns the boundaries: each one fires a bundle, shows what it did, and can be undone once.
 import { el, d6, rollDice, countSixes, clamp } from "./core.js";
-import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, ATTRIBUTES, TALENTS, TENSION } from "../data.js";
+import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
+         TALENTS, TENSION } from "../data.js";
 import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, exportJSON, importJSON } from "./store.js";
 import { talent as findTalent } from "./rules.js";
@@ -246,6 +247,8 @@ function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Time"));
   wrap.append(explain('The app owns the clock. Say what the group did, then end a Stretch, Shift, Day or session — each fires its whole bundle of healing, hunger, sleep, fuel and Bliss decay, tells you exactly what changed, and can be undone once. Reducing Tension here is the main way Hope comes back.'));
+  wrap.append(el("p", { class: "faint" },
+    TIME_UNITS.map((u) => `${u.label} ${u.duration}`).join(" · ") + ` · ${SHIFTS_PER_DAY} Shifts a day`));
 
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },
