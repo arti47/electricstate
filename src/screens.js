@@ -29,11 +29,9 @@ export function homeScreen() {
         el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—"))));
     }
     wrap.append(el("div", { class: "card" }, list));
+    // Journey, Time and Tension are one tap away in the section nav above.
     wrap.append(el("div", { class: "btn-row" },
-      el("a", { class: "btn", href: "#/create" }, "New Traveler"),
-      el("a", { class: "btn", href: "#/journey" }, "Journey"),
-      el("a", { class: "btn", href: "#/time" }, "Time"),
-      chars.length > 1 ? el("a", { class: "btn", href: "#/tension" }, "Tension") : null));
+      el("a", { class: "btn", href: "#/create" }, "New Traveler")));
   }
   const hidden = [
     !Settings.solo() && ["Solo mode", "#/solo"],

@@ -274,13 +274,17 @@ function build(rerender) {
     optionRow("Travelled", "travelled", "Burns fuel."),
     optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast.")));
 
+  // The three you press all evening, then the ones you press once.
   wrap.append(el("div", { class: "btn-row" },
     el("button", { class: "btn", onclick: () => fire("stretch", opts, rerender) }, "End Stretch"),
     el("button", { class: "btn btn-primary", onclick: () => fire("shift", opts, rerender) }, "End Shift"),
-    el("button", { class: "btn", onclick: () => fire("day", opts, rerender) }, "End Day"),
-    el("button", { class: "btn", onclick: () => debrief(rerender) }, "End Session"),
-    el("button", { class: "btn", onclick: () => weekPasses(rerender) }, "A week passes"),
-    el("button", { class: "btn", onclick: () => epilogue(rerender) }, "End the Journey")));
+    el("button", { class: "btn", onclick: () => fire("day", opts, rerender) }, "End Day")));
+  wrap.append(el("details", { class: "explain" }, el("summary", {}, "Bigger boundaries"),
+    el("p", { class: "faint" }, "End of session is the debrief where Travelers improve. A week is the interval mental trauma recovers on. Ending the Journey rolls each Traveler's epilogue and closes the campaign."),
+    el("div", { class: "btn-row" },
+      el("button", { class: "btn", onclick: () => debrief(rerender) }, "End session"),
+      el("button", { class: "btn", onclick: () => weekPasses(rerender) }, "A week passes"),
+      el("button", { class: "btn btn-danger", onclick: () => epilogue(rerender) }, "End the Journey"))));
 
   // Tension → Hope
   if (chars.length > 1) {

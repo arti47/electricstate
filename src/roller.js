@@ -227,6 +227,9 @@ function build(rerender) {
   const combat = getCombat();
   if (combat?.active) {
     const targets = combat.combatants.filter((c) => c.id !== ch.id);
+    wrap.append(el("div", { class: "card-row", style: "margin-bottom:var(--gap)" },
+      el("span", { class: "faint" }, `Round ${combat.round} — a fight is running`),
+      el("a", { class: "btn", href: "#/combat" }, "Back to combat")));
     wrap.append(el("div", { class: "field" }, el("label", {}, "Target"),
       el("select", { onchange: (e) => { pending.targetId = e.target.value || null; rerender(); } },
         el("option", { value: "" }, "No target"),
@@ -339,19 +342,22 @@ function build(rerender) {
     drivingMod ? el("div", { class: "faint" }, `Driving ${drivingMod}`) : null));
 
   const legality = pushLegality(ch);
-  wrap.append(el("div", { class: "btn-row" },
-    el("button", { class: "btn btn-primary", onclick: () => doRoll(ch, pool, rerender, false) }, "Roll"),
-    Settings.manualDice()
-      ? el("button", { class: "btn", onclick: () => doRoll(ch, pool, rerender, true) }, "Enter dice")
-      : null));
-
   if (pending.result) wrap.append(resultCard(ch, pool, legality, rerender));
-  wrap.append(el("div", { class: "btn-row", style: "margin-top:16px" },
-    el("a", { class: "btn", href: "#/log" }, "Roll log"),
-    el("a", { class: "btn", href: "#/neuro" }, "Neuroscape"),
-    el("a", { class: "btn", href: "#/combat" }, "Combat"),
-    el("a", { class: "btn", href: "#/hazards" }, "Hazards"),
-    el("a", { class: "btn", href: "#/driving" }, "Driving")));
+
+  // Roll is the most-pressed control in the game and sat below seven cards of setup.
+  // It lives above the tab bar now, carrying the pool size with it.
+  wrap.append(el("div", { class: "actionbar-spacer" }));
+  wrap.append(el("div", { class: "actionbar" },
+    el("div", { class: "actionbar-inner" },
+      el("span", { class: "pool" }, `${pool.base + pool.gear}`,
+        el("small", {}, `${pool.base} base · ${pool.gear} gear`)),
+      el("button", { class: "btn btn-primary", onclick: () => doRoll(ch, pool, rerender, false) }, "Roll"),
+      Settings.manualDice()
+        ? el("button", { class: "btn", onclick: () => doRoll(ch, pool, rerender, true) }, "Enter dice")
+        : null)));
+
+  // The sheet's own header follows the Traveler you are rolling for.
+  renderVitals(ch);
   return wrap;
 }
 

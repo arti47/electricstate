@@ -133,6 +133,20 @@ export async function nextStopCountdown() {
 const threatStepsLeft = () =>
   PERSONAL_THREAT_COUNTDOWN.length - (state().personalThreatStep || 0);
 
+/**
+ * A Stop is a spotlight, so generating one hands it to whoever has led fewest — which is
+ * how the book's "rotate so each Traveler leads at least one" actually gets honoured.
+ * Ties break in creation order; the hand-over button still overrides it.
+ */
+export function passTheSpotlight(cast = listCharacters()) {
+  if (cast.length < 2) return null;
+  const led = state().ledStops || {};
+  const fewest = Math.min(...cast.map((c) => led[c.id] || 0));
+  const nextUp = cast.find((c) => (led[c.id] || 0) === fewest);
+  write({ leadId: nextUp.id, ledStops: { ...led, [nextUp.id]: (led[nextUp.id] || 0) + 1 } });
+  return nextUp;
+}
+
 function build(rerender) {
   const s = state();
   const wrap = el("div", {}, el("h1", {}, "Solo"));
@@ -140,6 +154,10 @@ function build(rerender) {
 
   const phase = (title, blurb, ...kids) =>
     el("div", { class: "card" }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
+  // Prep happens once; it should not sit above the controls you use every scene.
+  const foldedPhase = (title, blurb, ...kids) =>
+    el("details", { class: "card phase-fold" }, el("summary", {}, title),
+      blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
   const row = (...kids) => el("div", { class: "btn-row" }, ...kids.filter(Boolean));
   const act = (label, fn, primary = false) =>
     el("button", { class: "btn" + (primary ? " btn-primary" : ""), onclick: fn }, label);
@@ -161,17 +179,18 @@ function build(rerender) {
         cast.filter((c) => !led[c.id]).length
           ? `Still waiting for a Stop of their own: ${cast.filter((c) => !led[c.id]).map((c) => c.name).join(", ")}.`
           : "Everyone has led at least one Stop."),
+      el("div", { class: "faint" }, "Generating a Stop hands this on by itself, to whoever has led fewest."),
       row(
         act("Hand it to " + (next?.name || "the next one"), () => {
           write({ leadId: next.id, ledStops: { ...led, [next.id]: (led[next.id] || 0) + 1 } });
           rerender();
-        }, true),
+        }),
         el("a", { class: "btn", href: `#/sheet/${leadId}` }, "Their sheet"))));
     if (!s.leadId) write({ leadId, ledStops: { ...led, [leadId]: led[leadId] || 1 } });
   }
 
   // ---------------------------------------------------------------- 1 prepare
-  wrap.append(phase("1 · Before you set out",
+  wrap.append(foldedPhase("1 · Before you set out",
     "Start, destination, route and vehicle. Leave the Stops unplanned — you generate each one as you arrive.",
     row(
       el("a", { class: "btn", href: "#/journey" }, "The Journey"),
@@ -236,8 +255,10 @@ function build(rerender) {
       act("Generate a Stop", () => {
         const stop = makeStop();
         saveStop(stop, { makeActive: true });
+        const lead = passTheSpotlight();
         logEvent("New Stop", `${stop.setting.terrain} · ${stop.blocker}`);
         rerender();
+        if (lead) showToast(`${lead.name || "They"} lead this one.`);
       }, true),
       act("Generate a Threat", () => {
         const current = activeStop();
@@ -316,7 +337,7 @@ function build(rerender) {
       }))));
 
   // ------------------------------------------------------------ 6 the session
-  wrap.append(phase("6 · Ending the Stop",
+  wrap.append(foldedPhase("6 · Ending the Stop",
     "Time passes on the Time screen — Shifts, Days and the session debrief run the same as at a table.",
     row(
       el("a", { class: "btn", href: "#/time" }, "Time"),

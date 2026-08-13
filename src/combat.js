@@ -150,19 +150,29 @@ function build(rerender) {
     return wrap;
   }
 
+  // Turn order is the thing you are constantly re-deriving at the table, so the list
+  // states it: the side that acts first, then whoever has not gone, then the spent.
+  const rank = (x) => (x.side === c.startingSide ? 0 : 2) + (x.acted ? 1 : 0);
+  const ordered = [...c.combatants].sort((a, b) => rank(a) - rank(b));
+  const upNext = ordered.find((x) => !x.acted);
+  const waiting = ordered.filter((x) => !x.acted).length;
+
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },
       el("strong", {}, `Round ${c.round}`),
       el("span", { class: "faint" }, c.startingSide === "travelers" ? "Travelers act first" : "Enemies act first")),
+    el("div", { class: "card-row" },
+      el("span", {}, upNext ? el("strong", {}, `${upNext.name} is up`) : el("strong", {}, "Everyone has gone")),
+      el("span", { class: "faint" }, upNext ? `${waiting} still to act` : "End the round")),
     el("p", { class: "faint" }, `One move and one action, or two moves — the move comes first. A reaction costs your next turn but covers every attack until then.`),
     el("div", { class: "btn-row" },
       el("button", {
-        class: "btn btn-primary", onclick: () => { nextRound(c); rerender(); }
+        class: "btn" + (upNext ? "" : " btn-primary"), onclick: () => { nextRound(c); rerender(); }
       }, "Next round"),
       el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"),
       el("button", { class: "btn btn-danger", onclick: () => { endCombat(); rerender(); } }, "End combat"))));
 
-  for (const combatant of c.combatants) {
+  for (const combatant of ordered) {
     wrap.append(combatantCard(combatant, c, rerender));
   }
   wrap.append(tasksCard(rerender));

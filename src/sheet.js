@@ -94,6 +94,19 @@ function build(ch, rerender) {
       : null,
     statusNotes(ch, hMax, pMax, rerender)));
 
+  // The things you reach for mid-scene, directly under the vitals rather than below
+  // eight cards of reference. Rally and the death roll appear only when they apply.
+  wrap.append(el("div", { class: "btn-row" },
+    el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll dice"),
+    el("button", { class: "btn", onclick: async () => { const { damageDialog } = await import("./roller.js"); damageDialog(ch, rerender); } }, "Take damage"),
+    el("button", { class: "btn", onclick: async () => { const { traumaticEventDialog } = await import("./roller.js"); await traumaticEventDialog(ch, rerender); } }, "Traumatic event"),
+    ch.state.health === 0 || ch.state.hope === 0
+      ? el("button", { class: "btn", onclick: async () => { const { rallyDialog } = await import("./roller.js"); await rallyDialog(ch, rerender); } }, "Rally")
+      : null,
+    ch.state.health === 0 && !ch.state.stabilized && !ch.state.dead && !isDronePilot(ch)
+      ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
+      : null));
+
   // --- attributes
   const attrGrid = el("div", { class: "card" }, el("h3", {}, "Attributes"));
   for (const a of ATTRIBUTES) {
@@ -140,17 +153,6 @@ function build(ch, rerender) {
     el("h3", {}, "Notes"),
     el("textarea", { rows: 4, "aria-label": "Notes", onchange: (e) => patch((c) => { c.notes = e.target.value; }) }, ch.notes || "")));
 
-  wrap.append(el("div", { class: "btn-row", style: "margin:16px 0" },
-    el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll dice"),
-    el("button", { class: "btn", onclick: async () => { const { damageDialog } = await import("./roller.js"); damageDialog(ch, rerender); } }, "Take damage"),
-    el("button", { class: "btn", onclick: async () => { const { traumaticEventDialog } = await import("./roller.js"); await traumaticEventDialog(ch, rerender); } }, "Traumatic event"),
-    ch.state.health === 0 || ch.state.hope === 0
-      ? el("button", { class: "btn", onclick: async () => { const { rallyDialog } = await import("./roller.js"); await rallyDialog(ch, rerender); } }, "Rally")
-      : null,
-    ch.state.health === 0 && !ch.state.stabilized && !ch.state.dead && !isDronePilot(ch)
-      ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
-      : null));
-
   wrap.append(el("button", {
     class: "btn btn-danger btn-block",
     onclick: async () => {
@@ -179,9 +181,10 @@ function statusNotes(ch, hMax, pMax, rerender) {
   if (ch.state.health === 0 && isDronePilot(ch)) {
     notes.push(["Disconnected", "The drone's Hull is gone, so you were thrown out of it. Your body is elsewhere, so there are no death rolls — but the drone is dead metal until someone repairs it.", "drones", "repairDrone"]);
   } else if (ch.state.health === 0) {
-    notes.push(["Incapacitated", "You can crawl and mumble. No attribute rolls, no talents. Death rolls each turn until stabilized.", "deathRoll"]);
+    notes.push(["Incapacitated", "You can crawl and mumble. No attribute rolls, no talents. Death rolls each turn until stabilized.",
+      "deathRoll", ch.state.stabilized || ch.state.dead ? "rally" : "death"]);
   }
-  if (ch.state.hope === 0) notes.push(["Breakdown", "You can talk, move and flee, but cannot roll attributes or use talents until rallied.", "breakdown"]);
+  if (ch.state.hope === 0) notes.push(["Breakdown", "You can talk, move and flee, but cannot roll attributes or use talents until rallied.", "breakdown", "rally"]);
   if (tracksBliss(ch) && ch.state.bliss >= ch.state.hope && ch.state.hope > 0)
     notes.push(["Lost in the Electric State", "Bliss has caught your Hope. You cannot leave a neuroscape on your own — someone must pull the helmet off, and that costs everything.", "bliss", "pullOut"]);
   if (ch.state.frozen) notes.push(["Frozen", "Whatever just happened stopped you dead. You lose your next turn — clear this once you have sat it out.", "traumaticEvent", "unfreeze"]);
@@ -189,6 +192,25 @@ function statusNotes(ch, hMax, pMax, rerender) {
   return el("div", { style: "margin-top:8px" },
     ...notes.map(([title, text, ruleId, action]) => el("div", { class: "card", style: "border-left:3px solid var(--danger)" },
       el("strong", {}, title), el("p", { class: "faint" }, text), ruleLink(ruleId),
+      action === "death"
+        ? el("button", {
+            class: "btn btn-danger btn-block", style: "margin-top:8px",
+            onclick: async () => {
+              const { deathRollDialog } = await import("./roller.js");
+              await deathRollDialog(ch);
+              rerender();
+            }
+          }, "Roll for death")
+        : null,
+      action === "death" || action === "rally"
+        ? el("button", {
+            class: "btn btn-block", style: "margin-top:8px",
+            onclick: async () => {
+              const { rallyDialog } = await import("./roller.js");
+              await rallyDialog(ch, rerender);
+            }
+          }, "Someone rallies them")
+        : null,
       action === "unfreeze"
         ? el("button", {
             class: "btn btn-block", style: "margin-top:8px",

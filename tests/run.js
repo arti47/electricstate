@@ -822,6 +822,42 @@ await test("a wrecked vehicle needs a spare part before repairs mean anything", 
   assert.match(src, /Hull and repairs/, "and the vehicle has a repair surface at all");
 });
 
+await test("the solo spotlight rotates to whoever has led fewest Stops", () => {
+  store.resetAll();
+  const a = store.saveCharacter({ name: "A", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  const b = store.saveCharacter({ name: "B", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  const c = store.saveCharacter({ name: "C", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  store.saveJourney({ solo: { deck: [], events: [], history: [] } });
+
+  const order = [1, 2, 3, 4].map(() => soloMod.passTheSpotlight().id);
+  assert.deepEqual(order, [a.id, b.id, c.id, a.id], "everyone leads once before anyone leads twice");
+  assert.equal(store.getJourney().solo.leadId, a.id);
+
+  store.resetAll();
+  store.saveCharacter({ name: "Alone", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  assert.equal(soloMod.passTheSpotlight(), null, "one Traveler has nobody to hand it to");
+});
+
+await test("combat orders the list by who actually acts next", () => {
+  store.resetAll();
+  store.saveJourney({
+    combat: {
+      active: true, round: 2, startingSide: "enemies",
+      combatants: [
+        { id: "t1", kind: "traveler", name: "Traveler spent", side: "travelers", acted: true, zone: 1 },
+        { id: "t2", kind: "traveler", name: "Traveler waiting", side: "travelers", acted: false, zone: 1 },
+        { id: "e1", kind: "threat", name: "Enemy spent", side: "enemies", acted: true, zone: 2 },
+        { id: "e2", kind: "threat", name: "Enemy waiting", side: "enemies", acted: false, zone: 2 }
+      ]
+    }
+  });
+  const c = combatMod.getCombat();
+  const rank = (x) => (x.side === c.startingSide ? 0 : 2) + (x.acted ? 1 : 0);
+  const order = [...c.combatants].sort((a, b) => rank(a) - rank(b)).map((x) => x.id);
+  assert.deepEqual(order, ["e2", "e1", "t2", "t1"],
+    "acting side first, and within each side whoever still has a turn");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

@@ -1,6 +1,7 @@
 // Hash routing + conditional tab gating.
 import { $, $$, el } from "./core.js";
 import { Settings, set as setSetting } from "./settings.js";
+import { listCharacters } from "./store.js";
 import { homeScreen, rulesScreen, settingsScreen, rollLogScreen } from "./screens.js";
 import { soloScreen } from "./solo.js";
 import { gmScreen } from "./gm.js";
@@ -33,6 +34,44 @@ const ROUTES = [
   { path: "sheet", tab: "home", render: (id) => (id ? sheetScreen(id) : notYet("Character sheet", "Phase 2")) },
   { path: "injury", tab: "home", render: (id) => (id ? injuryScreen(id) : notYet("Injuries", "Phase 2")) }
 ];
+
+/**
+ * Second level of navigation. Twelve of the eighteen routes hang off two tabs, and were
+ * reachable only from a button row at the foot of one screen — which in a fight means
+ * scrolling past the whole dice builder to find Combat. These are the siblings of
+ * wherever you are, at the top, always.
+ */
+const SUBNAV = {
+  home: [
+    ["#/home", "Travelers"],
+    ["#/journey", "Journey"],
+    ["#/time", "Time"],
+    ["#/tension", "Tension", () => listCharacters().length > 1]
+  ],
+  dice: [
+    ["#/dice", "Dice"],
+    ["#/combat", "Combat"],
+    ["#/neuro", "Neuroscape"],
+    ["#/hazards", "Hazards"],
+    ["#/driving", "Driving"],
+    ["#/log", "Log"]
+  ],
+  rules: [["#/rules", "Rules"], ["#/tutorial", "Tutorial"]]
+};
+
+function subnav(route) {
+  const items = (SUBNAV[route.tab] || []).filter(([, , when]) => !when || when());
+  if (items.length < 2) return null;
+  const here = `#/${route.path}`;
+  const nav = el("nav", { class: "subnav", "aria-label": "Section" });
+  for (const [href, label] of items) {
+    nav.append(el("a", {
+      href, class: "subnav-item" + (href === here ? " is-here" : ""),
+      ...(href === here ? { "aria-current": "page" } : {})
+    }, label));
+  }
+  return nav;
+}
 
 function notYet(what, phase) {
   return el("div", {}, el("h1", {}, what),
@@ -80,7 +119,9 @@ export function render() {
   }
 
   if (path !== "sheet" && path !== "injury") clearVitals();
-  screenEl.replaceChildren(route.render(param));
+  // The wizard and the sheet are places you go into, not siblings to flick between.
+  const chrome = ["create", "sheet", "injury"].includes(path) ? null : subnav(route);
+  screenEl.replaceChildren(...[chrome, route.render(param)].filter(Boolean));
   screenEl.focus({ preventScroll: true });
   window.scrollTo(0, 0);
 

@@ -48,14 +48,17 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   }
 
   // nothing at the foot of a screen may sit under the fixed tab bar
-  for (const route of ["create", "home", "settings", "rules"]) {
+  for (const route of ["create", "home", "settings", "rules", "dice", "time"]) {
     await page.evaluate((r) => { location.hash = `#/${r}`; }, route);
     await page.waitForTimeout(80);
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(80);
     const clearance = await page.evaluate(() => {
       const nav = document.querySelector(".tabbar").getBoundingClientRect();
-      const controls = [...document.querySelectorAll("#screen .btn, #screen button, #screen input, #screen select")];
+      // Controls inside a collapsed panel keep their last layout position in Chromium,
+      // so they read as buried under the nav while being unreachable. Skip them.
+      const controls = [...document.querySelectorAll("#screen .btn, #screen button, #screen input, #screen select")]
+        .filter((c) => !c.closest("details:not([open])"));
       const worst = controls.reduce((acc, c) => {
         const r = c.getBoundingClientRect();
         if (r.height === 0) return acc;
@@ -67,6 +70,25 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
       check(clearance.worst >= 0, `${route} at ${viewport.width}px: a control is ${Math.abs(Math.round(clearance.worst))}px under the tab bar`);
     }
   }
+
+  // section nav reaches the routes that hang off a tab, and marks where you are
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(80);
+  const diceNav = await page.evaluate(() => ({
+    items: [...document.querySelectorAll("#screen .subnav-item")].map((a) => a.getAttribute("href")),
+    here: document.querySelector("#screen .subnav-item.is-here")?.getAttribute("href")
+  }));
+  for (const href of ["#/combat", "#/neuro", "#/hazards", "#/driving", "#/log"]) {
+    check(diceNav.items.includes(href), `section nav does not reach ${href}`);
+  }
+  check(diceNav.here === "#/dice", `section nav marks ${diceNav.here} as current, expected #/dice`);
+  await page.click('#screen .subnav-item[href="#/combat"]');
+  await page.waitForTimeout(80);
+  check(await page.evaluate(() => location.hash) === "#/combat", "section nav did not navigate");
+  // the wizard is somewhere you go into, not a sibling to flick between
+  await page.evaluate(() => { location.hash = "#/create"; });
+  await page.waitForTimeout(80);
+  check(await page.evaluate(() => !document.querySelector("#screen .subnav")), "the wizard should not carry section nav");
 
   // rules page is an accordion, collapsed by default, and every panel carries an explainer
   await page.evaluate(() => { location.hash = "#/rules"; });
@@ -229,6 +251,20 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
 
   const logged = await page.evaluate(() => JSON.parse(localStorage.getItem("electricState.v1")).rollLog.length);
   check(logged >= 1, "roll was not written to the log");
+
+  // Roll sits in a bar above the tab bar, reachable without scrolling the builder
+  const bar = await page.evaluate(() => {
+    const b = document.querySelector("#screen .actionbar");
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    const nav = document.querySelector(".tabbar").getBoundingClientRect();
+    return { visible: r.top < window.innerHeight && r.bottom > 0, clearsNav: r.bottom <= nav.top + 1,
+             hasRoll: !!b.querySelector("button"), pool: b.querySelector(".pool")?.textContent || "" };
+  });
+  check(bar !== null, "dice screen has no action bar");
+  check(bar && bar.visible, "action bar is off screen");
+  check(bar && bar.clearsNav, "action bar overlaps the tab bar");
+  check(bar && bar.hasRoll && /\d/.test(bar.pool), `action bar shows no pool size (${bar && bar.pool})`);
 
   // a worn neurocaster takes dice off the pool, and unticking it gives them back
   await page.evaluate(() => {
