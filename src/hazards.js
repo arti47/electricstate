@@ -73,13 +73,23 @@ function build(rerender) {
   // disease
   const disease = el("select", { "aria-label": "Disease" },
     ...DISEASES.map((d) => el("option", { value: d.virulence }, `${d.name} — Virulence ${d.virulence}`)));
+  // A Nurse who spends a Stretch on them adds their own Wits successes to the patient's.
+  const nurses = listCharacters().filter((c) => (c.talents || []).includes("nurse"));
+  const nurse = nurses.length
+    ? el("select", { "aria-label": "Nursed by" }, el("option", { value: "" }, "No one"),
+        ...nurses.map((c) => el("option", { value: c.id }, c.name)))
+    : null;
   wrap.append(card("Disease", "An opposed Strength roll against the Virulence, once a day, until you win one. While sick you cannot heal.",
     el("div", { class: "field" }, disease),
+    nurse ? el("div", { class: "field" }, el("label", {}, "Nursed by (a Stretch of care)"), nurse) : null,
     el("div", { class: "btn-row" },
-      el("button", { class: "btn btn-primary", onclick: () => applyDisease(target(), +disease.value, rerender) }, "Resist"))));
+      el("button", {
+        class: "btn btn-primary",
+        onclick: () => applyDisease(target(), +disease.value, rerender, nurse?.value ? getCharacter(nurse.value) : null)
+      }, "Resist"))));
 
   // cold and hunger live on the Time screen, where their intervals belong
-  wrap.append(card("Cold, hunger and sleep", "These are checked when time passes, so they live on the Time screen.",
+  wrap.append(card("Cold, hunger and sleep", "These are checked when time passes, so they live on the Time screen — tick Out in the cold there and end a Shift.",
     el("a", { class: "btn", href: "#/time" }, "Time")));
 
   return wrap;
@@ -153,10 +163,11 @@ async function applyFall(ch, metres, onDone) {
   onDone?.();
 }
 
-async function applyDisease(ch, virulence, onDone) {
+async function applyDisease(ch, virulence, onDone, nurse = null) {
   const mine = rollDice(ch.attributes.strength + ((ch.talents || []).includes("resilient") ? 2 : 0));
   const theirs = rollDice(virulence);
-  const my6 = countSixes(mine), their6 = countSixes(theirs);
+  const nursing = nurse ? rollDice(Math.max(1, nurse.attributes.wits)) : [];
+  const my6 = countSixes(mine) + countSixes(nursing), their6 = countSixes(theirs);
   const damage = Math.max(0, their6 - my6);
 
   const next = structuredClone(ch);
@@ -175,7 +186,7 @@ async function applyDisease(ch, virulence, onDone) {
   await modal({
     title: my6 > their6 ? "Fought it off" : damage ? `${damage} damage` : "Infected, but holding",
     body: el("div", {},
-      el("p", { class: "faint" }, `You ${mine.join(" ")} · disease ${theirs.join(" ")}`),
+      el("p", { class: "faint" }, `You ${mine.join(" ")}${nursing.length ? ` · ${nurse.name} nursing ${nursing.join(" ")}` : ""} · disease ${theirs.join(" ")}`),
       my6 > their6 ? el("p", {}, "The sickness passes.") : el("p", {}, "Roll again tomorrow. You cannot heal while sick.")),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });

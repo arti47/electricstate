@@ -767,6 +767,23 @@ await test("animals stand in the bestiary beside the Threats", () => {
     "and it defends on its own stat block, not a guess");
 });
 
+await test("cold bites per Shift, and per Stretch when it is extreme", () => {
+  store.resetAll();
+  const ch = store.saveCharacter({ name: "Cold", attributes: { strength: 1, agility: 3, wits: 3, empathy: 3 } });
+  store.saveJourney({});
+
+  const quiet = lifecycle.advanceTime("stretch", { cold: true });
+  assert.ok(!quiet.some((n) => /freezing|keeps the cold out/.test(n)), "ordinary cold waits for the Shift");
+
+  const biting = lifecycle.advanceTime("stretch", { cold: true, extremeCold: true });
+  assert.ok(biting.some((n) => /freezing|keeps the cold out/.test(n)), "extreme cold rolls every Stretch");
+
+  lifecycle.advanceTime("shift", { cold: true });
+  assert.equal(store.getCharacter(ch.id).state.flags.cold, true, "exposure blocks healing until they are warm");
+  lifecycle.advanceTime("shift", {});
+  assert.equal(store.getCharacter(ch.id).state.flags.cold, false, "and clears once they are out of it");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

@@ -28,6 +28,23 @@ export const canUndo = () => !!undoSnapshot;
  * Advance time. Returns a list of human-readable effects so the confirmation
  * summary reports exactly what changed.
  */
+/**
+ * Cold with no shelter or clothing: a Strength roll, a point of damage on a failure,
+ * and no natural healing until they are warm again (p.89).
+ */
+function exposure(ch, hMax, name) {
+  const notes = [];
+  const dice = rollDice(Math.max(1, ch.attributes.strength));
+  const ok = countSixes(dice) > 0;
+  logRoll({ by: name, label: "Cold", dice, outcome: ok ? "endured" : "1 damage" });
+  if (!ok) {
+    ch.state.health = clamp(ch.state.health - 1, 0, hMax);
+    notes.push(`${name} is freezing — 1 damage.`);
+  } else notes.push(`${name} keeps the cold out.`);
+  ch.state.flags.cold = true;
+  return notes;
+}
+
 export function advanceTime(unit, options = {}) {
   snapshot();
   const notes = [];
@@ -46,10 +63,14 @@ export function advanceTime(unit, options = {}) {
         ch.state.death = null;
         notes.push(`${name} rallies on their own — 1 Health.`);
       }
+      // Extreme cold bites every Stretch rather than every Shift.
+      if (options.cold && options.extremeCold) notes.push(...exposure(ch, hMax, name));
     }
 
     if (unit === "shift") {
       ch.state.flags.hopeItemUsedThisShift = false;
+      if (options.cold && !options.extremeCold) notes.push(...exposure(ch, hMax, name));
+      if (!options.cold) ch.state.flags.cold = false;
 
       const blocked = (ch.conditions || []).some((c) => c.kind === "disease") ||
         ch.state.flags.hungry || ch.state.flags.cold;
@@ -245,6 +266,8 @@ function build(rerender) {
     optionRow("Under a Nurse's care", "nurse", "2 Health per Shift instead of 1."),
     optionRow("Slept this Shift", "slept"),
     optionRow("Ate and drank", "fed", "Going without means a Strength roll and no recovery at all."),
+    optionRow("Out in the cold", "cold", "No shelter or warm clothing: a Strength roll each Shift, and no healing until they are warm."),
+    optionRow("Extreme cold", "extremeCold", "Bites every Stretch instead of every Shift."),
     optionRow("Travelled", "travelled", "Burns fuel."),
     optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast.")));
 

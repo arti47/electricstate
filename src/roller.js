@@ -831,8 +831,14 @@ export async function damageDialog(ch, onDone) {
       actions: [{ label: "Understood", value: true, class: "btn-danger" }]
     });
   } else if (next.state.health === 0) {
-    showToast("Incapacitated — death rolls begin.", "danger");
-    await deathRollDialog(next);
+    // More damage on someone already down restarts the death rolls from zero,
+    // stabilized or not — the old tally does not carry over.
+    const again = !!(next.state.stabilized || next.state.death);
+    next.state.stabilized = false;
+    next.state.death = { successes: 0, failures: 0 };
+    saveCharacter(next);
+    showToast(again ? "Hit while down — death rolls start over." : "Incapacitated — death rolls begin.", "danger");
+    await deathRollDialog(getCharacter(next.id));
   }
   onDone?.();
 }
