@@ -635,6 +635,41 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(await page.evaluate(() => getComputedStyle(document.body).overflow) !== "hidden",
     "navigating did not clear a stuck scroll lock");
 
+  // Gender is on the sheet, and it changes what the app calls this Traveler.
+  const sheetId = await page.evaluate(() => Object.values(__game.read().characters)[0].id);
+  await page.evaluate((id) => { location.hash = `#/sheet/${id}`; }, sheetId);
+  await page.waitForTimeout(150);
+  await page.locator("#screen details.phase-fold >> nth=0 >> summary").click();
+  await page.waitForTimeout(120);
+  const genderControls = await page.evaluate(() =>
+    [...document.querySelectorAll("#screen button")].map((b) => b.textContent.trim()));
+  check(genderControls.includes("Man") && genderControls.includes("Woman"),
+    `the sheet has no gender control: ${genderControls.slice(0, 12).join(", ")}`);
+
+  await page.locator('#screen button:has-text("Woman")').first().click();
+  await page.waitForTimeout(180);
+  const asWoman = await page.evaluate(() => ({
+    stored: Object.values(__game.read().characters)[0].gender,
+    text: document.getElementById("screen").textContent
+  }));
+  check(asWoman.stored === "female", `gender did not persist (${asWoman.stored})`);
+  check(/she, her, her/.test(asWoman.text), "the sheet does not show the pronouns it will use");
+
+  // And the app narrates with it: a Traveler at zero Health is offered a rally by name.
+  await page.evaluate((id) => {
+    __game.edit((g) => { g.characters[id].state.health = 0; });
+  }, sheetId);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate((id) => { location.hash = `#/sheet/${id}`; }, sheetId);
+  await page.waitForTimeout(180);
+  const narrated = await page.textContent("#screen");
+  check(/Someone rallies her/.test(narrated), "status notes still speak in the plural");
+  check(!/\b(they|them|their)\b/i.test(narrated), `a plural pronoun reached the sheet: ${(narrated.match(/.{0,40}\b(they|them|their)\b.{0,40}/i) || [])[0]}`);
+  await page.evaluate((id) => {
+    __game.edit((g) => { g.characters[id].state.health = 3; g.characters[id].gender = "male"; });
+  }, sheetId);
+  await page.reload({ waitUntil: "networkidle" });
+
   // zoom is locked off
   const zoom = await page.evaluate(() => {
     const meta = document.querySelector('meta[name="viewport"]')?.content || "";

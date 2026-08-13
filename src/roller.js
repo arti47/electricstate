@@ -12,6 +12,7 @@ import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } f
 import { Settings } from "./settings.js";
 import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn } from "./combat.js";
 
 // ============================================================ pure resolution
@@ -278,7 +279,7 @@ function build(rerender) {
     } else {
       weaponCard.append(toggleRow("Ambush", "ambush", "An unaware target cannot fight back or dodge. Sneaking into close combat costs 3 dice.", rerender));
     }
-    if (chosen.special === "stun") weaponCard.append(el("p", { class: "faint" }, "No damage: the target rolls Strength at −2 dice or loses their next turn."));
+    if (chosen.special === "stun") weaponCard.append(el("p", { class: "faint" }, "No damage: the target rolls Strength at −2 dice or loses the next turn."));
   }
   wrap.append(weaponCard);
 
@@ -336,7 +337,7 @@ function build(rerender) {
     mods.notes.length ? el("div", { class: "faint" }, "Conditions: " + mods.notes.join(", ")) : null,
     tension ? el("div", { class: "faint" }, `Tension +${tension}`) : null,
     rangeMod ? el("div", { class: "faint" }, `Range ${rangeMod}`) : null,
-    pending.helpers ? el("div", { class: "faint" }, `${pending.helpers} helping (+${pending.helpers}) — helping costs their turn in combat`) : null,
+    pending.helpers ? el("div", { class: "faint" }, `${pending.helpers} helping (+${pending.helpers}) — each helper spends a turn in combat`) : null,
     ambushMod ? el("div", { class: "faint" }, `Ambush ${ambushMod}`) : null,
     casterMod ? el("div", { class: "faint" }, `Neurocaster ${casterMod}`) : null,
     drivingMod ? el("div", { class: "faint" }, `Driving ${drivingMod}`) : null));
@@ -477,15 +478,17 @@ function resultCard(ch, pool, legality, rerender) {
   if (weapon?.special === "stun" && total > 0) {
     card.append(el("button", {
       class: "btn btn-block", style: "margin-top:8px", onclick: () => stunDialog(rerender)
-    }, "They resist the stun"));
+    }, "Resist the stun"));
   }
 
   const actions = el("div", { class: "btn-row", style: "margin-top:12px" },
     el("button", { class: "btn", onclick: () => { pending.result = null; rerender(); } }, "Clear"));
   if (pending.ambush) {
-    card.append(el("p", { class: "faint" }, "Ambushed — they are unaware, so they cannot fight back or dodge. They take the hit."));
+    const t = refer(pending.targetId ? findCombatant(pending.targetId) : null);
+    card.append(el("p", { class: "faint" },
+      `Ambushed — ${t.s} is unaware, so ${t.s} cannot fight back or dodge. The hit lands.`));
   } else {
-    actions.append(el("button", { class: "btn", onclick: () => opposedDialog(ch, total, rerender) }, "They fight back"));
+    actions.append(el("button", { class: "btn", onclick: () => opposedDialog(ch, total, rerender) }, "The target fights back"));
   }
   if (weapon?.special !== "stun") {
     actions.append(el("button", { class: "btn", onclick: () => damageDialog(ch, rerender) }, "Apply damage"));
@@ -497,16 +500,17 @@ function resultCard(ch, pool, legality, rerender) {
 /** The taser: no damage, a Strength roll at −2, and a lost turn on a failure (p.81). */
 async function stunDialog(onDone) {
   const target = pending.targetId ? findCombatant(pending.targetId) : null;
+  const t = refer(target);
   const pool = el("input", {
-    type: "number", min: "1", "aria-label": "Their Strength",
+    type: "number", min: "1", "aria-label": "Strength of the one resisting",
     value: String(target ? defencePool(target, "close") : 3)
   });
   const go = await modal({
     title: "Stunned?",
     body: el("div", {},
-      el("p", { class: "faint" }, `They roll Strength at ${TASER_RULE.modifier} dice. No 6 and they lose their next turn.`),
+      el("p", { class: "faint" }, `${t.S} rolls Strength at ${TASER_RULE.modifier} dice. No 6 and ${t.s} loses ${t.p} next turn.`),
       target ? el("p", {}, el("strong", {}, target.name), el("span", { class: "faint" }, " is resisting.")) : null,
-      el("div", { class: "field" }, el("label", {}, "Their Strength"), pool)),
+      el("div", { class: "field" }, el("label", {}, `${t.P} Strength`), pool)),
     actions: [{ label: "Roll", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
   });
   if (!go) return;
@@ -514,13 +518,13 @@ async function stunDialog(onDone) {
   const dice = rollDice(Math.max(1, (Number(pool.value) || 1) + TASER_RULE.modifier));
   const held = countSixes(dice) > 0;
   if (!held && target) forfeitNextTurn(target.id, "stunned");
-  logRoll({ label: "Resist the stun", by: target?.name, dice, outcome: held ? "shook it off" : "loses their next turn" });
+  logRoll({ label: "Resist the stun", by: target?.name, dice, outcome: held ? "shook it off" : "loses a turn" });
   await modal({
     title: held ? "Shook it off" : "Stunned",
     body: el("div", {},
       el("p", { class: "mono faint" }, dice.join(" ")),
-      el("p", {}, held ? "They stay on their feet and act as normal." : "They lose their next turn."),
-      !held && !target ? el("p", { class: "faint" }, "Nothing tracked to mark — remember it costs them their next turn.") : null),
+      el("p", {}, held ? `${t.S} stays on ${t.p} feet and acts as normal.` : `${t.S} loses ${t.p} next turn.`),
+      !held && !target ? el("p", { class: "faint" }, "Nothing tracked to mark — remember the lost turn.") : null),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
   onDone?.();
@@ -570,11 +574,12 @@ function writeLog(ch, pool, result, pushed, burst = 1) {
  */
 export async function opposedDialog(attacker, attackerSixes, onDone) {
   const target = pending.targetId ? findCombatant(pending.targetId) : null;
+  const d = refer(target, "the defender");
   const defaultKind = (pending.range || "engaged") === "engaged" ? "close" : "ranged";
 
   const kindSelect = el("select", { "aria-label": "Kind of attack" },
-    el("option", { value: "close", selected: defaultKind === "close" }, "Close combat — they can fight back"),
-    el("option", { value: "ranged", selected: defaultKind === "ranged" }, "Ranged — they can dodge"));
+    el("option", { value: "close", selected: defaultKind === "close" }, "Close combat — the target can fight back"),
+    el("option", { value: "ranged", selected: defaultKind === "ranged" }, "Ranged — the target can dodge"));
   const dicePool = el("input", {
     type: "number", min: "1", "aria-label": "Defender's dice",
     value: String(target ? defencePool(target, defaultKind) : 4)
@@ -590,12 +595,12 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
   const go = await modal({
     title: `You rolled ${attackerSixes}`,
     body: el("div", {},
-      el("p", { class: "faint" }, "A defender who reacts turns this into an opposed roll and forfeits their next turn — but it covers every attack until then."),
-      target ? el("p", {}, el("strong", {}, target.name), el("span", { class: "faint" }, " is defending — their dice are filled in below.")) : null,
+      el("p", { class: "faint" }, "A defender who reacts turns this into an opposed roll and forfeits a turn — but the reaction covers every attack until then."),
+      target ? el("p", {}, el("strong", {}, target.name), el("span", { class: "faint" }, ` is defending — ${poss(target)} dice are filled in below.`)) : null,
       el("div", { class: "field" }, el("label", {}, "Kind of attack"), kindSelect),
       el("div", { class: "field" }, el("label", {}, "Defender's dice"), dicePool),
       el("div", { class: "field" }, el("label", {}, "Base damage"), damage)),
-    actions: [{ label: "They react", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+    actions: [{ label: "React", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
   });
   if (!go) return;
 
@@ -619,8 +624,8 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
       ? "Tooth and nail — neither of you gets the upper hand, and nobody is hurt."
       : "Even — the shot misses.",
     defender: kindSelect.value === "close"
-      ? `They turn it around: you take ${outcome.damage} damage from their weapon.`
-      : "They get clear. The shot misses."
+      ? `${d.S} turns it around: you take ${outcome.damage} damage from ${d.p} weapon.`
+      : `${d.S} gets clear. The shot misses.`
   };
 
   await modal({
@@ -628,7 +633,7 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
     body: el("div", {},
       el("p", { class: "mono faint" }, defenderDice.join(" ")),
       el("p", {}, readings[outcome.winner]),
-      el("p", { class: "faint" }, "Reacting costs them their next turn, but covers every attack until then.")),
+      el("p", { class: "faint" }, `Reacting costs ${d.o} ${d.p} next turn, but covers every attack until then.`)),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
 
@@ -743,7 +748,9 @@ export async function rallyDialog(target, onDone) {
     }
     await modal({
       title: ok ? "Stabilized" : "No good",
-      body: el("p", {}, ok ? "The death rolls stop. They are still Incapacitated until rallied." : "The bleeding continues — death rolls go on."),
+      body: el("p", {}, ok
+        ? `The death rolls stop. ${Subj(target)} is still Incapacitated until rallied.`
+        : "The bleeding continues — death rolls go on."),
       actions: [{ label: "Understood", value: true, class: "btn-primary" }]
     });
     onDone?.();
@@ -765,10 +772,10 @@ export async function rallyDialog(target, onDone) {
   logRoll({ by: helper.name, label: isBreakdown ? "Rally (Hope)" : "Rally (Health)", dice, outcome: sixes ? `+${sixes}` : "failed" });
 
   await modal({
-    title: sixes ? `Back on their feet — +${sixes}` : "No response",
+    title: sixes ? `Back on ${poss(target)} feet — +${sixes}` : "No response",
     body: el("div", {},
       el("p", { class: "mono faint" }, dice.join(" ")),
-      !isBreakdown && sixes ? el("p", {}, "Still not stabilized — the death rolls continue until a Medic stops them.") : null),
+      !isBreakdown && sixes ? el("p", {}, `Still not stabilized — the death rolls continue until a Medic stops ${obj(target)}.`) : null),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
   onDone?.();
@@ -1069,7 +1076,8 @@ export async function neuroresistantEscape(ch, onDone) {
 
 export async function forcedDisconnect(ch) {
   const sure = await confirmModal("Pull the helmet off?",
-    "They cannot leave on their own. Forcing them out drops their Hope to zero and inflicts a mental trauma — but the alternative is dying of thirst in there.", "Pull them out");
+    `${Subj(ch)} cannot leave on ${poss(ch)} own. Forcing ${obj(ch)} out drops ${poss(ch)} Hope to zero and inflicts a mental trauma — but the alternative is dying of thirst in there.`,
+    `Pull ${obj(ch)} out`);
   if (!sure) return;
 
   const next = structuredClone(getCharacter(ch.id));
@@ -1078,7 +1086,7 @@ export async function forcedDisconnect(ch) {
   renderVitals(next);
   logRoll({ by: ch.name, label: "Forced disconnect", dice: [], outcome: "Hope to zero, roll for trauma" });
   await modal({
-    title: "They are out",
+    title: `${Subj(ch)} is out`,
     body: el("p", {}, "Hope is gone and a Breakdown with it. Roll a mental trauma on the injury screen."),
     actions: [{ label: "Roll trauma", value: true, class: "btn-primary" }]
   });

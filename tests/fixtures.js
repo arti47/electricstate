@@ -95,7 +95,7 @@ export function campaign(body = {}) {
 }
 
 const traveler = (id, name, over = {}) => ({
-  id, name, archetype: "veteran",
+  id, name, archetype: "veteran", gender: "male",
   attributes: { strength: 4, agility: 4, wits: 3, empathy: 3 },
   talents: ["hardened"], conditions: [], tension: {},
   inventory: { items: [], cash: 200 },
@@ -119,7 +119,7 @@ export const MID_SESSION = campaign({
       inventory: { items: [{ name: "Handgun", bonus: 2, maxBonus: 2 }], cash: 200 }
     }),
     a2: traveler("a2", "Audit Two", {
-      archetype: "doctor", attributes: { strength: 3, agility: 3, wits: 4, empathy: 5 },
+      archetype: "doctor", gender: "female", attributes: { strength: 3, agility: 3, wits: 4, empathy: 5 },
       talents: ["surgeon"], tension: { a1: 2 }, neurocaster: "stimulusGo",
       inventory: { items: [], cash: 50 },
       state: { health: 3, hope: 5, bliss: 0, permanentBliss: 0 }
@@ -143,6 +143,7 @@ export const STRESS = (() => {
   names.forEach((name, i) => {
     const id = `s${i + 1}`;
     characters[id] = traveler(id, name, {
+      gender: i % 2 ? "female" : "male",
       conditions: Array.from({ length: 5 }, (_, k) => ({
         id: `${id}c${k}`, kind: k % 2 ? "trauma" : "injury", name: `Condition ${k + 1}`,
         effects: [{ dice: -1, attr: "strength" }], heal: k % 2 ? null : 3, surgery: false

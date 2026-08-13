@@ -140,7 +140,7 @@ export const DESC_WEAR = [
   "an apron never taken off", "a uniform from the wrong job", "a name tag from somewhere else", "a hospital bracelet",
   "an expired security badge", "someone else's ID", "a photograph in the wallet", "a child's drawing, folded soft",
   "letters in a rubber band", "a map covered in notes", "a rosary wound round the wrist", "a lucky coin",
-  "a St Christopher on the dash", "keys for a door that's gone", "nothing they didn't steal", "a jacket two sizes too big"
+  "a St Christopher on the dash", "keys for a door that's gone", "nothing honestly come by", "a jacket two sizes too big"
 ];
 
 // -------------------------------------------- d100 description: how they behave
@@ -148,8 +148,8 @@ export const DESC_MANNER = [
   "watchful", "restless", "unhurried", "twitchy",
   "unnervingly still", "smiles at the wrong moment", "never smiles", "laughs first",
   "laughs a beat late", "stares too long", "won't meet your eyes", "flinches at sudden noise",
-  "talks to themselves", "hums constantly", "whistles tunelessly", "quotes movies",
-  "swears creatively", "prays under their breath", "counts things", "taps fingers",
+  "mutters aloud", "hums constantly", "whistles tunelessly", "quotes movies",
+  "swears creatively", "prays quietly", "counts things", "taps fingers",
   "cracks knuckles", "always chewing gum", "chain-smokes", "never without coffee",
   "rattles a pill bottle", "always eating", "never seen eating", "sleeps anywhere",
   "sleeps badly", "wakes at any sound", "sits facing the door", "checks the exits",
@@ -159,16 +159,16 @@ export const DESC_MANNER = [
   "answers questions with questions", "listens more than speaks", "monologues", "whispers",
   "shouts when nervous", "goes quiet when angry", "cries easily", "never cries",
   "touches people constantly", "flinches from touch", "gives things away", "takes without asking",
-  "hoards batteries", "collects junk", "keeps a journal", "writes letters they never send",
+  "hoards batteries", "collects junk", "keeps a journal", "writes letters never sent",
   "carries photographs", "named the car", "talks to machines", "won't touch a neurocaster",
   "wears the neurocaster too long", "stares at the towers", "salutes out of habit", "checks every mirror",
   "avoids mirrors", "lies for practice", "tells the truth too bluntly", "over-shares",
   "keeps secrets badly", "keeps secrets far too well", "first to volunteer", "last to commit",
   "argues for sport", "agrees to end the argument", "changes the subject", "remembers every name",
   "forgets names immediately", "gives everyone a nickname", "refuses all nicknames", "cooks for everyone",
-  "eats alone", "shares their cigarettes", "shares nothing", "pays for everything",
+  "eats alone", "always shares a cigarette", "shares nothing", "pays for everything",
   "never has money", "tips too well", "haggles over everything", "feeds strays",
-  "kicks at strays", "steps between people", "stands too close", "keeps a hand near their weapon",
+  "kicks at strays", "steps between people", "stands too close", "keeps a hand near the holster",
   "goes unarmed by choice", "sings along badly", "dances when drunk", "doesn't drink"
 ];
 

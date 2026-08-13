@@ -35,7 +35,7 @@ export function hazardScreen() {
 function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Hazards"));
-  wrap.append(explain("The things that hurt you without swinging: blasts, fire, falls, disease, cold and hunger. Each rolls its own dice — Blast Power, Intensity, Virulence — where every 6 is a point of damage, and none of them can be pushed."));
+  wrap.append(explain("The things that hurt you without swinging: blasts, fire, falls, disease, cold and hunger. Each rolls its own dice — Blast Power, Intensity, Virulence — where every 6 is a point of damage, and none of these rolls can be pushed."));
 
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" }, el("p", {}, "Create a Traveler first.")));
@@ -90,7 +90,7 @@ function build(rerender) {
       }, "Resist"))));
 
   // cold and hunger live on the Time screen, where their intervals belong
-  wrap.append(card("Cold, hunger and sleep", "These are checked when time passes, so they live on the Time screen — tick Out in the cold there and end a Shift.",
+  wrap.append(card("Cold, hunger and sleep", "These are checked when time passes, so the controls live on the Time screen — tick Out in the cold there and end a Shift.",
     el("a", { class: "btn", href: "#/time" }, "Time")));
 
   return wrap;
@@ -207,7 +207,7 @@ function buildVehicle(rerender) {
   const v = j.vehicle;
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Driving"));
-  wrap.append(explain("Stunts, accidents, ramming and chases. A stunt is an Agility roll with the vehicle's Maneuverability as gear dice, and failing one means rolling on the accident table. Chases ignore zones and Speed entirely — they are an opposed Agility roll each round."));
+  wrap.append(explain("Stunts, accidents, ramming and chases. A stunt is an Agility roll with the vehicle's Maneuverability as gear dice, and failing one means rolling on the accident table. Chases ignore zones and Speed entirely — each round is one opposed Agility roll."));
 
   if (!v) {
     wrap.append(el("div", { class: "empty card" },
@@ -238,7 +238,7 @@ function buildVehicle(rerender) {
       el("button", { class: "btn", onclick: () => accident(terrain.value, rerender) }, "Accident only"))));
 
   wrap.append(el("div", { class: "card" }, el("h3", {}, "Ramming"),
-    el("p", { class: "faint" }, `Only at Engaged range. You deal half your starting Hull (${Math.ceil(v.hull / 2)}) and take half theirs.`),
+    el("p", { class: "faint" }, `Only at Engaged range. You deal half your starting Hull (${Math.ceil(v.hull / 2)}) and take half the other vehicle's.`),
     el("div", { class: "btn-row" },
       el("button", { class: "btn btn-primary", onclick: () => ram(v, rerender) }, "Ram something"))));
 
@@ -335,7 +335,7 @@ function hullCard(j, v, chars, rerender) {
       el("p", { class: "faint" }, `A Shift of work and a Wits roll. Each 6 restores a point of Hull. ${REPAIR.vehicleAtZeroRequires === "sparePart" ? "A wrecked vehicle needs a spare part before any of it helps." : ""}`),
       mechanics ? el("div", { class: "field" }, el("label", {}, "Who works on it"), mechanics) : null,
       el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
-        el("span", {}, "Vehicle tools to hand", el("div", { class: "faint" }, "Their bonus becomes gear dice.")), tools),
+        el("span", {}, "Vehicle tools to hand", el("div", { class: "faint" }, "The tool bonus becomes gear dice.")), tools),
       el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
         el("span", {}, "Spare part to hand", el("div", { class: "faint" }, "Only needed once it is wrecked.")), part),
       el("button", {
@@ -419,18 +419,18 @@ export function chaseStep(bandIndex, myExtra, theirExtra, iAmPrey) {
 function chaseCard(j, v, chars, driver, rerender) {
   const chase = j.chase || null;
   const card = el("div", { class: "card" }, el("h3", {}, "Chase"),
-    el("p", { class: "faint" }, "Range bands only — no zones, and Speed is not used. An opposed Agility roll each round, with the vehicle's Maneuverability as gear dice. Every success beyond theirs moves you a band."));
+    el("p", { class: "faint" }, "Range bands only — no zones, and Speed is not used. An opposed Agility roll each round, with the vehicle's Maneuverability as gear dice. Every success beyond the other driver's moves you a band."));
 
   const write = (next) => { const journey = getJourney() || {}; saveJourney({ ...journey, chase: next }); rerender(); };
 
   if (!chase) {
     const role = el("select", { "aria-label": "Your part in it" },
       el("option", { value: "prey" }, "You are being chased"),
-      el("option", { value: "pursuer" }, "You are chasing them"));
-    const theirs = el("input", { type: "number", value: "4", min: "1", "aria-label": "Their dice" });
+      el("option", { value: "pursuer" }, "You are the pursuer"));
+    const theirs = el("input", { type: "number", value: "4", min: "1", "aria-label": "The other driver's dice" });
     card.append(
       el("div", { class: "field" }, el("label", {}, "Your part in it"), role),
-      el("div", { class: "field" }, el("label", {}, "Their Agility plus Maneuverability"), theirs),
+      el("div", { class: "field" }, el("label", {}, "The other driver: Agility plus Maneuverability"), theirs),
       el("div", { class: "btn-row" },
         el("button", {
           class: "btn btn-primary",
@@ -445,7 +445,7 @@ function chaseCard(j, v, chars, driver, rerender) {
   const prey = chase.role === "prey";
   card.append(el("div", { class: "card-row" },
     el("strong", {}, `Round ${chase.round} · ${band}`),
-    el("span", { class: "faint" }, prey ? "They are behind you" : "You are behind them")));
+    el("span", { class: "faint" }, prey ? "The pursuer is behind you" : "You are behind the other car")));
   if (band === "engaged") {
     card.append(el("p", { class: "faint" }, "Engaged: the pursuer can ram, or attack in close combat."));
   }
@@ -472,7 +472,7 @@ async function chaseRound(ch, vehicle, chase, write) {
   if (step.escaped) {
     write(null);
     await modal({
-      title: chase.role === "prey" ? "You lose them" : "They get away",
+      title: chase.role === "prey" ? "You shake the pursuer" : "The other car gets away",
       body: el("p", {}, "Past Extreme range the chase is over."),
       actions: [{ label: "Understood", value: true, class: "btn-primary" }]
     });
@@ -483,7 +483,7 @@ async function chaseRound(ch, vehicle, chase, write) {
   await modal({
     title: `${CHASE_BANDS[step.bandIndex]}`,
     body: el("div", {},
-      el("p", { class: "faint" }, `You ${mine.join(" ")} · them ${theirs.join(" ")}`),
+      el("p", { class: "faint" }, `You ${mine.join(" ")} · the other car ${theirs.join(" ")}`),
       el("p", {}, step.moved === 0
         ? "Neither of you gains a yard."
         : `${Math.abs(step.moved)} clear — the gap ${(step.moved > 0) === (chase.role === "prey") ? "opens" : "closes"}.`),

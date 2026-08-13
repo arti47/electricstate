@@ -1,6 +1,7 @@
 // Character-derived calculations. Pure functions over a character object.
 import { ceilHalf, clamp } from "./core.js";
 import { TALENTS, DERIVED, ATTRIBUTE_MIN, ATTRIBUTE_MAX, DRONE_PILOT_RULES, BODY_ARMOR } from "../data.js";
+import { genderOf } from "./pronouns.js";
 
 const talentEffect = (id) => TALENTS.find((t) => t.id === id)?.effect;
 
@@ -71,6 +72,8 @@ export function normalize(ch) {
   c.conditions = c.conditions || [];
   c.inventory = c.inventory || { items: [], cash: 0 };
   c.tension = c.tension || {};
+  // Every Traveler has one, because every sentence the app writes about them needs it.
+  c.gender = genderOf(c);
   c.state = c.state || {};
   const hMax = maxHealth(c), pMax = maxHope(c);
   c.state.health = clamp(c.state.health ?? hMax, 0, hMax);

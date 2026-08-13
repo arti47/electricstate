@@ -113,7 +113,7 @@ export function stopCard(stop, { onCountdown, onResolve, compact = false } = {})
 
   card.append(
     el("h3", {}, "Blocker"), el("p", {}, stop.blocker),
-    el("p", { class: "faint" }, `They also need: ${String(stop.need).toLowerCase()}`),
+    el("p", { class: "faint" }, `The Stop also needs: ${String(stop.need).toLowerCase()}`),
     el("h3", {}, "Conflict"),
     el("p", {}, `${stop.conflict.a} against ${stop.conflict.b}, over ${String(stop.conflict.over).toLowerCase()}`),
     el("h3", {}, "Locations"), el("p", {}, stop.locations.join(" · ")),

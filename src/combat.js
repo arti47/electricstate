@@ -1,12 +1,13 @@
 // Combat tracker and the generic progress-task tracker (Phase 4).
 // One task component serves neurocasting difficulties, countdowns, healing clocks and diseases.
-import { el, uid, rollDice, countSixes, d6, clamp } from "./core.js";
+import { el, uid, rollDice, countSixes, d6, clamp, randomInt } from "./core.js";
 import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js";
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
 import { maxHealth } from "./derived.js";
 import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
 // ------------------------------------------------------------- progress tasks
 /** A task is N successes against an optional opposing count. Used everywhere. */
@@ -34,7 +35,7 @@ const writeCombat = (c) => { const j = getJourney() || {}; saveJourney({ ...j, c
 export function startCombat(side = "attackers") {
   const combatants = listCharacters().map((c) => ({
     id: c.id, kind: "traveler", name: c.name || "Unnamed", side: "travelers",
-    zone: 1, acted: false, realm: "real"
+    gender: c.gender, zone: 1, acted: false, realm: "real"
   }));
   writeCombat({ active: true, round: 1, startingSide: side, combatants });
   return combat();
@@ -139,7 +140,7 @@ function build(rerender) {
             const r = rollInitiative();
             await modal({
               title: "Initiative",
-              body: el("p", {}, `${r.mine} against ${r.theirs}. ${r.side === "travelers" ? "The Travelers" : "The other side"} acts first.`),
+              body: el("p", {}, `${r.mine} against ${r.theirs}. ${r.side === "travelers" ? "The Travelers act" : "The other side acts"} first.`),
               actions: [{ label: "Start combat", value: true, class: "btn-primary" }]
             });
             startCombat(r.side === "travelers" ? "travelers" : "enemies");
@@ -175,7 +176,7 @@ function build(rerender) {
         onclick: async () => {
           const down = c.combatants.filter((x) => x.kind === "threat" && (x.health ?? 1) <= 0).length;
           const ok = await confirmModal("End the fight?",
-            `Zones, rounds and every Threat's remaining health are discarded.${down ? ` ${down} of them are already down.` : ""} Travelers keep their own Health, and anyone Incapacitated still owes a serious injury roll.`,
+            `Zones, rounds and every Threat's remaining health are discarded.${down ? ` ${down} of the Threats are already down.` : ""} Each Traveler keeps the Health on the sheet, and anyone Incapacitated still owes a serious injury roll.`,
             "End it");
           if (!ok) return;
           endCombat();
@@ -218,13 +219,13 @@ function combatantCard(combatant, c, rerender) {
 
   if (combatant.forfeit) {
     card.append(el("p", { class: "faint" }, combatant.forfeit === "stunned"
-      ? "Stunned — they lose their next turn."
-      : "Reacted — that costs their next turn, but it answers every attack until then."));
+      ? `Stunned — ${subj(combatant)} loses ${poss(combatant)} next turn.`
+      : `Reacted — that costs ${poss(combatant)} next turn, but it answers every attack until then.`));
   }
   if (combatant.forfeited) {
     card.append(el("p", { class: "faint" }, combatant.forfeited === "stunned"
       ? "Sitting this round out: stunned."
-      : "Sitting this round out: they reacted last round."));
+      : `Sitting this round out: ${subj(combatant)} reacted last round.`));
   }
 
   card.append(el("div", { class: "card-row", style: "margin-top:6px" },
@@ -243,12 +244,13 @@ function combatantCard(combatant, c, rerender) {
           onclick: () => update({ realm })
         }, realm === "real" ? "The world" : "The network")))));
     if (combatant.realm === "neuroscape") {
-      card.append(el("p", { class: "faint" }, "Inert out here until their next turn — they cannot answer an attack in the real world."));
+      card.append(el("p", { class: "faint" },
+        `Inert out here until ${poss(combatant)} next turn — ${subj(combatant)} cannot answer an attack in the real world.`));
     }
   }
 
   card.append(el("div", { class: "btn-row", style: "margin-top:8px" },
-    el("button", { class: "btn btn-primary", onclick: () => update({ acted: true }) }, "Took their turn"),
+    el("button", { class: "btn btn-primary", onclick: () => update({ acted: true }) }, `${Subj(combatant)} has acted`),
     el("button", {
       class: "btn", onclick: async () => {
         const { setTarget } = await import("./roller.js");
@@ -292,9 +294,12 @@ async function addThreat(rerender) {
   const t = bestiaryEntry(select.value);
   const c = combat();
   const many = Math.max(1, Number(count.value) || 1);
+  // A robot is an "it"; anything with a person inside gets a rolled pronoun, so the app
+  // can say what happens to that one rather than to "them".
   const additions = Array.from({ length: many }, (_, i) => ({
     id: uid(), kind: "threat", name: many > 1 ? `${t.name} ${i + 1}` : t.name,
     side: "enemies", zone: 2, acted: false,
+    gender: t.isDrone || t.hull != null ? "neuter" : rollGender(randomInt),
     health: t.health ?? t.hull ?? 4, threatId: t.id
   }));
   writeCombat({ ...c, combatants: [...c.combatants, ...additions] });

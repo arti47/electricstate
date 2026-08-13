@@ -129,7 +129,7 @@ function build(rerender) {
     card.append(el("div", { class: "field" }, el("label", {}, "Scope of the change"),
       el("select", { onchange: (e) => { session.difficulty = +e.target.value; session.progress = 0; session.rolls = []; rerender(); } },
         ...[2, 3, 4].map((n) => el("option", { value: n, selected: session.difficulty === n }, `${n} successful rolls`)))));
-    card.append(el("p", { class: "faint" }, "One roll per Shift. Convinces an avatar their core beliefs are wrong — non-human entities do this to people too."));
+    card.append(el("p", { class: "faint" }, "One roll per Shift. Convinces an avatar that its core beliefs are wrong — non-human entities do this to people too."));
     if (session.difficulty < 2) session.difficulty = 2;
   } else if (spec.id === "droneControl") {
     const drone = el("select", { "aria-label": "Drone",
@@ -145,13 +145,13 @@ function build(rerender) {
   } else {
     card.append(el("p", { class: "faint" }, session.kind === "avatarCombat"
       ? `Close combat at Engaged range, but rolled on Wits with Graphics as gear dice.`
-      : `Empathy with Graphics as gear dice. An opponent resists with Wits and their own Network.`));
+      : `Empathy with Graphics as gear dice. An opponent resists with Wits and that opponent's own Network.`));
     session.difficulty = 1;
   }
   // Helpers on the same neuroscape lend a die each and can do nothing else that Stretch.
   card.append(el("div", { class: "card-row", style: "padding:6px 0" },
     el("span", {}, "Helpers in here",
-      el("div", { class: "faint" }, "+1 die each, up to three. They can do nothing else.")),
+      el("div", { class: "faint" }, "+1 die each, up to three. A helper can do nothing else.")),
     el("div", { class: "btn-row" },
       el("button", { class: "btn", "aria-label": "Fewer helpers", disabled: (session.helpers || 0) <= 0,
         onclick: () => { session.helpers = Math.max(0, (session.helpers || 0) - 1); rerender(); } }, "−"),

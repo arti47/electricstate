@@ -7,6 +7,7 @@ import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilo
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent,
          getSessionLog, clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
+import { subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
@@ -52,7 +53,7 @@ export function advanceTime(unit, options = {}) {
       if (ch.state.health === 0 && !ch.state.dead) {
         ch.state.health = 1;
         ch.state.death = null;
-        notes.push(`${name} rallies on their own — 1 Health.`);
+        notes.push(`${name} rallies alone — 1 Health.`);
       }
       // Extreme cold bites every Stretch rather than every Shift.
       if (options.cold && options.extremeCold) notes.push(...exposure(ch, hMax, name));
@@ -86,7 +87,7 @@ export function advanceTime(unit, options = {}) {
         ch.state.flags.sleepDeprived = false;
       } else if (ch.state.flags.shiftsAwake >= SHIFTS_PER_DAY && !ch.state.flags.sleepDeprived) {
         ch.state.flags.sleepDeprived = true;
-        notes.push(`${name} is sleep deprived — no Hope recovery until they sleep.`);
+        notes.push(`${name} is sleep deprived — no Hope recovery until a Shift is slept.`);
       }
     }
 
@@ -261,7 +262,7 @@ function build(rerender) {
     optionRow("Under a Nurse's care", "nurse", "2 Health per Shift instead of 1."),
     optionRow("Slept this Shift", "slept"),
     optionRow("Ate and drank", "fed", "Going without means a Strength roll and no recovery at all."),
-    optionRow("Out in the cold", "cold", "No shelter or warm clothing: a Strength roll each Shift, and no healing until they are warm."),
+    optionRow("Out in the cold", "cold", "No shelter or warm clothing: a Strength roll each Shift, and no healing until the Traveler is warm."),
     optionRow("Extreme cold", "extremeCold", "Bites every Stretch instead of every Shift."),
     optionRow("Travelled", "travelled", "Burns fuel."),
     optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast.")));
@@ -348,7 +349,7 @@ async function weekPasses(rerender) {
       const attr = ch.attributes.wits >= ch.attributes.empathy ? "wits" : "empathy";
       const dice = rollDice(ch.attributes[attr]);
       const ok = countSixes(dice) > 0;
-      logRoll({ by: ch.name, label: `Recover from ${trauma.name}`, dice, outcome: ok ? "recovered" : "still with them" });
+      logRoll({ by: ch.name, label: `Recover from ${trauma.name}`, dice, outcome: ok ? "recovered" : "still there" });
       if (ok) {
         ch.conditions = ch.conditions.filter((c) => c.id !== trauma.id);
         notes.push(`${ch.name} shakes off ${trauma.name}.`);
@@ -367,7 +368,7 @@ async function epilogue(rerender) {
   const chars = listCharacters();
   if (!chars.length) { showToast("No Travelers."); return; }
   const body = el("div", {},
-    el("p", { class: "faint" }, "Three dice each. A high result is fortune, wealth or happiness; a low one is not. Place them in any order, decide how much time passes between them, and tell them round the table."));
+    el("p", { class: "faint" }, "Three dice each. A high result is fortune, wealth or happiness; a low one is not. Put the three in any order, decide how much time passes between one and the next, and tell the story round the table."));
   for (const ch of chars) {
     const dice = rollDice(3);
     logRoll({ by: ch.name, label: "Epilogue", dice, outcome: dice.join(" ") });
@@ -403,7 +404,7 @@ async function debrief(rerender) {
     if (ch.state?.improvementLocked) {
       await modal({
         title: `${ch.name}`,
-        body: el("p", { class: "faint" }, "This Traveler overcame their Flaw. They cannot improve further — the debrief is still worth playing for the story and for Tension."),
+        body: el("p", { class: "faint" }, `This Traveler overcame the Flaw, so ${subj(ch)} cannot improve further — the debrief is still worth playing for the story and for Tension.`),
         actions: [{ label: "Next", value: true }]
       });
       continue;
@@ -419,7 +420,7 @@ async function debriefOne(ch) {
     ...ATTRIBUTES.map((a) => el("option", { value: a.id }, `${a.label} ${ch.attributes[a.id]}`)));
 
   const body = el("div", {},
-    el("p", { class: "faint" }, "Say how this Traveler followed their Dream or their Flaw this session. If the table agrees, choose the attribute that best matches what they learned."),
+    el("p", { class: "faint" }, `Say how this Traveler followed the Dream or the Flaw this session. If the table agrees, choose the attribute that best matches what ${subj(ch)} learned.`),
     el("div", { class: "card" }, el("h3", {}, "Dream"), el("p", {}, ch.dream || "—"),
       el("h3", {}, "Flaw"), el("p", {}, ch.flaw || "—")),
     el("div", { class: "field" }, el("label", {}, "Attribute"), attrSelect));

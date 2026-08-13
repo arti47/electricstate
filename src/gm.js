@@ -28,7 +28,7 @@ const writeStops = (list) => { const j = getJourney() || {}; saveJourney({ ...j,
 
 function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "GM"));
-  wrap.append(explain("Everything behind the screen. The party panel watches each Traveler's Bliss against their Hope; the Stop builder rolls a setting, a Blocker, a conflict, locations and a three-step Countdown; and every rollable table in the book is under Roll a table."));
+  wrap.append(explain("Everything behind the screen. The party panel watches each Traveler's Bliss against that same Traveler's Hope; the Stop builder rolls a setting, a Blocker, a conflict, locations and a three-step Countdown; and every rollable table in the book is under Roll a table."));
 
   // A GM runs Threats through the tracker and calls for rolls constantly; both were
   // three taps away through another tab.
@@ -152,7 +152,7 @@ function threatCard() {
     el("summary", {}, "Build a Threat"),
     el("p", { class: "faint" }, `Four slots: ${THREAT_ANATOMY.join(", ")}.`),
     ...THREAT_GOAL_KINDS.map((k) => el("p", { class: "faint" }, `${k.id === "atStop" ? "Aimed at the Stop" : "Aimed at the Travelers"}: ${k.blurb}`)),
-    el("p", { class: "faint" }, `Personal Threats run ${PERSONAL_THREAT_RULES.countdownSteps} steps of their own. ${PERSONAL_THREAT_RULES.principle}`),
+    el("p", { class: "faint" }, `A personal Threat runs ${PERSONAL_THREAT_RULES.countdownSteps} steps of its own. ${PERSONAL_THREAT_RULES.principle}`),
     el("p", { class: "faint" }, PERSONAL_THREAT_RULES.mayEnd),
     el("div", { class: "btn-row" },
       el("button", {
@@ -184,8 +184,8 @@ function tablesCard() {
         const mech = MECHANICAL_QUIRKS[q];
         if (!mech) return q;
         const note = mech.realWorldPenalty
-          ? `${mech.realWorldPenalty} dice to their real-world actions`
-          : "Hope only ever comes back to them from neurine";
+          ? `${mech.realWorldPenalty} dice to real-world actions`
+          : "Hope only ever comes back from neurine";
         return `${q} — ${note}`;
       }),
       roll("Reaction", () => {

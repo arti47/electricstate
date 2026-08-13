@@ -132,7 +132,7 @@ export const ARCHETYPES = [
   {
     id: "devotee", name: "Devotee", key: "empathy", cash: { mult: 100, dice: "d6" },
     talents: ["dreamer", "leader", "speaker"],
-    dreams: ["Make them see the light.", "Stop the pain.", "Drive out the demons."],
+    dreams: ["Make the world see the light.", "Stop the pain.", "Drive out the demons."],
     flaws: ["You must convert everyone you meet.", "You expect obedience.", "You care for nothing but the message."],
     neurocasters: ["stimulusTleStandard", "stimulusGo", null],
     items: ["Shades", "Book (religious)", "Neurine (D6 doses)"]

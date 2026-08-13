@@ -31,7 +31,7 @@ function build(rerender) {
 
   wrap.append(step("1 · Make a Traveler", [
     p("Tap Travelers, then New Traveler. Seven screens, and every field can be rolled if you would rather not decide."),
-    faint("Archetype sets what you are good at. Attributes are rolled four dice at a time — the book's own method — and if they come out low you get a second talent to compensate. Dream and Flaw are not flavour: acting on either one is how you improve at the end of a session."),
+    faint("Archetype sets what you are good at. Attributes are rolled four dice at a time — the book's own method — and a low total earns a second talent to compensate. Dream and Flaw are not flavour: acting on either one is how you improve at the end of a session."),
     el("div", { class: "btn-row" }, go("#/create", "New Traveler"), go("#/home", "Travelers"))
   ], { done: chars.length > 0 }));
 
@@ -57,7 +57,7 @@ function build(rerender) {
   wrap.append(step("5 · Get hurt", [
     p("On the sheet: Take damage. Armor and cover soak it, then Health comes off."),
     faint("At zero Health you are Incapacitated and start death rolls — four dice a turn, no pushing, three 6s total to stabilize against three failed rolls to die. Someone else can rally you with an Empathy roll, but only a Medic can stop the death rolls."),
-    faint("Traumatic events work the other way round: they come for your Hope, you resist with Empathy, and losing any Hope at all makes you freeze for a turn.")
+    faint("A traumatic event works the other way round: it comes for your Hope, you resist with Empathy, and losing any Hope at all makes you freeze for a turn.")
   ]));
 
   wrap.append(step("6 · End the Shift", [
@@ -74,7 +74,7 @@ function build(rerender) {
 
   wrap.append(el("h2", {}, "Playing alone"));
   wrap.append(el("div", { class: "card" },
-    p("The book has full solo rules and the app implements them. You run two to four Travelers and let cards answer the questions a GM would."),
+    p("The book has full solo rules and the app implements the lot. You run two to four Travelers and let cards answer the questions a GM would."),
     Settings.solo()
       ? el("div", { class: "btn-row" }, go("#/solo", "Solo"))
       : el("button", { class: "btn btn-primary", onclick: () => { setSetting("solo", true); rerender(); } }, "Turn on Solo mode")));
@@ -85,7 +85,7 @@ function build(rerender) {
   ]));
 
   wrap.append(step("S2 · Let the deck pace you", [
-    p("Draw a card whenever you need input or want the story to move. Face cards fire events by suit: spades bring your personal Threat closer, clubs advance the Stop, hearts turn on the Travelers themselves, diamonds start a conversation."),
+    p("Draw a card whenever you need input or want the story to move. Face cards fire events by suit: spades bring your personal Threat closer, clubs advance the Stop, hearts turn on the Travelers, diamonds start a conversation."),
     faint("Do not reshuffle until the deck is spent. The deck running down is the pacing — a Journey has a length whether or not you planned one.")
   ]));
 
@@ -95,8 +95,8 @@ function build(rerender) {
   ]));
 
   wrap.append(step("S4 · Play one Traveler at a time", [
-    p("Pick one Traveler as the main character for each Stop and rotate. The others are run by Traveler events, which is also how Tension shifts between them."),
-    faint("Tension is what makes a solo group feel like people rather than a party. It is also the only reliable way any of them get Hope back.")
+    p("Pick one Traveler as the main character for each Stop and rotate. The others are run by Traveler events, which is also how Tension shifts across the group."),
+    faint("Tension is what makes a solo group feel like people rather than a party. It is also the only reliable way a Traveler gets Hope back.")
   ]));
 
   wrap.append(el("div", { class: "card" },

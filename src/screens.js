@@ -15,7 +15,7 @@ export function homeScreen() {
   const wrap = el("div");
   const chars = listCharacters();
   wrap.append(el("h1", {}, "Travelers"));
-  wrap.append(explain("Everyone you are playing lives here. Tap a Traveler to open their sheet — vitals, talents, gear and conditions. The Journey is shared by the whole group: one destination, one vehicle, three items between you."));
+  wrap.append(explain("Everyone you are playing lives here. Tap a Traveler to open that sheet — vitals, talents, gear and conditions. The Journey is shared by the whole group: one destination, one vehicle, three items between you."));
   if (!chars.length) wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "First time? Start here"));
 
   if (!chars.length) {
@@ -48,7 +48,7 @@ export function homeScreen() {
         i ? " · " : "",
         el("a", { href }, label)
       ]),
-      ". Turn them on in Settings."));
+      ". Switch on in Settings."));
   }
 
   return wrap;
@@ -289,7 +289,7 @@ export function rollLogScreen() {
 
 export function settingsScreen() {
   const wrap = el("div", {}, el("h1", {}, "Settings"));
-  wrap.append(explain("Optional surfaces are switched off until you want them, so the app stays small for a player at a table. Everything is stored on this device only — export a backup before clearing your browser data."));
+  wrap.append(explain("Optional surfaces stay switched off until wanted, so the app stays small for a player at a table. Everything is stored on this device only — export a backup before clearing your browser data."));
   wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "Tutorial"));
 
   const theme = el("select", {

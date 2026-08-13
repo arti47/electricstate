@@ -456,3 +456,33 @@ checks were verified to fail with the defect reintroduced.
 ## Result
 
 92 invariants, browser smoke clean, three probes clean, button audit clean.
+
+---
+
+# Fifteenth pass — the app talked about people in the plural
+
+Raised from play: the app said "they lose their next turn" about one specific person at the
+table. A Traveler is somebody, not an abstraction, and the singular they read as the app not
+knowing who it meant.
+
+| # | Finding | Fix |
+|---|---|---|
+| 93 | **No character had a gender**, so every sentence about one reached for a plural. | `gender` on the character, chosen in creation above the name and editable on the sheet, normalized onto every existing save. `src/pronouns.js` is the single source: `subj/obj/poss/refl`, capitalised variants, and `refer(who, fallback)` for a sentence whose subject may not be picked yet. |
+| 94 | **The name roller produced "Cade/Courtney Draper".** The house table is written in the book's paired convention and the app handed the slash straight to the player. | The roll takes the half matching the gender. The four printed pregens name both halves explicitly in `data-pregens.js` — the book's pairs are not consistently male-first (Nancy/Pascal, Wilhemina/William), so the data says which is which, and the pregen picker offers both. |
+| 95 | **Threats and NPCs had no pronoun either.** A robot is an "it"; a patrolman is not. | Combatants carry a gender: rolled for people, `neuter` for anything with a Hull. A generated solo NPC now gets a name and a gender as well as a personality — that is the handle the table needs to talk about one. |
+| 96 | **224 plural pronouns in user-facing strings.** | All of them rewritten. Where a specific person is in scope the text asks `pronouns.js`; where none is, it names the thing ("the target", "the other driver", "the pursuer"). The Kicker and destination tables in `data-journey.js` moved to second person, which is the register the rest of the app already used — the Kicker is yours. |
+
+## Guard
+
+`tests/pronoun-scan.mjs` reads every string and template literal in `src/` and `data*.js` and
+fails on a plural pronoun, ignoring comments and `${expression}` interpolations. It runs inside
+`npm test` and standalone as `npm run pronouns`. One allowlisted string: a 1992 Pete Rock record
+whose title the app does not get to rewrite.
+
+The browser smoke opens the sheet, switches the Traveler to Woman, and asserts both that the
+choice persists and that the status notes then read "Someone rallies her" — with no plural
+pronoun anywhere on the rendered sheet.
+
+## Result
+
+100 invariants, browser smoke clean, three probes clean, button audit clean.

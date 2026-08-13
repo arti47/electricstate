@@ -12,7 +12,8 @@
     "probe:flow": "node tests/probe-flow.mjs",
     "probe:pwa": "node tests/probe-pwa.mjs",
     "verify": "npm test && npm run probe && npm run audit",
-    "serve": "python3 -m http.server 8080"
+    "serve": "python3 -m http.server 8080",
+    "pronouns": "node tests/pronoun-scan.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.47.0"

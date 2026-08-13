@@ -15,6 +15,7 @@ import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePil
 import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, confirmModal, explain, actionBar, dismissModal } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
+import { GENDERS, DEFAULT_GENDER, splitPairedName, resolvePairedName, genderOf } from "./pronouns.js";
 
 const STEPS = ["archetype", "attributes", "talents", "identity", "gear", "journey", "review"];
 
@@ -22,7 +23,7 @@ let draft = null;
 
 function blankDraft() {
   return {
-    id: uid(), name: "", archetype: null,
+    id: uid(), name: "", archetype: null, gender: DEFAULT_GENDER,
     method: "roll",                        // the book's primary method
     attributes: { strength: null, agility: null, wits: null, empathy: null },
     rolled: null,                          // the four rolled scores awaiting assignment
@@ -244,14 +245,28 @@ function stepIdentity(rerender) {
     value: draft.name || "", placeholder: "A name that fits 1997",
     oninput: (e) => { draft.name = e.target.value; }
   });
+  // Gender first: it decides which half of the paired name table the roller takes, and
+  // every "he loses his next turn" the app says about this Traveler from here on.
+  wrap.append(el("div", { class: "field" },
+    el("label", {}, "Gender"),
+    el("div", { class: "btn-row" },
+      ...GENDERS.map((g) => el("button", {
+        class: "btn" + (genderOf(draft) === g.id ? " btn-primary" : ""),
+        onclick: () => { draft.gender = g.id; rerender(); }
+      }, g.label))),
+    el("p", { class: "faint" }, "The app uses this for every pronoun it writes about this Traveler.")));
+
   wrap.append(el("div", { class: "field" },
     el("label", {}, "Name"),
     el("div", { class: "card-row" }, nameInput,
       el("button", {
         class: "btn", "aria-label": "Roll a name",
-        onclick: () => { draft.name = `${fromD100(FIRST_NAMES)} ${fromD100(SURNAMES)}`; rerender(); }
+        onclick: () => {
+          draft.name = `${splitPairedName(fromD100(FIRST_NAMES), draft)} ${fromD100(SURNAMES)}`;
+          rerender();
+        }
       }, "D100")),
-    el("p", { class: "faint" }, "Rolls a paired first name and a surname. Keep whichever half of the pair suits your Traveler, or use both.")));
+    el("p", { class: "faint" }, "Rolls a first name and a surname. The first-name table is written in pairs, the book's own convention; the roll takes the half that matches the gender above.")));
 
   wrap.append(rollableField("Dream", "dream", arch?.dreams, rerender));
   wrap.append(rollableField("Flaw", "flaw", arch?.flaws, rerender));
@@ -346,7 +361,7 @@ function stepJourney(rerender) {
     el("p", { class: "muted" }, "Your Goal is specific and should echo your Dream. Your Threat is whatever stands in its way."));
   wrap.append(seedField({
     label: "Personal Goal", key: "goal", wordsKey: "goalWords", table: GOAL_SEEDS,
-    hint: "Three seeds: an act, a thing, a condition. Write one specific objective out of them.",
+    hint: "Three seeds: an act, a thing, a condition. Write one specific objective out of the three.",
     rerender
   }));
   wrap.append(seedField({
@@ -412,7 +427,7 @@ function stepReview() {
     el("div", { class: "card" },
       el("h3", {}, "Dream"), el("p", {}, draft.dream || "—"),
       el("h3", {}, "Flaw"), el("p", {}, draft.flaw || "—")),
-    el("p", { class: "faint" }, "Tension with the other Travelers is set once more than one exists — start at 1 toward one or two of them."));
+    el("p", { class: "faint" }, "Tension with the other Travelers is set once more than one exists — start at 1 toward one or two of the others."));
 }
 
 // -------------------------------------------------------------------- validation
@@ -478,7 +493,7 @@ function build(rerender) {
 
 function finish() {
   const ch = {
-    id: draft.id, name: draft.name.trim(), archetype: draft.archetype,
+    id: draft.id, name: draft.name.trim(), archetype: draft.archetype, gender: genderOf(draft),
     attributes: filledAttributes(), talents: draft.talents,
     dream: draft.dream, flaw: draft.flaw, song: draft.song, description: draft.description,
     descriptorWords: draft.descriptorWords || [],
@@ -501,21 +516,31 @@ async function choosePregen() {
     const erratum = PREGEN_ERRATA.find((e) => e.id === p.id);
     body.append(el("li", {}, el("button", {
       class: "row",
-      onclick: () => { instantiatePregen(p); dismissModal(false); }
+      onclick: () => { instantiatePregen(p, DEFAULT_GENDER); dismissModal(false); }
     },
       el("div", { class: "card-row" }, el("strong", {}, p.name),
         el("span", { class: "faint mono" }, `${p.health}/${p.hope}`)),
       el("div", { class: "faint" }, p.blurb),
       erratum ? el("div", { class: "faint" }, `Note: the printed sheet shows Hope ${erratum.printed}; the formula gives ${erratum.computed}, which is what this app uses.`) : null)));
+    // The book prints each pregen with a paired name so either half can play it. Both
+    // halves are offered, because the choice also fixes every pronoun the app will write.
+    body.append(el("div", { class: "btn-row", style: "padding:0 4px 10px" },
+      ...GENDERS.map((g) => el("button", {
+        class: "btn", onclick: () => { instantiatePregen(p, g.id); dismissModal(false); }
+      }, pregenName(p, g.id)))));
   }
   await modal({ title: "Pre-made Travelers", body, actions: [{ label: "Cancel", value: false }] });
 }
 
-function instantiatePregen(p) {
+/** The book prints both halves; which half is which varies by pregen, so the data says. */
+const pregenName = (p, gender) => p.names?.[gender] || resolvePairedName(p.name, gender);
+
+function instantiatePregen(p, gender = DEFAULT_GENDER) {
   const taken = takenArchetypes();
   if (taken.has(p.archetype)) { showToast("Someone in the group already has that archetype.", "danger"); return; }
+  const name = pregenName(p, gender);
   saveCharacter({
-    id: uid(), name: p.name, archetype: p.archetype,
+    id: uid(), name, archetype: p.archetype, gender,
     attributes: { strength: p.strength, agility: p.agility, wits: p.wits, empathy: p.empathy },
     talents: p.talents, dream: p.dream, flaw: p.flaw, song: p.favoriteSong,
     description: p.blurb, neurocaster: p.neurocaster,
@@ -523,7 +548,7 @@ function instantiatePregen(p) {
     conditions: [], tension: {}, fromPregen: p.id, createdAt: Date.now()
   });
   draft = null;
-  showToast(`${p.name} joins the Journey.`);
+  showToast(`${name} joins the Journey.`);
   location.hash = "#/home";
 }
 
@@ -700,7 +725,7 @@ function buildTension(rerender, chars) {
   wrap.append(explain("What each Traveler feels toward each other Traveler, from 0 to 2. It is asymmetric on purpose — you can resent someone who thinks you are friends. It adds dice when you two are opposed, and talking it down is how Hope comes back."));
   if (chars.length < 2) {
     wrap.append(el("div", { class: "empty card" },
-      el("p", {}, "Tension needs at least two Travelers. It runs between people, not inside them.")));
+      el("p", {}, "Tension needs at least two Travelers. It runs between people, not inside one.")));
     return wrap;
   }
   wrap.append(el("p", { class: "faint" }, "Asymmetric on purpose: what you feel toward someone need not be returned. Start at 1 toward one or two others, 0 toward the rest."));

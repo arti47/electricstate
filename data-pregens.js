@@ -6,6 +6,7 @@
 export const PREGENS = [
   {
     id: "draper", name: "Cade/Courtney Draper", archetype: "artist",
+    names: { male: "Cade Draper", female: "Courtney Draper" },
     favoriteSong: "Life on Mars, David Bowie",
     strength: 3, agility: 3, wits: 4, empathy: 6,
     health: 3, hope: 5,
@@ -14,10 +15,11 @@ export const PREGENS = [
     flaw: "You believe you're the center of the universe, even the small, shabby one you now inhabit.",
     neurocaster: "johnnyJoltTheme",
     gear: ["Gibson Les Paul guitar (musical instrument)", "Three doses of neurine"],
-    blurb: "Original lead vocalist of the band Bliss, cut loose before they made it big. A neurine addict and a footnote on MTV."
+    blurb: "Original lead vocalist of the band Bliss, cut loose before the band made it big. A neurine addict and a footnote on MTV."
   },
   {
     id: "alvarez", name: "Nancy/Pascal Alvarez", archetype: "outsider",
+    names: { male: "Pascal Alvarez", female: "Nancy Alvarez" },
     favoriteSong: "Fall With Your Knife, Peter Murphy",
     strength: 2, agility: 4, wits: 6, empathy: 2,
     health: 3, hope: 4,
@@ -30,6 +32,7 @@ export const PREGENS = [
   },
   {
     id: "harker", name: "Francis/Billy-Lee Harker", archetype: "veteran",
+    names: { male: "Francis Harker", female: "Billy-Lee Harker" },
     favoriteSong: "We Gotta Get Outta This Place, The Animals",
     strength: 4, agility: 6, wits: 3, empathy: 3,
     health: 5, hope: 3,
@@ -43,6 +46,7 @@ export const PREGENS = [
   },
   {
     id: "carbone", name: 'Wilhemina/William "Willy" Carbone', archetype: "runawayKid",
+    names: { male: 'William "Willy" Carbone', female: 'Wilhemina "Willy" Carbone' },
     favoriteSong: "Friday, I'm in Love, The Cure",
     strength: 2, agility: 6, wits: 4, empathy: 6,
     health: 4, hope: 5,          // sheet prints Hope 4; see PREGEN_ERRATA

@@ -8,6 +8,7 @@ import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourne
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
 import { showToast, confirmModal, modal, promptModal, explain, dismissModal } from "./ui.js";
+import { GENDERS, genderOf, genderLabel, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
 // ---------------------------------------------------------------- vitals header
 /**
@@ -108,8 +109,8 @@ function build(ch, rerender) {
     el("div", { class: "card-row" },
       el("h1", { style: "margin:0" }, ch.name || "Unnamed"),
       el("a", { class: "btn", href: "#/home" }, "Back")),
-    el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
-    explain("Everything about this Traveler, and everything that happens to them. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply their dice penalties to rolls automatically, and gear degrades as you push rolls with it."),
+    el("p", { class: "faint" }, [arch?.name, genderLabel(ch), ch.song].filter(Boolean).join(" · ")),
+    explain("Everything about this Traveler, and everything that happens. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply dice penalties to rolls automatically, and gear degrades as you push rolls with it."),
     ch.descriptorWords?.length ? el("p", { class: "faint" }, ch.descriptorWords.join(" · ")) : null);
 
   // --- vitals steppers
@@ -180,7 +181,14 @@ function build(ch, rerender) {
 
   // --- dream, flaw, goal, threat: written at creation, read often, edited rarely
   wrap.append(el("details", { class: "card phase-fold" },
-    el("summary", {}, "Dream, Flaw, Goal and Threat"),
+    el("summary", {}, "Identity — Dream, Flaw, Goal and Threat"),
+    el("div", { class: "field" }, el("label", {}, "Gender"),
+      el("div", { class: "btn-row" },
+        ...GENDERS.map((g) => el("button", {
+          class: "btn" + (genderOf(ch) === g.id ? " btn-primary" : ""),
+          onclick: () => patch((c) => { c.gender = g.id; })
+        }, g.label))),
+      el("p", { class: "faint" }, `Every pronoun the app writes about this Traveler: ${subj(ch)}, ${obj(ch)}, ${poss(ch)}.`)),
     field("Dream", ch.dream, (v) => patch((c) => { c.dream = v; })),
     field("Flaw", ch.flaw, (v) => patch((c) => { c.flaw = v; })),
     field("Goal", ch.goal, (v) => patch((c) => { c.goal = v; })),
@@ -269,7 +277,7 @@ function statusNotes(ch, hMax, pMax, rerender) {
               const { rallyDialog } = await import("./roller.js");
               await rallyDialog(ch, rerender);
             }
-          }, "Someone rallies them")
+          }, `Someone rallies ${obj(ch)}`)
         : null,
       action === "unfreeze"
         ? el("button", {
@@ -479,7 +487,7 @@ function tensionCard(ch) {
     const theirs = other.tension?.[ch.id] ?? 0;
     card.append(el("div", { class: "card-row", style: "padding:4px 0" },
       el("span", {}, other.name || "Unnamed"),
-      el("span", { class: "mono faint" }, `you ${mine} · them ${theirs}`)));
+      el("span", { class: "mono faint" }, `you ${mine} · ${subj(other)} ${theirs}`)));
   }
   card.append(el("p", { class: "faint" }, TENSION.reduce.hopeGain === 1
     ? "Talking it through in a calm scene lowers both by 1 and returns 1 Hope each."

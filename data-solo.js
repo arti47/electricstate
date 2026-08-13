@@ -92,17 +92,17 @@ export const CONVERSATION_SUBJECTS = [
   "Personal background", "Emotional state", "Religion", "Technology", "The war", "The Stop's background"
 ];
 export const TRAVELER_EVENTS = [
-  { d6: 1, event: "A Traveler confronts and tries to overcome their Flaw." },
+  { d6: 1, event: "A Traveler confronts the Flaw and tries to overcome it." },
   { d6: 2, event: "A Threat catches up to the Traveler, possibly pulling in the whole group." },
-  { d6: 3, event: "A Traveler pursues an aspect of their Dream." },
+  { d6: 3, event: "A Traveler pursues an aspect of the Dream." },
   { d6: 4, event: "A conversation increases Tension between Travelers of your choice." },
   { d6: 5, event: "A conversation lowers Tension between Travelers of your choice." },
-  { d6: 6, event: "A Traveler wanders off. Do the others search for them?" }
+  { d6: 6, event: "A Traveler wanders off. Do the others go looking?" }
 ];
 
 // Minor encounters — card-drawn, 2 through Ace (not D6, despite some secondary sources).
 export const MINOR_ENCOUNTERS = {
-  "2": "Hitchhiker. Give them a personality type and a quirk.",
+  "2": "Hitchhiker. Give the hitchhiker a personality type and a quirk.",
   "3": "Roadwork.",
   "4": "Weather event — something harsh, a downpour or sandstorm.",
   "5": "Gas station. Is anyone there?",
@@ -134,7 +134,7 @@ export const SOLO_PERSONAL_THREATS = [
   "The Traveler is a fugitive — from the law, a corporation, or a cult.",
   "The Traveler is sick, maybe dying.",
   "The Threat is a machine — a drone growth or something more enigmatic.",
-  "One of the other Travelers is their secret nemesis."
+  "One of the other Travelers is a secret nemesis."
 ];
 export const NINETIES_VEHICLES = [
   "1990 Pontiac Grand Prix",
@@ -149,7 +149,7 @@ export const NINETIES_VEHICLES = [
 // Journalist appears here but is not one of the ten creation archetypes (ruling A2).
 export const SOLO_ARCHETYPE_HOOKS = {
   artist: { goal: "Shoot a video at an iconic civil war battle site.", threat: "Veterans who hated your last video are hunting you." },
-  criminal: { goal: "Find the person you shot in a robbery and pay them back somehow.", threat: "Their sibling hired a bounty hunter." },
+  criminal: { goal: "Find the person you shot in a robbery and pay that debt somehow.", threat: "A sibling of that person hired a bounty hunter." },
   devotee: { goal: "Find the godhead in a specific system, then plug in until it drains you.", threat: "You stole a prototype neurocaster; Sentre wants it back." },
   doctor: { goal: "Find a specific desert cactus that may hold the cure.", threat: "You're a neurine addict and nearly out." },
   dronePilot: { goal: "Break into the well-guarded corporate lab holding your body.", threat: "A virus in your drone body makes you paranoid, and it's worsening." },
@@ -157,7 +157,7 @@ export const SOLO_ARCHETYPE_HOOKS = {
   outsider: { goal: "Reach a major city where you can blend in and learn to act normal.", threat: "You're deeply depressed and fall into self-destructive bouts." },
   runawayKid: { goal: "You're pregnant. Find a safe place to have your baby.", threat: "The baby's father is an abuser and he's looking for you." },
   scientist: { goal: "Find a particular cult to study anthropologically.", threat: "The rival whose ideas you stole now works for Sentre." },
-  veteran: { goal: "Make a pilgrimage to the Civil War Memorial.", threat: "A squadmate blames you for their injuries and wants revenge." },
+  veteran: { goal: "Make a pilgrimage to the Civil War Memorial.", threat: "A squadmate blames you for a crippling injury and wants revenge." },
   journalist: { goal: "Travel with strangers and learn to treat people as more than camera subjects.", threat: "You photographed a powerful politician compromised; you're wanted.", notAnArchetype: true }
 };
 

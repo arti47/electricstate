@@ -259,4 +259,17 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   hand and the count drifted, which left `overflow: hidden` on the body — the app stopped
   scrolling, and not until the *next* dialog closed. `ui.releaseScrollLock()` runs on every
   route render as the backstop.
+- **Every person the app names has a gender, and no user-facing string uses a plural pronoun
+  for one person.** `ch.gender` is `"male"` or `"female"`, chosen in creation above the name and
+  editable on the sheet; `normalize()` back-fills old saves. `src/pronouns.js` is the only source
+  of the words — `subj/obj/poss/refl`, capitalised variants, `refer(who, fallback)` when the
+  subject may not be picked yet, and `neuter` (it/its) for machines. Combatants carry a gender
+  too: rolled for people, `neuter` for anything with a Hull. Generated solo NPCs get a name and
+  a gender. The house first-name table is paired (`Cade/Courtney`) and the roller takes the
+  matching half; pregens name both halves in `data-pregens.js` because the book's pairs are not
+  consistently male-first.
+- `tests/pronoun-scan.mjs` fails the build on `they/them/their` inside any string literal in
+  `src/` or `data*.js` — comments and `${expressions}` excluded. `npm run pronouns` runs it
+  alone. Where no specific person is in scope, name the thing ("the target", "the other
+  driver"); the `data-journey.js` Kicker and destination tables are second person.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

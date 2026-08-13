@@ -1097,6 +1097,80 @@ await test("the readable export names the Traveler and their numbers", () => {
   assert.match(text, /Get out/, "the Dream is part of the sheet, not just the numbers");
 });
 
+// ------------------------------------------------------------------- pronouns
+
+const pronouns = await import("../src/pronouns.js");
+const scan = await import("./pronoun-scan.mjs");
+
+await test("a Traveler is he or she, and every word agrees", () => {
+  const him = { gender: "male" }, her = { gender: "female" };
+  assert.equal(pronouns.subj(him), "he");
+  assert.equal(pronouns.obj(him), "him");
+  assert.equal(pronouns.poss(him), "his");
+  assert.equal(pronouns.refl(him), "himself");
+  assert.equal(pronouns.subj(her), "she");
+  assert.equal(pronouns.obj(her), "her");
+  assert.equal(pronouns.poss(her), "her");
+  assert.equal(pronouns.refl(her), "herself");
+  assert.equal(pronouns.Subj(her), "She");
+  assert.equal(pronouns.Poss(him), "His");
+});
+
+await test("a machine is an it, and a save with no gender still reads", () => {
+  assert.equal(pronouns.subj({ gender: "neuter" }), "it");
+  assert.equal(pronouns.poss({ gender: "neuter" }), "its");
+  assert.equal(pronouns.genderOf({}), pronouns.DEFAULT_GENDER, "a Traveler from before the field existed");
+  assert.equal(pronouns.genderOf({ gender: "nonsense" }), pronouns.DEFAULT_GENDER);
+  assert.equal(pronouns.genderOf("female"), "female", "a bare gender string works too");
+});
+
+await test("someone the app has not met yet is named, not pluralised", () => {
+  const known = pronouns.refer({ gender: "female" });
+  assert.equal(known.s, "she");
+  assert.equal(known.P, "Her");
+  const unknown = pronouns.refer(null, "the target");
+  assert.equal(unknown.s, "the target");
+  assert.equal(unknown.p, "the target's");
+  assert.equal(unknown.S, "The target");
+});
+
+await test("the paired name tables resolve to one half", () => {
+  assert.equal(pronouns.splitPairedName("Cade/Courtney", "male"), "Cade");
+  assert.equal(pronouns.splitPairedName("Cade/Courtney", "female"), "Courtney");
+  assert.equal(pronouns.splitPairedName("Quinn", "female"), "Quinn", "an unpaired name is left alone");
+  assert.equal(pronouns.resolvePairedName("Cade/Courtney Draper", "female"), "Courtney Draper");
+});
+
+await test("every pregen names both halves the book prints", () => {
+  for (const p of pregens.PREGENS) {
+    assert.ok(p.names?.male && p.names?.female, `${p.id} has no paired names`);
+    for (const half of Object.values(p.names)) {
+      assert.ok(!half.includes("/"), `${p.id} still carries a slash: ${half}`);
+    }
+  }
+});
+
+await test("normalize gives every stored Traveler a gender", () => {
+  store.resetAll();
+  const ch = makeChar({ name: "No gender set" });
+  assert.ok(["male", "female"].includes(store.getCharacter(ch.id).gender));
+});
+
+await test("no user-facing string calls one person they, them or their", () => {
+  const hits = scan.scanAll();
+  const shown = hits.slice(0, 8).map((h) => `${h.file}:${h.line} ${h.text.trim().slice(0, 60)}`);
+  assert.deepEqual(hits, [], `${hits.length} plural pronoun(s):\n        ${shown.join("\n        ")}`);
+});
+
+await test("the pronoun scan reads strings and ignores comments and expressions", () => {
+  assert.deepEqual(scan.offenders('// they and their\nconst a = 1;'), [], "comments are for the reader");
+  assert.equal(scan.offenders('const a = "they went";').length, 1);
+  assert.deepEqual(scan.offenders("const a = `${r.theirs} against ${x}`;"), [],
+    "a property called theirs is code, not prose");
+  assert.equal(scan.offenders("const a = `${x} lost their turn`;").length, 1,
+    "prose around an expression still counts");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

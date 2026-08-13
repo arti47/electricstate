@@ -7,9 +7,9 @@ export const LIBRARY = [
   { id: "push", title: "Pushing a roll", tags: ["core"], page: 53,
     text: "Once per roll you may re-roll every die not showing a 1 or a 6. All dice count afterwards. Each 1 on a base die costs 1 Hope; each 1 on a gear die reduces that gear's bonus by 1, and gear at bonus 0 is Busted. NPCs never push." },
   { id: "opposed", title: "Opposed rolls", tags: ["core", "combat"], page: 54,
-    text: "The active party must roll more 6s than the opponent. Only the active party may push, except in an open opposed roll where both may. A tie in an open opposed roll means a compromise, or a re-roll if none is possible. Between Travelers, both sides add bonus dice equal to their Tension toward the other." },
+    text: "The active party must roll more 6s than the opponent. Only the active party may push, except in an open opposed roll where both may. A tie in an open opposed roll means a compromise, or a re-roll if none is possible. Between Travelers, both sides add bonus dice equal to the Tension each feels toward the other." },
   { id: "helping", title: "Helping", tags: ["core"], page: 53,
-    text: "Up to three others can help, each giving +1 die, if they can plausibly assist. In combat, helping uses the helper's turn." },
+    text: "Up to three others can help, each giving +1 die, where the help is plausible. In combat, helping uses the helper's turn." },
   { id: "health", title: "Health", tags: ["vitals"], page: 54,
     text: "Maximum Health is Strength plus Agility divided by two, rounded up, +2 with the Tough talent. At zero you are Incapacitated." },
   { id: "hope", title: "Hope", tags: ["vitals"], page: 55,
@@ -29,7 +29,7 @@ export const LIBRARY = [
   { id: "actions", title: "Actions and moves", tags: ["combat"], page: 78,
     text: "Each turn gives one move and one action, or two moves, and the move must come first. Minor things like drawing a weapon or speaking are free. A reaction costs your next turn but covers every attack until then." },
   { id: "closeCombat", title: "Close combat", tags: ["combat"], page: 80,
-    text: "Roll Strength plus weapon dice at Engaged range. Before dice are rolled the target chooses to take the hit or fight back. Fighting back makes it opposed, and a target who wins deals their own weapon's damage to the attacker. A tie means neither is hurt." },
+    text: "Roll Strength plus weapon dice at Engaged range. Before dice are rolled the target chooses to take the hit or fight back. Fighting back makes it opposed, and a target who wins deals the damage of the weapon in hand to the attacker. A tie means neither is hurt." },
   { id: "rangedCombat", title: "Ranged combat", tags: ["combat"], page: 80,
     text: "Roll Agility plus weapon dice at Short range or further. The target chooses to stand tall or dodge. Dodging makes it opposed, and a tie means the attack misses." },
   { id: "cover", title: "Cover and armor", tags: ["combat"], page: 80,
@@ -45,7 +45,7 @@ export const LIBRARY = [
   { id: "rally", title: "Rallying and stabilizing", tags: ["vitals"], page: 82,
     text: "Someone in the same zone can rally you with an Empathy roll, restoring Health equal to the 6s rolled, but you still make death rolls. Only a Medic can stabilize, with a Wits roll. Unaided, you rally alone after a Stretch with 1 Health." },
   { id: "seriousInjury", title: "Serious injuries", tags: ["vitals"], page: 84,
-    text: "Surviving Incapacitation means rolling on the injury table. Most results carry dice penalties and a healing time in days; four require surgery before they heal at all." },
+    text: "Surviving Incapacitation means rolling on the injury table. Most results carry dice penalties and a healing time in days; four require surgery before any healing starts at all." },
   { id: "surgery", title: "Surgery", tags: ["vitals"], page: 84,
     text: "Surgery takes a Shift and a Wits roll from someone with the Surgeon talent; improvised tools work but proper instruments give gear dice. A failed operation leaves the patient Incapacitated. Paid surgery costs $1,000." },
   { id: "mentalTrauma", title: "Mental trauma", tags: ["vitals"], page: 87,
@@ -61,7 +61,7 @@ export const LIBRARY = [
   { id: "hacking", title: "Hacking systems", tags: ["neuronics"], page: 94,
     text: "Difficulty 1 to 3 is the number of successful Wits rolls needed, with the neurocaster's Network as gear dice, disabling the system for a Stretch. Add 1 to take control, and another 1 to extend to a Shift. Failure usually trips an alarm." },
   { id: "avatars", title: "Avatars", tags: ["neuronics"], page: 97,
-    text: "Persuading an avatar uses Empathy with the Graphics attribute as gear dice; opponents resist with Wits and their Network. Avatar combat is close combat at Engaged range but rolls Wits. Damage hits the user's real Health, and being reduced to zero disconnects you with a mental trauma instead of a death roll." },
+    text: "Persuading an avatar uses Empathy with the Graphics attribute as gear dice; opponents resist with Wits and the Network attribute. Avatar combat is close combat at Engaged range but rolls Wits. Damage hits the user's real Health, and being reduced to zero disconnects you with a mental trauma instead of a death roll." },
   { id: "drones", title: "Drones", tags: ["neuronics"], page: 98,
     text: "A piloted drone uses its own Strength and Agility with your Wits and Empathy, and every roll gains gear dice from your neurocaster's Network. Damage reduces the drone's Hull; at zero the operator is disconnected. Every failed roll while piloting adds Bliss." },
   { id: "vehicleStunt", title: "Stunts and accidents", tags: ["vehicles"], page: 103,
@@ -77,7 +77,7 @@ export const LIBRARY = [
   { id: "lifecycle", title: "Time and boundaries", tags: ["lifecycle"], page: 16,
     text: "A Round is five to ten seconds, a Stretch five to ten minutes, a Shift five to ten hours, with four Shifts to a day. Healing, hunger, cold and sleep are checked per Shift; Bliss decay and disease are checked per day." },
   { id: "stops", title: "Stops", tags: ["journey"], page: 118,
-    text: "A Stop is where play happens: a Blocker keeps the Travelers there, a Situation is already underway, and a Countdown escalates it while they stay. Leaving usually ends the session." }
+    text: "A Stop is where play happens: a Blocker keeps the Travelers there, a Situation is already underway, and a Countdown escalates it while the Travelers stay. Leaving usually ends the session." }
 ];
 
 export const BY_ID = Object.fromEntries(LIBRARY.map(e => [e.id, e]));

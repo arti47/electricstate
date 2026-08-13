@@ -1,5 +1,5 @@
 // Solo play (Phase 6). The deck is the pacing timer: no reshuffle until it runs out.
-import { el, d6, d66, uid, shuffle, fromRangeTable } from "./core.js";
+import { el, d6, d66, uid, shuffle, fromRangeTable, randomInt, fromD100 } from "./core.js";
 import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EMOTION,
          NPC_MOTIVE, NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS,
          THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
@@ -8,10 +8,12 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
          SOLO_PRINCIPLES, INTERNAL_THREATS_ALLOWED } from "../data-solo.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
+import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
 import { showToast, modal, explain, actionBar, dismissModal } from "./ui.js";
+import { subj, obj, poss, Subj, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
 
 const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" };
 
@@ -69,7 +71,12 @@ export function generateThreat() {
 }
 
 export function generateNPC(cards) {
+  // A generated NPC is a person the table will talk about for the next ten minutes, so
+  // give one a name and a gender rather than leaving a description with no handle on it.
+  const gender = rollGender(randomInt);
   return {
+    gender,
+    name: `${splitPairedName(fromD100(FIRST_NAMES), gender)} ${fromD100(SURNAMES)}`,
     personality: NPC_PERSONALITY[cards[0].rank],
     emotion: NPC_EMOTION[cards[1].rank],
     motive: NPC_MOTIVE[cards[2].suit],
@@ -258,13 +265,13 @@ function build(rerender) {
     const lead = cast.find((c) => c.id === leadId);
     const next = cast[(cast.findIndex((c) => c.id === leadId) + 1) % cast.length];
     wrap.append(phase("Whose Stop is this?",
-      "One Traveler leads each Stop and the others follow. Rotate, so each of them gets a Stop of their own.",
+      "One Traveler leads each Stop and the others follow. Rotate, so every Traveler gets a Stop to lead.",
       el("div", { class: "card-row" },
         el("strong", {}, lead?.name || "Unnamed"),
         el("span", { class: "faint" }, `${led[leadId] || 0} led so far`)),
       el("div", { class: "faint" },
         cast.filter((c) => !led[c.id]).length
-          ? `Still waiting for a Stop of their own: ${cast.filter((c) => !led[c.id]).map((c) => c.name).join(", ")}.`
+          ? `Still waiting for a Stop to lead: ${cast.filter((c) => !led[c.id]).map((c) => c.name).join(", ")}.`
           : "Everyone has led at least one Stop."),
       el("div", { class: "faint" }, "Generating a Stop hands this on by itself, to whoever has led fewest."),
       row(
@@ -272,7 +279,7 @@ function build(rerender) {
           write({ leadId: next.id, ledStops: { ...led, [next.id]: (led[next.id] || 0) + 1 } });
           rerender();
         }),
-        el("a", { class: "btn", href: `#/sheet/${leadId}` }, "Their sheet"))));
+        el("a", { class: "btn", href: `#/sheet/${leadId}` }, `${Poss(lead)} sheet`))));
     if (!s.leadId) write({ leadId, ledStops: { ...led, [leadId]: led[leadId] || 1 } });
   }
 
@@ -300,16 +307,16 @@ function build(rerender) {
           body: el("div", {}, el("p", {}, t),
             el("p", { class: "faint" }, "Three steps from here: you hear about it, it makes contact, it attacks."),
             target
-              ? el("p", { class: "faint" }, "This is the clock — how close it has got. The Threat on their sheet is the description of it, and starts out whatever you wrote at creation.")
+              ? el("p", { class: "faint" }, `This is the clock — how close it has got. The Threat on ${poss(target)} sheet is the description of it, and starts out whatever you wrote at creation.`)
               : null),
           actions: [
-            target ? { label: "Write it onto their sheet", value: "sheet", class: "btn-primary" } : null,
+            target ? { label: `Write it onto ${poss(target)} sheet`, value: "sheet", class: "btn-primary" } : null,
             { label: "Good", value: true }
           ].filter(Boolean)
         });
         if (chose === "sheet" && target) {
           saveCharacter({ ...target, threat: t });
-          showToast(`${target.name || "Their"} Threat updated.`);
+          showToast(`${target.name || "The"} Threat updated.`);
           rerender();
         }
       }),
@@ -329,8 +336,8 @@ function build(rerender) {
               el("button", {
                 class: "btn", onclick: (e) => {
                   saveCharacter({ ...c, goal: hook.goal, threat: hook.threat });
-                  e.target.replaceWith(el("span", { class: "faint" }, "Written to their sheet."));
-                  showToast(`${c.name || "Their"} Goal and Threat set.`);
+                  e.target.replaceWith(el("span", { class: "faint" }, `Written to ${poss(c)} sheet.`));
+                  showToast(`Goal and Threat set for ${c.name || "the Traveler"}.`);
                 }
               }, "Use both"),
               el("button", {
@@ -358,7 +365,7 @@ function build(rerender) {
   // ------------------------------------------------------------- 2 on the road
   // Between Stops, not during one: folded like prep, so the Stop you are in stays on top.
   wrap.append(foldedPhase("2 · On the road",
-    "Between Stops. Encounters can be driven past — they are mood, not obligation.",
+    "Between Stops. An encounter can be driven past — it is mood, not obligation.",
     row(
       act("Minor encounter", () => encounter(rerender)),
       act("Arrive at what time?", async () => {
@@ -424,8 +431,8 @@ function build(rerender) {
             el("p", { class: "faint" }, `How it goes: ${read.label}`),
             listCharacters().length > 1
               ? el("p", { class: "faint" }, read.good
-                  ? "A good one between Travelers lowers the Tension between them."
-                  : "A bad one between Travelers raises the Tension between them.")
+                  ? "A good one between two Travelers lowers the Tension on both sides."
+                  : "A bad one between two Travelers raises the Tension on both sides.")
               : null),
           actions: [
             listCharacters().length > 1 ? { label: "Adjust Tension", value: "tension" } : null,
@@ -470,7 +477,7 @@ function build(rerender) {
           whose = chosen.id;
         }
         const step = advancePersonalThreat(whose);
-        if (!step) { showToast("That Threat has played out — it has caught up with them."); return; }
+        if (!step) { showToast("That Threat has played out — it has already arrived."); return; }
         logEvent("Personal Threat Countdown", `${step.name} — step ${step.index}: ${step.event}`);
         rerender();
         await modal({
@@ -507,9 +514,9 @@ function build(rerender) {
 
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "How to play this way"),
     el("ul", { class: "list" }, ...SOLO_PRINCIPLES.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x)))),
-    el("p", { class: "faint" }, "Map a Stop as a mind map rather than a floor plan: circle where you are, draw lines to places as you find them, and dot the lines to somewhere you have only heard about. Three or four places visible from the Blocker is enough to open."),
+    el("p", { class: "faint" }, "Map a Stop as a mind map rather than a floor plan: circle where you are, draw a line to each place as you find it, and dot the line to somewhere you have only heard about. Three or four places visible from the Blocker is enough to open."),
     INTERNAL_THREATS_ALLOWED
-      ? el("p", { class: "faint" }, "Playing alone also opens up Threats the group rules avoid — addiction, grief, the demons that are already inside. Nobody loses agency to them but you.")
+      ? el("p", { class: "faint" }, "Playing alone also opens up Threats the group rules avoid — addiction, grief, the demons that are already inside. Nobody loses agency to that but you.")
       : null));
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "When you are stuck"),
     el("ul", { class: "list" }, ...SOLO_UNSTICK.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
@@ -612,15 +619,16 @@ async function npc(rerender) {
     deck = drawn.deck;
   }
   const person = generateNPC(cards);
-  write({ deck, history: [{ suit: cards[0].suit, rank: cards[0].rank, note: `NPC: ${person.personality}, ${person.emotion}` }, ...s.history].slice(0, 40) });
-  logEvent("NPC", `${person.personality}, ${person.emotion.toLowerCase()} · wants ${person.motive.toLowerCase()} · by ${person.method.toLowerCase()} · ${person.quirk} · ${person.predisposition.label}`, cards[0]);
+  write({ deck, history: [{ suit: cards[0].suit, rank: cards[0].rank, note: `NPC: ${person.name}` }, ...s.history].slice(0, 40) });
+  logEvent("NPC", `${person.name} — ${person.personality}, ${person.emotion.toLowerCase()} · wants ${person.motive.toLowerCase()} · by ${person.method.toLowerCase()} · ${person.quirk} · ${person.predisposition.label}`, cards[0]);
 
   await modal({
-    title: "An NPC",
+    title: person.name,
     body: el("div", {},
+      el("p", { class: "faint" }, genderLabel(person)),
       el("p", {}, el("strong", {}, `${person.personality}, currently ${person.emotion.toLowerCase()}`)),
       el("p", { class: "faint" }, `Wants: ${person.motive.toLowerCase()} · Method: ${person.method.toLowerCase()}`),
-      el("p", { class: "faint" }, `Quirk: ${person.quirk.toLowerCase()}`),
+      el("p", { class: "faint" }, `Quirk: ${person.quirk.toLowerCase()} — ${subj(person)} shows it before ${subj(person)} says anything.`),
       el("p", { class: "faint" }, `Toward the Travelers: ${person.predisposition.label}`)),
     actions: [{ label: "Good", value: true, class: "btn-primary" }]
   });
