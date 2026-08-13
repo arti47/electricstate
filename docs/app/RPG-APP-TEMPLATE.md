@@ -1,4 +1,4 @@
-# RPG Player-Character App — Autonomous Build Instructions (v2)
+# RPG Player-Character App — Autonomous Build Instructions (v3)
 
 > **To the AI receiving this file:** you have been given (1) this document and (2) a
 > tabletop RPG rulebook in some form. Your task is to build a complete, installable
@@ -17,11 +17,31 @@
 >    Extraction Ledger**, §9.1) and build phase by phase, autonomously, under the process
 >    rules in §10. After Stage B, ask the user questions **only** when the rulebook is
 >    genuinely ambiguous on a rules point.
+> 4. **Stage D — Audit to done (§11):** run the audit protocol until a full pass finds
+>    nothing. This is not optional polish; in the reference builds it produced more than
+>    half of the app's correctness.
 >
 > Everything marked **LOCKED** is proven architecture from fully built and rules-audited
 > reference implementations — do not substitute or "improve" it.
 > Everything marked **CONDITIONAL** is included only when the game actually has that
 > subsystem; if the game lacks it, omit it entirely — never invent mechanics.
+
+---
+
+## 0. The one thing that goes wrong
+
+Across reference builds, one defect class outnumbers every other combined:
+
+> **Data is extracted faithfully, unit-tested, documented in the UI — and never called.**
+
+A talent's effect sits in `data.js`. The sheet prints its name. The roller never reads it.
+Everything looks finished and the rule does nothing. The same shape recurs as: a toggle that
+sets a flag nothing reads; a constant imported and unused; a state field written and never
+consumed; a modal that explains a cost the engine never charges.
+
+Reading the code does not find these — you read the sentence in the UI and believe it.
+**Mechanical scans find them in a minute** (§11.1). Build the scans early and run them every
+pass. Everything else in this document is downstream of that lesson.
 
 ---
 
@@ -40,11 +60,12 @@
 **Mandatory scope (every app, every game):** creation wizard · full in-play character
 sheet · native dice engine · inventory & resources · **persistent resource/currency header
 on every in-play screen** · **roll log** (every roll recorded with enough detail to
-re-derive it; `aria-live` announced) · **JSON export/import backup** in Settings ·
-**scene/session lifecycle engine** (the app owns boundary events, with confirmation
-summary + one-step undo) · searchable rules library (**every automated surface links to
-its rules-library entry**) · bestiary/NPC compendium · Firebase multiplayer party with
-shared combat tracker (gated per above) · GM screen.
+re-derive it, attributed to whoever rolled, filterable; `aria-live` announced) · **JSON
+export/import backup** in Settings · **scene/session lifecycle engine** (the app owns
+boundary events, with confirmation summary + one-step undo) · searchable rules library
+(**every automated surface links to its rules-library entry**) · **per-screen "what this
+does" note** (§6.2) · **first-session tutorial** · bestiary/NPC compendium · Firebase
+multiplayer party with shared combat tracker (gated per above) · GM screen.
 **Conditional:** solo mode (only if official solo rules exist) · expansion content (only
 if expansion books are supplied; commitment tiers set at Stage B) · power/spell automation
 (only if the game has such a subsystem) · shared group entity (only if the game has one —
@@ -59,6 +80,10 @@ The rulebook may arrive in any form. Adapt:
 - **PDF file(s):** read systematically cover-to-cover for the System Profile (skim
   fiction/setting chapters; read rules chapters closely). Record page numbers as you
   extract; cite them in data-file comments so the audit (§11) can re-check values fast.
+- **Plain-text transcription of a PDF:** the most common real case, and the most dangerous.
+  Transcription **de-interleaves multi-column tables**: a weapons table becomes a vertical
+  list of names, then a vertical list of bonuses, then a vertical list of damages, with no
+  reliable way to re-pair them. See §2.1.
 - **Queryable notebook (e.g. NotebookLM):** first map the book's structure (query for the
   table of contents / chapter list), then extract section by section. Notebook answers are
   non-deterministic — corroborate any surprising value with a second, differently-phrased
@@ -75,6 +100,29 @@ The rulebook may arrive in any form. Adapt:
   order, **one question at a time**, and record their answers as the source of record
   (flag at the checkpoint that values are user-supplied and unverified against a printing).
 
+### 2.1 Source precedence and corrupted tables — **LOCKED**
+
+Establish this order in the project CLAUDE.md on day one and never deviate:
+
+> **page images > official character sheet > transcript/OCR text > third-party summary**
+
+- A **third-party summary corroborates; it never decides.** Where transcript and summary
+  disagree, request the page image rather than picking one. Where the summary is the *only*
+  source for a value, mark the value provisional in the data file.
+- **Never reconstruct a de-interleaved table from the transcript alone.** If a table's
+  columns have been flattened into separate lists, the row alignment is unrecoverable and
+  a plausible-looking reconstruction is worse than a blocked feature. Ask for a photo of
+  the page. Record the block in a `TRANSCRIPT-ISSUES.md` alongside chapter line offsets,
+  and **build no UI against a blocked table.**
+- **Printed derived values lose to formulas.** Published pregens and sample characters
+  contain arithmetic errors. When a pregen's printed Health disagrees with the game's own
+  formula, the formula wins, and the discrepancy is recorded as a named erratum constant
+  (`PREGEN_ERRATA`) with the page cited — never silently "corrected" and never silently
+  copied. A regression test asserts the formula for every pregen and the erratum list for
+  the exceptions.
+- **Cite by line number, not page number**, when working from a transcript: page numbers
+  survive in the text but drift against the real printing.
+
 **Hard rules for extraction, regardless of form:**
 - Every number, list, table, formula, and procedure in the app comes **from the supplied
   source**. If you cannot find a value, ask for it or mark the feature blocked — never
@@ -84,6 +132,10 @@ The rulebook may arrive in any form. Adapt:
   talents/feats in the core book go into the data files — the app is not done until the
   core book's every list is fully represented. For very large books, plan multiple
   data-extraction phases in the roadmap (§9), but completeness is non-negotiable.
+- **Extract the guidance, not just the tables.** Solo principles, GM pacing advice, safety
+  tools, "how to build a threat" checklists and per-archetype suggestions are content the
+  app should surface. In reference builds these were extracted and then never shown — the
+  same defect as §0, wearing a different coat.
 - **Multiple books supplied:** the core rulebook populates `data.js`; each additional
   official book becomes its own `data-<name>.js` behind a content toggle, off by default
   (§8). The Stage B Q&A assigns each book a **commitment tier** (committed / stretch /
@@ -92,6 +144,21 @@ The rulebook may arrive in any form. Adapt:
 - **Paraphrase, don't copy.** Extract numbers and mechanics; rewrite all effect and flavor
   text concisely in your own words. Never reproduce rules prose verbatim. Exclude setting,
   adventure, and art content entirely (see §12).
+
+### 2.2 House aids — **LOCKED** if you build any
+
+The book will be missing a table the book itself references, or one the app obviously needs
+(name generators, a starting-point table for a journey). You may invent it, under rules:
+
+- It lives in its **own file** (`data-<topic>.js`), never mixed into extracted data.
+- It exports a `HOUSE_AID = true` flag and **the UI labels it as a house aid** wherever it
+  is rolled.
+- It contains **no setting content** — describe things by what they are, never by named
+  places, people or brands from the setting.
+- If it is an oracle/interpretation table, follow one published method and cite it; note
+  in the project CLAUDE.md the distinction between **meaning tables** (single words, feed
+  interpretation, keep doubles as amplification) and **content tables** (hand over a
+  finished thing, draw distinct rows). Mixing the two produces tables that do neither job.
 
 ---
 
@@ -127,6 +194,12 @@ any **decay/reset schedule** (per scene, session, adventure). The GM's mirror ec
 one exists) is extracted with the same rigor. *Archetypes:* Momentum/Threat (2d20);
 Fate/Fortune points; Bennies; Inspiration; Stress/Trauma as spendable; Darkness Points.
 
+**3.3a Currency interactions and lose conditions.** Where two tracked numbers are compared
+to produce a state (addiction ≥ willpower, corruption ≥ humanity, stress ≥ composure),
+record the comparison as a first-class rule. These are the game's real stakes, they belong
+in the persistent header, and their **resolution paths** (who can end the state, at what
+cost, and any once-per talent that grants an escape roll) are part of the slot.
+
 **3.4 Attributes & scales.** Attribute list, value ranges, and every legal generation
 method (rolled, array, point-buy, playbook-fixed) with its exact procedure. Note: some
 games have **no classic attributes** (skill+drive, approach-based, playbook-only) — record
@@ -148,7 +221,9 @@ expert dice) and exactly what they change (crit range, extra dice, re-rolls).
 species/ancestry (+ innate abilities), class/profession/playbook (+ starting skills, gear,
 features), faction/template picks (+ mandatory selections), age/background/experience
 tiers (+ modifiers), starting power/feat picks. For each: what it grants, what it
-constrains, what makes the result legal.
+constrains, what makes the result legal. **Record the creation steps that happen after the
+character sheet is full** — the party's shared entity, the destination, the relationships
+between characters. They are the ones every implementation forgets (§6.2, "next step").
 
 **3.8 Shared group entity — CONDITIONAL.** If the game has a party-level entity (noble
 House, crew, ship, warband, covenant, colony, caravan): its **own creation wizard** (steps,
@@ -160,28 +235,44 @@ rep, turf); Traveller ship (mortgage, roles); Ars Magica covenant.
 
 **3.9 Conditions & statuses.** The condition list, causes, exact mechanical effects, and
 removal rules. In the app, a condition **auto-applies** its effect to the rolls it touches
-— a checkbox with no mechanical teeth is not done. If the game has no fixed list
-(complications create ad-hoc negative traits), record the trait-creation and removal
-economy instead.
+— a checkbox with no mechanical teeth is not done. Record **conditions that rewrite the
+engine's own rules** (cannot push / must push / cannot be healed by X / cannot benefit
+from the group) separately from dice modifiers: these need machine-readable rule keys, a
+documented **conflict-resolution order** when two contradict, and their own tests. If the
+game has no fixed list (complications create ad-hoc negative traits), record the
+trait-creation and removal economy instead.
 
 **3.10 Health, damage & death.** The damage model (HP, wound levels, harm/stress tracks,
 **or defeat/progress tracks with no HP at all**), armor/soak (or difficulty-based defense),
 and the **exact dying/death procedure** step by step, including every escape hatch
 (resist-defeat, death saves, trauma-out) and its once-per-X limits. The death procedure
 gets a dedicated guided UI — it is the highest-stakes moment in play and must be
-impossible to run wrong.
+impossible to run wrong. **Record what happens on each terminal outcome**: surviving often
+triggers a lasting-injury roll, dying often triggers a new character. Both are part of the
+procedure and both get an onward route in the UI (§6.2).
+
+**3.10a Archetype exceptions to the damage model — CONDITIONAL.** Some games publish a
+class that takes damage under different rules entirely (a machine body, an incorporeal
+being, a possessing spirit). Extract every exception it makes to §3.10, §3.11 and §3.16 as
+a named rule set, and note that the app must branch on it everywhere — the vitals label,
+the death procedure, rest, injuries, inventory, currency. Reference builds have shipped
+this archetype as flesh-and-blood four separate times before catching it.
 
 **3.11 Rest & recovery.** Each rest type, duration, what it restores, and its usage
 limits. Once-per-X limits are rules — the app enforces them. Include recovery of
 narrative resources (crossed-out beliefs/drives, stress, corruption), not just physical
-wounds.
+wounds, and record **what blocks recovery** (hunger, cold, disease, sleeplessness) — those
+blockers imply background procedures the lifecycle engine must actually run (§3.12).
 
 **3.12 Scene / session / adventure lifecycle.** What the game defines as a scene, session,
 downtime, and adventure — and **exactly what happens at each boundary**: pool decay,
 temporary asset/effect expiry, per-scene flags resetting, start-of-adventure resource
 resets, end-of-session XP procedures. **The app owns these events**: explicit End
 Scene / End Session / End Adventure controls that fire the whole bundle, with a
-confirmation summary and one-step undo. If the game has no such structure, record that.
+confirmation summary and one-step undo. Also record the **environmental checks that run on
+a boundary** (exposure, starvation, thirst, sleep, disease progression, addiction decay);
+each is a roll the app makes, not a note the player reads. If the game has no such
+structure, record that.
 
 **3.13 Extended / progress tasks.** The game's mechanism for efforts spanning multiple
 rolls: extended tests, skill challenges, progress clocks, research projects. The exact
@@ -198,40 +289,63 @@ tables. **If powers are implemented as talents/feats with embedded mechanics rat
 a subsystem, there is no separate power module — but every talent with a dice effect must
 still be automated in the roller ("tap to use"), never merely displayed.**
 
+**3.14a Abilities that change a rule rather than a die count.** Classify every ability as
+`dice` (adds/removes dice — the roller wires these naturally) or `rule` (changes what is
+legal, substitutes one attribute for another, grants an extra roll, alters a cost). **The
+`rule` ones are the ones that ship inert**, because nothing in the roller needs them to
+compile. Each requires: a machine-readable key, a named home in a specific module, and a
+test asserting it fires. Include the game's permission to **invent** an ability if it
+grants one — that is a feature, not flavour text.
+
 **3.15 Advancement.** The exact advancement loop — XP thresholds, marks-and-session-end
 procedures, milestones, playbook advances, **cost formulas and any one-advance-per-X
 gates** — plus identity mechanics that interact with it (weakness/drive/bond/ambition).
-Automate earning, spending/rolling, and consequences (new features at thresholds).
+Automate earning, spending/rolling, and consequences (new features at thresholds), and
+carry the ability descriptions into the picker: a list of forty bare names is not a
+choice.
 
 **3.16 Inventory, encumbrance & wealth.** The game's *actual* carrying model (slots,
 weight, abstract load, **or abstract assets with a permanent-asset cap**), equipped-gear
 exemptions, currency denominations and coin weight (or an abstract wealth index and its
 price ladder), stackables, durability/quality ratings. Over-limit consequences are
-enforced, not just warned.
+enforced, not just warned. Record the **repair path** for anything that degrades — a
+degradable item with no way back is a dead end the audit will find later.
 
 **3.17 Combat structure.** Initiative method (cards, rolls, side-based, popcorn,
 alternating with seize/keep-initiative economics), the action economy per turn, movement
-rules (grid, zones — physical or abstract), reactions (parry/dodge/opportunity),
-monster/NPC activation rules including multi-attack/ferocity, and **whether multiple
-conflict scales share one engine** (dueling/skirmish/warfare; social conflict as combat).
-Include any dual play scale (personal vs organization-level actions) and what stats each
-scale uses.
+rules (grid, zones — physical or abstract), reactions (parry/dodge/opportunity) **and what
+a reaction costs**, monster/NPC activation rules including multi-attack/ferocity, and
+**whether multiple conflict scales share one engine** (dueling/skirmish/warfare; social
+conflict as combat). Include any dual play scale (personal vs organization-level actions,
+physical vs virtual realm) and what stats each scale uses, plus what happens to a character
+who is acting in the other scale when attacked.
 
 **3.18 Bestiary & NPCs.** Every monster/adversary stat block in the book, including
 attack tables and attacks-per-turn; NPC archetypes; animals; **the NPC tier system**
 (minion/notable/major build recipes) if one exists; which creatures are deliberately
-unstatted forces of nature (record the fact — do not invent stats).
+unstatted forces of nature (record the fact — do not invent stats). Animals and minor
+NPCs are stat blocks too: they belong in the same lookup the combat tracker uses, or they
+will be extracted and unreachable.
 
 **3.19 Pre-generated characters — CONDITIONAL.** If the book publishes pregens — or
 sanctions playing its iconic NPCs — extract them fully for one-tap instantiation, and
 record which rules economy they run on (PC rules vs NPC rules) as a checkpoint ruling.
+Validate every printed derived value against §3.5 (see §2.1 on errata).
 
 **3.20 Solo rules — CONDITIONAL.** Official solo oracle/tables/procedures only. If the
-book has none, there is no solo tab — do not invent one.
+book has none, there is no solo tab — do not invent one. Extract the solo chapter's
+**procedural framing** as well as its tables: how many characters the mode assumes, whether
+a spotlight rotates between them, what the pacing device is (a deck, a clock, a countdown)
+and the rule that governs when it resets.
 
 **3.21 GM tables.** Fumble tables, fear/horror tables, random encounters, travel mishaps,
 story/adventure generators, enemy generators — whatever rollable tables the book gives a
 GM; these power the GM screen's reference panel.
+
+**3.22 Safety tools.** Whatever the book recommends (lines and veils, an X-card, a debrief,
+consent around specific content) and any rules the book explicitly gates behind table
+agreement. These belong in Settings, before play, next to the toggle for the gated rules —
+not in a document nobody opens.
 
 ---
 
@@ -246,7 +360,9 @@ Before writing any application code, present a single, readable summary containi
    extra d20 keep best/worst; push = re-roll once, take a condition").
 2. **Content inventory** — counts per category (skills, powers, monsters, gear, pregens…)
    so the user sees the extraction scale, plus anything the source did not cover.
-3. **Proposals** (defaults below — present your concrete choices):
+3. **Blocked data** — every table you could not recover (§2.1), what you need to unblock it
+   (usually a photo of one page), and which features are held back until then.
+4. **Proposals** (defaults below — present your concrete choices):
    - **App name:** default `<Game> Player`.
    - **Visual theme:** a palette/typography direction that evokes the game's genre and
      trade-dress **without copying its art or logos** (parchment/ink for a fantasy game,
@@ -254,9 +370,9 @@ Before writing any application code, present a single, readable summary containi
    - **Rules-vs-setting boundary:** which chapters you are including vs excluding.
    - **Expansions detected** with proposed commitment tiers; **solo mode** present or
      absent; **group entity** present or absent.
-4. **Ambiguity list** — every rules point where the book was unclear, with your proposed
+5. **Ambiguity list** — every rules point where the book was unclear, with your proposed
    ruling for each. The user confirms or corrects; rulings get recorded in the project
-   CLAUDE.md.
+   CLAUDE.md with a stable ruling id (`A1`, `A2`…) so later work can cite them.
 
 ### 4.2 The Product Q&A (standard, one question at a time)
 
@@ -269,7 +385,9 @@ roadmap to match:
    single-device only. Sets Phase 5's gate.
 2. **User's seat** — GM / player / rotates. Sets GM-screen priority.
 3. **Dice input** — digital-only / digital + manual physical-dice entry / manual-first.
-   Shapes the roller.
+   Shapes the roller. (Manual entry is **two-stage** for any push economy: enter the
+   initial dice, then only the re-rolled ones. A single total cannot tell the engine what
+   the push cost.)
 4. **Expansion commitment** — which supplied books are committed vs stretch vs dropped.
 5. **Table device** — phone / tablet / desktop / mixed. Tunes layout effort (baseline
    stays phone-first regardless).
@@ -302,10 +420,17 @@ newly discovered rules ambiguities — never for permission to continue.
 - **Campaigns:** memorable fantasy-phrase join codes (e.g. `red-dragon-sword`).
 - **Themed UI primitives:** no native `alert/confirm/prompt` — a shared `modal()` +
   `showToast/confirmModal/promptModal`, accessible (focus trap, Escape, `aria-modal`,
-  focus restore) and sized to the visual viewport (mobile-toolbar safe).
+  focus restore) and sized to the visual viewport (mobile-toolbar safe). **Modal actions
+  are ordered primary-first, consistently, everywhere.**
+- **Null-safe DOM helpers.** The element factory skips nullish children so
+  `el("div", {}, maybe && node)` is safe. Provide a matching `add(parent, ...children)`
+  helper and use it for **every** append of a value that can be null — a bare
+  `node.append(null)` renders the literal text `null` into the page (§13, D-1).
 - **Accessibility:** keyboard + screen-reader usable — `aria-live` roll results and
-  vitals, labeled icon-only buttons, `aria-current` nav.
-- **Responsive:** phone-first; zero horizontal overflow at 360px on every screen.
+  vitals, labeled icon-only buttons (**including checkboxes**, which the layout harness
+  measures), `aria-current` nav.
+- **Responsive:** phone-first; zero horizontal overflow at 320, 360 and 390px on every
+  screen, in a realistic mid-campaign state (§11.5).
 
 ---
 
@@ -313,20 +438,23 @@ newly discovered rules ambiguities — never for permission to continue.
 
 | File | Purpose |
 |---|---|
-| `index.html` | App shell: header, bottom nav, screen mount, module entry |
+| `index.html` | App shell: header, persistent resource header, bottom nav, screen mount, module entry |
 | `styles.css` | Game theme (light + dark) + all component styles |
 | `data.js` | **Core rules library** — every §3 list/table/formula from the core book |
 | `data-<expansion>.js` | One file per supplied expansion, behind its toggle (CONDITIONAL) |
 | `data-monsters.js` | Bestiary stat blocks incl. attack tables & attacks-per-turn (omit if the game has no monster bestiary — record why) |
 | `data-npcs.js` | Humanoid NPCs / archetypes / animals / NPC tier recipes |
-| `data-pregens.js` | Published pre-generated characters (CONDITIONAL) |
+| `data-pregens.js` | Published pre-generated characters + `*_ERRATA` (CONDITIONAL) |
 | `data-solo.js` | Official solo tables (CONDITIONAL) |
+| `data-<houseaid>.js` | Invented tables, `HOUSE_AID = true` (§2.2, CONDITIONAL) |
 | `firebase-config.js` | Placeholder config + `FIREBASE_ENABLED` flag |
 | `database.rules.json` | RTDB security rules (player/GM roles; group-entity write rules) |
 | `manifest.json`, `service-worker.js`, `icon.svg` | PWA |
-| `tests/` + `package.json` | Dev-only headless regression harness (`npm test`); dev-only `playwright-core`; `node_modules` gitignored; not in the SW app shell |
+| `tests/` + `package.json` | Dev-only harnesses (§11.1); dev-only `playwright-core`; `node_modules` gitignored; not in the SW app shell |
 | `README.md` | Setup incl. Firebase steps + the personal-use licensing note (§12) |
 | `CLAUDE.md` | This document, instantiated (§9) — the project's living canonical spec |
+| `docs/rules/` | Distilled per-subsystem reference, one file per chapter — the audit reads these against the engine (§11.2) |
+| `docs/AUDIT.md` | Numbered findings, pass by pass, with the verified-clean list |
 
 ### 6.1 `src/` module map — **LOCKED** responsibilities
 
@@ -335,26 +463,76 @@ One module per responsibility; explicit `import`/`export`, nothing smuggled thro
 
 | Module | Responsibility |
 |---|---|
-| `core.js` | Foundational constants, DOM/util helpers, raw dice functions. No imports. |
-| `ui.js` | Themed modals/toasts/confirm/prompt. |
-| `rules.js` | Pure rules lookups over the data libraries (find ability, parse gear, build skills, requirement checks). |
-| `derived.js` | Character-derived calculations (effective maxima, encumbrance, equipped gear, data normalization/migration). |
+| `core.js` | Foundational constants, DOM/util helpers (incl. the null-safe `add`), raw dice functions. No imports. |
+| `ui.js` | Themed modals/toasts/confirm/prompt, the collapsible **explain()** note, and the pinned **actionBar()** (§6.2). |
+| `rules.js` | Pure rules lookups over the data libraries. Lookups that can resolve a **character-owned** entry (an invented ability) take the character as an optional second argument. |
+| `derived.js` | Character-derived calculations (effective maxima, encumbrance, equipped gear, condition modifiers, rule-conflict resolution, data normalization/migration). |
 | `settings.js` | Feature/content toggles (expansions, solo, GM screen, advanced automation). |
-| `store.js` | Local/cloud character (+ group entity) persistence + combat mirroring + JSON export/import. |
+| `store.js` | Local/cloud character (+ group entity) persistence + combat mirroring + JSON export/import + the roll log (attributed at write time). |
 | `sync.js` | Firebase auth, campaigns, join codes, presence + theme. |
 | `wizard.js` | Creation wizard (+ group-entity wizard, §3.8) + pregens. |
 | `roller.js` | The dice engine: every roll type, opposed-test sequence (§3.2), meta-currency spends (§3.3), push flows, ability-embedded automation, damage applier, **roll-log writes**. |
 | `sheet.js` | The full character sheet + all in-play tracking UI + persistent resource header. |
-| `combat.js` | Shared combat tracker: initiative, turn state, combatant cards, generic progress-task tracker (§3.13), scene/session lifecycle events (§3.12). |
-| `power-automation.js` | Automated power/spell resolution (targeting, effects, summons) — CONDITIONAL on §3.14 being a true subsystem. |
+| `combat.js` | Shared combat tracker: initiative, turn state, turn-order derivation, combatant cards, generic progress-task tracker (§3.13). |
+| `lifecycle.js` | Scene/session/adventure boundaries (§3.12), rest, environmental checks, advancement debrief (§3.15). |
+| `power-automation.js` | Automated power/spell resolution — CONDITIONAL on §3.14 being a true subsystem. |
 | `solo.js` | Solo assistant — CONDITIONAL on §3.20. |
 | `gm.js` | GM dashboard. |
-| `screens.js` | Top-level screen renderers (home/rules/about) + party banner + roll-log view. |
-| `router.js` | Bottom-nav routing + conditional tab gating. |
+| `screens.js` | Top-level screen renderers (home/rules/settings) + roll-log view. |
+| `tutorial.js` | First-session walkthrough. |
+| `router.js` | Bottom-nav routing, **section nav** (§6.2), conditional tab gating. |
 | `main.js` | Entry point / boot. |
 
 When adding or moving a `src/` file: update the project CLAUDE.md's file tables **and**
 the service-worker app-shell list, then bump `CACHE_VERSION` — in the same change.
+
+### 6.2 Interface rules — **LOCKED**
+
+These are not style preferences. Each one is a defect that shipped in a reference build and
+was found by measurement, not by reading (§11.4, §11.5).
+
+1. **Two-level navigation.** The bottom tab bar holds 4–6 tabs. **Any tab that owns more
+   than one route carries a section nav** — a horizontally scrolling pill row at the top of
+   every screen in that group, listing its siblings and marking the current one. Without
+   it, routes beyond the first are reachable only from a link buried at the foot of another
+   screen. Screens you go *into* rather than flick between (the wizard, a character sheet)
+   are excluded.
+2. **The primary action is above the fold, always.** The one control a screen exists for —
+   Roll, End Shift, Next — never sits below the viewport on a phone. Where the screen's
+   content is long, pin the action in a bar fixed above the tab bar, carrying its own
+   context (the pool size, the current shift, the step number). The helper returns the bar
+   **and its spacer together** so a caller cannot forget the spacer and have the bar cover
+   the last card. **The layout harness asserts this per screen** (§11.4).
+3. **Live state travels.** State that changes what the player should do next — a fight in
+   progress, a countdown running — is shown wherever they are, as a badge on the section
+   nav. State visible only on the screen that owns it is state nobody sees.
+4. **Every procedure ends somewhere.** A terminal outcome (stabilized, dead, blocker
+   resolved, task complete) offers the next thing the rules call for, as an action in the
+   same dialog. A modal that says "you survived" and stops leaves the player to remember a
+   screen they have not opened.
+5. **Destructive actions confirm, and say what is lost.** Ending a fight discards tracked
+   enemy health; clearing a log discards it. Name the loss in the confirmation.
+6. **Tap targets ≥ 44px effective.** A checkbox renders at ~13px unless styled; wrap every
+   option row in a `<label>` so the whole row is the target, and never let an inline style
+   override the stylesheet's sizing. **The harness measures the label, not the box.**
+7. **Long values stack; short values sit inline.** A flex row centres its children, so a
+   two-line sentence straddles its one-line label. Use an inline row only where the value is
+   short (`Hope 3/5`); use a stacked definition row (label above, value below, full width)
+   for anything sentence-length.
+8. **Density is a feature.** Lists that grow without bound (roll logs, combatant lists,
+   event records) page or collapse: show a session's worth and offer the rest. Items that
+   are done (a combatant who has acted) collapse to a line. Reference cards that are read
+   rarely (background, notes) fold. **Test at session-3 density, not at zero** (§11.5).
+9. **Long screens get a jump row.** Where a screen is legitimately long (a full character
+   sheet), add an in-page nav of the same pill component rather than hiding content.
+10. **Every screen explains itself.** A collapsed "what this does" note, closed by default,
+    in the app's own voice: what the surface is for and which rule it automates. Plus a
+    linked tutorial for a first session.
+11. **The rules library is an accordion**, grouped by subject in session order, collapsed
+    until opened, with search that auto-opens matches.
+12. **The next step is named.** Where the game's own procedure continues past the current
+    screen (creation ends, but the party still needs a destination and relationships), the
+    home screen names the next step until the group is ready to play.
 
 ---
 
@@ -368,9 +546,11 @@ campaigns/{campaignId}
   pools:   { <§3.3 shared meta-currencies, with caps> }
   combat:  { active, round, initiativeOrder[]|currentSide, keptInitiative,
              pendingContest{...},                                   // if §3.2 is sequential
-             combatants{ id: { ..., actedThisRound, tracks{...} } } }   // shaped by §3.17
+             combatants{ id: { ..., actedThisRound, forfeitNextTurn,
+                               scale, tracks{...} } } }             // shaped by §3.17
   tasks/{taskId}: { name, requirement, progress, contributors[] }   // §3.13 generic tasks
-  rollLog/{pushId}: { by, characterName, roll inputs, dice[], outcome,
+  scenes/{sceneId}: { <§3.12 adventure/scene record, countdowns, resolved> }
+  rollLog/{pushId}: { by, byId, characterName, roll inputs, dice[], outcome,
                       currencyDeltas, ts }                          // capped (~100)
   broadcast/{pushId}: { text, ts, from }                            // GM→players feed
 
@@ -381,9 +561,11 @@ characters/{characterId}
   derived:   { <§3.5 derived stats> }
   state:     { <§3.10 vitals/tracks>, conditions{...}, <death-procedure state>,
                <per-scene/per-session flags per §3.12>, <rest-limit flags>,
-               <combat state: movement, ammo, posture> }
+               <once-per-X escape-hatch flags per §3.3a>,
+               <combat state: movement, posture, active scale per §3.17> }
   skills:    { <name>: { level/bonus, trained, mark } }             // shape per §3.6
   abilities: [ ... ]                                                // talents/feats/features
+  customAbilities: [ { id, name, effect } ]                         // invented, per §3.14a
   powers:    { <§3.14 shape: known lists, cast skill, preparation> }
   inventory: { items[] (weight/qty/equipped/durability per §3.16), tiny[], money{...} }
   currencies:{ <§3.3 personal currencies, with caps> }
@@ -392,8 +574,9 @@ characters/{characterId}
 
 Rules: every rules number the schema references lives in the data files; every schema
 addition ships with a normalization path that back-fills defaults on old characters (never
-crash on old data); every field addition is documented in the project CLAUDE.md's data
-model **in the same change**.
+crash on old data); **state flags that represent a spent once-per-X reset in the same
+normalization pass** that would restore them; every field addition is documented in the
+project CLAUDE.md's data model **in the same change**.
 
 ---
 
@@ -403,16 +586,17 @@ All optional surfaces follow one pattern: a flag in `settings.js`
 (`Settings.<flag>() → !!get("<flag>")`, off by default), a toggle row in Settings & About
 with a one-line description, every related UI checks the flag before rendering, and nav
 tabs for gated modes are hidden by the router when off. Explicit user choice always beats
-role-based defaults (store `true`/`false` distinctly from unset).
+role-based defaults (store `true`/`false` distinctly from unset). A gated route reached
+directly explains what it is and offers to turn it on in place — never a silent redirect.
 
-Standard toggles: one per expansion book · solo mode · GM screen · advanced/GM automation
-(if built).
+Standard toggles: one per expansion book · solo mode · GM screen · manual dice entry ·
+any rules the book gates behind table agreement (§3.22) · advanced/GM automation.
 
 ---
 
 ## 9. Build roadmap — instantiate with checkboxes in the project CLAUDE.md
 
-At Stage C start, write the project's `CLAUDE.md`: this document's §1 and §5–§12 carried
+At Stage C start, write the project's `CLAUDE.md`: this document's §1 and §5–§13 carried
 over, **§1.1 Product Decisions** (the Stage B Q&A answers), §3 replaced by the
 **completed** System Profile (with the checkpoint rulings recorded inline), the file
 tables made real, the **Data Extraction Ledger** (§9.1), this roadmap instantiated with
@@ -431,48 +615,57 @@ values; write the table (paraphrased, cited); **tick the checkbox in the same ch
 and append a changelog row; estimated counts yield to real counts (record them);
 **an unticked box = data not extracted; never build UI against an unticked table.**
 
+**Each ledger row also names the module that will consume the table.** A row whose consumer
+column is empty is a table on its way to being extracted and never called (§0). At the end
+of every phase, the dead-data scan (§11.1) must agree with the ledger.
+
 ### 9.2 Phases — build strictly in order
 
 - **Phase 0 — Foundations:** scaffold all §6 files; extract the **complete, verified**
   core data library per the ledger (multiple sub-phases for large books) — data before
-  features; theme; PWA shell; app shell with router and local storage.
+  features; theme; PWA shell; app shell with router, two-level nav (§6.2) and local storage.
 - **Phase 1 — Creation Wizard(s):** the §3.7 flow with honest §3.4 generation, all §3.5
   derivations, legality validation at every step; the group-entity wizard if §3.8 exists;
-  pregens if published.
+  pregens if published (validated against the formulas, §2.1).
 - **Phase 2 — Core Tracker:** the live sheet — vitals with steppers clamped to true
-  maxima, conditions, inventory/encumbrance, abilities/powers display, flavor + notes +
-  portrait; **persistent resource header on every in-play screen**; **JSON export/import
-  in Settings**; persistence + migration.
+  maxima, conditions with real mechanical teeth, inventory/encumbrance, abilities/powers
+  display, flavor + notes + portrait; **persistent resource header on every in-play
+  screen**; **JSON export/import in Settings**; persistence + migration.
 - **Phase 3 — Dice Engine:** §3.1 natively, wired into sheet skills, weapons, and powers;
   the exact §3.2 opposed sequence; §3.3 currency spends with caps enforced; condition
-  effects auto-applied; push economy enforced; crit/fumble consequences from the book's
-  real tables; ability-embedded automation ("tap to use"); **roll log** (local always,
-  synced when multiplayer; capped; `aria-live`); **rules citations** — every automated
-  surface links to its rules-library entry.
+  effects auto-applied; push economy enforced (two-stage manual entry if chosen);
+  crit/fumble consequences from the book's real tables; ability-embedded automation
+  ("tap to use"); **roll log** (attributed, filterable, capped, `aria-live`); **rules
+  citations** — every automated surface links to its rules-library entry.
 - **🏁 Milestone — First Session Playable:** create character → live sheet → roll tests →
   track resources end-to-end, verified at (or rehearsed as) a real play session.
   **Phase 5 is gated on this milestone** unless the Stage B Q&A promoted multiplayer.
-- **Phase 4 — In-Play Systems:** guided death procedure (§3.10, impossible to run wrong);
-  rests with enforced limits; **scene/session lifecycle engine (§3.12) with confirmation
-  summary + one-step undo**; the **generic progress-task tracker (§3.13)**; the full
-  advancement loop (§3.15) incl. gates; local combat helper with the bestiary.
+- **Phase 4 — In-Play Systems:** guided death procedure (§3.10, impossible to run wrong,
+  with onward routes on every terminal outcome); rests with enforced limits; **lifecycle
+  engine (§3.12) with confirmation summary + one-step undo**, including the environmental
+  checks; the **generic progress-task tracker (§3.13)**; the full advancement loop (§3.15)
+  incl. gates and invented abilities (§3.14a); local combat tracker wired to the dice
+  engine — attacking from a combatant card and applying damage back to it, with no manual
+  re-entry of numbers the app already knows.
 - **Phase 5 — Multiplayer & Sync** *(gated per §1.1)*: Firebase, security rules
   (incl. group-entity write rules), anonymous auth + Google link, campaigns/join codes,
   party overview, shared pools, shared combat with two-way sync, shared tasks + roll log,
   portraits, PWA update toast.
-- **Phase 6+ — Conditional surfaces:** expansion toggles per commitment tier; solo mode;
-  GM screen (party panel, peek sheets, drop-in combatants, hand out damage/conditions,
-  rollable §3.21 reference tables); power-automation engine; advanced automation behind
-  one shared toggle (time clocks, light sources, afflictions — only if the game has them).
-- **Hardening (always):** committed regression-test harness; accessibility pass; the full
-  **rules-accuracy audit** (§11) with every finding closed.
+- **Phase 6+ — Conditional surfaces:** expansion toggles per commitment tier; solo mode
+  (with its procedural framing, §3.20 — not just its tables); GM screen (party panel, peek
+  sheets, drop-in combatants, hand out damage/conditions, rollable §3.21 reference tables,
+  and the book's own "how to build one" guidance); power-automation engine; advanced
+  automation behind one shared toggle.
+- **Hardening (always):** the harnesses of §11.1, the accessibility pass, the §6.2
+  interface rules, and the **audit protocol of §11 run to a clean pass**.
 
 **Per-feature spec format (mandatory for every roadmap item):**
 - **Rule:** the canonical mechanic with exact numbers (cited to the source).
 - **Target:** file · module · function.
-- **Behavior/UI:** what to build and where it appears.
+- **Behavior/UI:** what to build and where it appears — including *where on the screen*
+  relative to §6.2.
 - **Schema:** new fields — name · type · default · location (and §7 updated).
-- **Acceptance:** how to confirm it works in a browser.
+- **Acceptance:** how to confirm it works in a browser, and which harness check pins it.
 
 ---
 
@@ -489,42 +682,115 @@ and append a changelog row; estimated counts yield to real counts (record them);
 4. **Verify in a real browser.** Every phase/feature is verified headless (Playwright,
    Firebase requests aborted) before being marked complete: the flow works end-to-end
    with **zero console errors**. "Syntax is valid" is not verification.
-5. **Committed regression harness.** `npm test` boots the app headless and asserts at
-   minimum: boot/wiring smoke (every tab, zero JS errors); §3.5 derivation invariants
-   across generated + pregen characters; dice-engine invariants (incl. the §3.2 opposed
-   sequence and §3.3 caps/decay); every automated ability opens a non-empty resolution;
-   inventory/encumbrance math; lifecycle-event bundles fire completely and undo cleanly;
-   zero horizontal overflow at 360/390px on every screen; a11y basics; and every closed
-   audit finding. Every bug fix adds a check that would catch its return.
-6. **Cache discipline.** Any shipped-file change bumps `CACHE_VERSION`.
-7. **Root-cause fixes.** Debug to the actual cause before editing; record cause + fix in
+5. **Committed regression harness.** See §11.1 for the required checks. Every bug fix adds
+   a check that would catch its return.
+6. **Prove the guard bites.** A regression check written after a fix is worthless until you
+   have seen it fail. Reintroduce the defect, watch the check go red, restore the fix. Two
+   guards in the reference build passed happily against the bug they were written for —
+   one matched on the wrong whitespace, one ran in a state where the bug could not occur.
+7. **Cache discipline.** Any shipped-file change bumps `CACHE_VERSION`.
+8. **Root-cause fixes.** Debug to the actual cause before editing; record cause + fix in
    the changelog. No symptom-patching.
-8. **Scope guard.** Core rules (+ toggled supplied expansions) only. No setting/adventure
+9. **Scope guard.** Core rules (+ toggled supplied expansions) only. No setting/adventure
    content. Nothing invented presented as official — any house convenience is explicitly
-   labeled a house aid.
-9. **Module discipline.** Respect §6.1 responsibilities; export/import explicitly; split
-   a module that outgrows its job along the same lines.
+   labeled a house aid (§2.2).
+10. **Module discipline.** Respect §6.1 responsibilities; export/import explicitly; split
+    a module that outgrows its job along the same lines.
+11. **One record, not two.** When two surfaces generate the same kind of thing (a GM
+    building an adventure site and a solo player generating one), they share **one record
+    shape, one builder and one renderer**, with a migration folding any legacy shape in.
+    Two shapes for one concept is a bug with a delayed fuse.
+12. **Counters live in one place.** A count that drives a procedure (which countdown step
+    is next, how many rolls a talent has left) is stored once and read by every path. Two
+    paths deriving the same count from different sources will disagree, and capped history
+    lists cannot be counted at all.
 
 ---
 
-## 11. Rules-accuracy audit — mandatory before "done"
+## 11. Audit protocol — mandatory before "done"
 
-Re-verify the finished app against the rulebook:
+One audit pass is not enough. In the reference build, **eleven passes** were required, and
+the last four still found real defects — including four screens whose primary action was
+off-screen and a rule that had been inert since Phase 3. Run the passes below in order,
+repeat the cycle until a full cycle produces nothing, and record everything in
+`docs/AUDIT.md` as numbered findings (**Rule / Target / Fix / Why it mattered**) plus a
+**verified-clean list** so later passes do not re-litigate settled ground.
 
-- **Data values:** spot-check every category; fully check every formula and every
-  creation table.
-- **Engine behavior — audit hardest here:** gating, options, limits, and sequencing
-  (push/re-roll legality, rest once-per-X, crit option choices, multi-attack counts,
-  advantage stacking, restriction enforcement, **the exact opposed-test sequence incl.
-  ties and resource banking**, **currency caps + decay schedules**, **once-per-scene
-  escape hatches**, **lifecycle boundary bundles**, **one-advance-per-X gates**). In the
-  reference projects the data layer audited essentially flawless while nearly all real
-  findings were engine behaviors that deviated from the book — expect the same.
-- Document findings as a numbered work-list (**Rule / Target / Fix / Why**); close each
-  with a regression check; record what was **verified clean** so future audits don't
-  re-litigate it.
-- Re-verification method: pull the app's value from the data files, query the source for
-  the canonical value, compare; corroborate surprising answers before editing.
+### 11.1 The three harnesses — build these first
+
+**A. Unit + data harness (`npm test`, seconds).**
+- **Parses every source file first.** `node --check` each `src/*.js` and `data*.js`, and
+  fail by filename. A missing paren in a screen module does not throw in the browser — it
+  presents as a screen that never renders and a test run that hangs. This check costs one
+  second and saves an hour.
+- §3.5 derivation invariants across generated + pregen characters (and the errata list).
+- Dice-engine invariants: the §3.2 opposed sequence, §3.3 caps and decay, push legality,
+  the death procedure's terminal states.
+- Table completeness: every D66/D100 table has its full row count and unique rows; every
+  range table covers its range.
+- Every closed audit finding.
+
+**B. Browser smoke (Playwright, ~1 minute).** Boots the app and asserts:
+- Every route renders a heading with zero console errors.
+- Zero horizontal overflow at 320/360/390px.
+- **No stray `null`/`undefined`/`NaN`/`[object Object]` text node** anywhere on any route.
+- Nothing at the foot of a screen sits under the fixed tab bar (skipping controls inside
+  collapsed panels — they keep their last layout position and read as buried while being
+  unreachable).
+- **Each screen's primary action is above the fold without scrolling** (§6.2.2).
+- Section nav reaches every sibling route and marks the current one; live-state badges
+  appear only when the state is live.
+- No checkbox has an effective tap target under 40px (measure the wrapping label).
+- The end-to-end walk: wizard → sheet → roll → push → damage → condition → log.
+
+**C. Interaction audit (Playwright, ~1 minute).** Visits every route and **clicks every
+visible control in isolation** — resetting storage and re-rendering between clicks — and
+flags three things: a JS error, a control that cannot be clicked, and a control that
+changes **nothing** (no re-render, no modal, no toast, no storage write, no navigation).
+The no-op check is what catches a button wired to a handler that returns early.
+**Poll for the change rather than waiting a fixed interval**; a fixed wait loses the race
+with a handler that opens a modal and manufactures findings that reproduce nowhere.
+
+### 11.2 Pass types — run all of them, in this order
+
+1. **Dead-data scan (mechanical).** Two scripts: *every export nothing else imports*, and
+   *every named import a file never uses*. Triage each hit: provenance constant (fine),
+   redundant duplicate (delete or note), or **a rule the engine never reads** (a finding).
+   This pass alone produced 22 findings in one reference cycle. Run it first, every cycle.
+2. **Rules-file read-through.** Read the distilled `docs/rules/*.md` section by section
+   against the engine, asking of each sentence: *where does this happen in code?* This
+   catches what the scans cannot — rules that are implemented but implemented wrongly, and
+   rules never extracted in the first place. Where the rules file and the source disagree,
+   **the source wins and the rules file is corrected** — and where a distilled file and the
+   data file disagree, check the source before assuming the code is wrong.
+3. **Ability sweep.** List every ability whose effect is `rule` rather than `dice` (§3.14a)
+   and find each one's home in the engine. Anything without a home is inert.
+4. **Interaction audit** (harness C).
+5. **Measured layout.** A probe seeds a realistic mid-session state and records, per route:
+   document height in viewports, control count, **the scroll offset of the primary action**,
+   and every tap target's effective size. Read the table, not the screens. Four buried
+   primary actions survived ten passes of reading and fell out of one table.
+6. **Stress state.** Re-run the probe with what a table actually accumulates by session
+   three: a full party, several conditions and a full pack each, ten combatants, a spent
+   pacing deck, a full roll log, several adventure sites. Screens that are fine empty
+   buckle here — a hundred log entries is fifteen phone screens.
+7. **Flow walk.** Play a whole session through the app and ask at each step: *what do I tap
+   next, and how many taps is it?* Look specifically for terminal states with no onward
+   route (§6.2.4), procedures that require remembering a screen, and state that is invisible
+   from where you need it.
+
+### 11.3 Where the findings actually are
+
+- **Data values audit essentially clean.** Spot-check every category; fully check every
+  formula and every creation table; then stop looking there.
+- **Engine behaviour is where the bugs live** — gating, options, limits and sequencing:
+  push legality, rest once-per-X, crit option choices, multi-attack counts, the exact
+  opposed sequence including ties and resource banking, currency caps and decay, once-per-
+  scene escape hatches, lifecycle bundles, one-advance-per-X gates, and **every rule that
+  costs a turn** (reactions, freezing, stuns) — that last category is written as prose in
+  three places and enforced in none, over and over.
+- **Re-verification method:** pull the app's value from the data files, query the source
+  for the canonical value, compare; corroborate surprising answers before editing.
 
 ---
 
@@ -532,14 +798,41 @@ Re-verify the finished app against the rulebook:
 
 - Extract **numbers and mechanics**; **paraphrase all effect/flavor text concisely —
   never copy rules prose verbatim.** No setting, adventure, art, or logo content.
+- House aids are labelled as such in the UI and isolated in their own files (§2.2).
 - The generated app is a **personal play aid** built from the user's own books. State in
   the README that if the user publishes or distributes it, licensing is their
   responsibility, and that openly licensed material (an SRD, ORC/CC content) is the safe
-  basis for anything public.
+  basis for anything public. If the source is a transcription of a commercial book, the
+  repository stays private.
 
 ---
 
-## 13. Kickoff Prompt — copy-paste this to start a project
+## 13. Known defect classes — check for each by name
+
+Every one of these shipped in a reference build and was caught late. Grep for your own
+version of each before declaring a phase done.
+
+| | Defect | How it hides | The check |
+|---|---|---|---|
+| D-1 | `node.append(x)` where `x` can be null renders the text `null` | Only in the state where the value is absent | Text-node scan (§11.1 B) |
+| D-2 | A toggle sets a flag nothing reads (full auto, ambush, a stance) | The UI describes the rule perfectly | Dead-data scan; grep the flag |
+| D-3 | A `rule`-kind ability is displayed and never fires | It appears on the sheet | Ability sweep (§11.2.3) |
+| D-4 | A state field is written and never read (`frozen`, `stunned`) | Nothing visibly breaks | Dead-data scan |
+| D-5 | Two counters for one procedure disagree | Only after both paths are used | One-record rule (§10.12) |
+| D-6 | A degradable resource has no repair path | Nobody degrades it in testing | Flow walk |
+| D-7 | A terminal outcome offers no next step | The modal reads as complete | Flow walk (§6.2.4) |
+| D-8 | The primary action is below the fold | You always scroll during development | Measured layout (§11.2.5) |
+| D-9 | A list grows without bound | Fine with three entries | Stress state (§11.2.6) |
+| D-10 | An inline style overrides the stylesheet (13px checkboxes) | Looks deliberate | Tap-target measurement |
+| D-11 | A wrapping value straddles its label in a flex row | Only with long text | Definition rows (§6.2.7) |
+| D-12 | An archetype exception is not branched on everywhere | The common path works | §3.10a checklist |
+| D-13 | Two surfaces generate the same record in two shapes | Each works alone | One-record rule (§10.11) |
+| D-14 | A guard passes against the bug it was written for | Green is reassuring | Prove it bites (§10.6) |
+| D-15 | A fixed wait in a harness manufactures a finding | Fails once in ten runs | Poll, don't wait |
+
+---
+
+## 14. Kickoff Prompt — copy-paste this to start a project
 
 > Copy the block below into a fresh chat along with this template file and (if available)
 > the rulebook source. It is kept in sync with this template by design — if you edit one,
@@ -548,10 +841,10 @@ Re-verify the finished app against the rulebook:
 ```
 Role: You are an Expert Software Architect and AI Project Manager.
 
-Context: I am providing "RPG Player-Character App — Autonomous Build Instructions" (v2),
-which defines a strict three-stage execution order (A: Ingest & Extract, B: Checkpoint +
-Product Q&A, C: Autonomous Build) for building an installable HTML5/vanilla-JS RPG
-companion app.
+Context: I am providing "RPG Player-Character App — Autonomous Build Instructions" (v3),
+which defines a four-stage execution order (A: Ingest & Extract, B: Checkpoint + Product
+Q&A, C: Autonomous Build, D: Audit to done) for building an installable HTML5/vanilla-JS
+RPG companion app.
 
 Objective: Guide me through Stage A and Stage B so we generate the project's canonical
 CLAUDE.md — the completed System Profile, the content inventory, the T-numbered Data
@@ -567,15 +860,20 @@ Rules & Constraints:
    and corroborate every surprising value with a second, differently-phrased query. For
    sequential procedures (opposed tests, death, extended tasks, lifecycle boundaries),
    get the EXACT step-by-step rule including ties and edge cases — never a summary.
-3. Bring questions to me only for: (a) genuine rules ambiguities, each with your proposed
+3. Watch for corrupted tables. If the source is a transcription, multi-column tables are
+   probably de-interleaved and unrecoverable. Do not reconstruct them — list them at the
+   checkpoint and ask me for a photo of those pages.
+4. Bring questions to me only for: (a) genuine rules ambiguities, each with your proposed
    ruling; (b) the standard Stage B product-decision questions (usage mode, my seat at
    the table, dice input, expansion commitment tiers, table device, theme default).
    If NO digital source exists, instead interview me through the §3 System Profile
    slot by slot.
-4. Strictly one question at a time. Wait for my answer before the next. Never a list.
-5. No assumptions: never substitute training-data memory of the game for the source. A
+5. Strictly one question at a time. Wait for my answer before the next. Never a list.
+6. No assumptions: never substitute training-data memory of the game for the source. A
    missing value gets queried, then asked, then marked blocked — never guessed.
-6. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions —
+7. Every ledger row names the module that will consume the table. A table with no
+   consumer is a table that will be extracted and never called.
+8. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions —
    including the Data Extraction Ledger with every box unticked — then stop and await my
    go-ahead for Stage C.
 
@@ -589,5 +887,6 @@ source).
 
 | Version | Date | Change |
 |---|---|---|
+| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 interface rules (two-level nav, pinned action bar, live-state badges, terminal routes, density, tap targets, definition rows, explain notes, next-step prompt) — each one a measured defect. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §13 catalogue of fifteen named defect classes. |
 | v2 | 2026-07-06 | Lessons from the Dune: Adventures in the Imperium reference build: new §3 slots (opposed-test sequence 3.2, meta-currencies 3.3, group entity 3.8, scene/session lifecycle 3.12, extended/progress tasks 3.13); mandatory Data Extraction Ledger (§9.1); Stage B split into checkpoint + standard product Q&A (§4.2); local-first default with First Session Playable milestone gating Phase 5; mandatory roll log, JSON export/import, persistent resource header, lifecycle confirm+undo, rules-citation links; notebook extraction warning about summarized procedures; kickoff prompt embedded (§13). |
 | v1 | — | Original template from the first reference implementation. |
