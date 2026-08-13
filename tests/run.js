@@ -784,6 +784,17 @@ await test("cold bites per Shift, and per Stretch when it is extreme", () => {
   assert.equal(store.getCharacter(ch.id).state.flags.cold, false, "and clears once they are out of it");
 });
 
+await test("Tilt degrees split the ranks the way the book's table does", () => {
+  const degreeOf = (rank) => soloMod.readTilt({ suit: "hearts", rank }).degree;
+  assert.deepEqual(["2", "3"].map(degreeOf), ["Low", "Low"]);
+  assert.deepEqual(["4", "5", "6"].map(degreeOf), ["Medium", "Medium", "Medium"]);
+  assert.deepEqual(["7", "8", "9"].map(degreeOf), ["High", "High", "High"]);
+  assert.deepEqual(["10", "J", "Q", "K", "A"].map(degreeOf), Array(5).fill("Extreme"));
+  assert.equal(solo.RANKS.length, 13, "every rank lands in exactly one degree");
+  assert.equal(soloMod.readTilt({ suit: "clubs", rank: "J" }).good, false, "clubs are bad news");
+  assert.equal(soloMod.readTilt({ suit: "diamonds", rank: "J" }).good, true);
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

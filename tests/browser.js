@@ -230,6 +230,25 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const logged = await page.evaluate(() => JSON.parse(localStorage.getItem("electricState.v1")).rollLog.length);
   check(logged >= 1, "roll was not written to the log");
 
+  // a worn neurocaster takes dice off the pool, and unticking it gives them back
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    const ch = Object.values(db.characters)[0];
+    ch.neurocaster = "stimulusTlePro";
+    ch.state.wearingCaster = true;
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(120);
+  const withCaster = await page.textContent("#screen");
+  check(/Neurocaster\s*[-−]2/.test(withCaster), "the worn neurocaster did not reach the pool");
+  const poolWith = Number((withCaster.match(/(\d+) base \+ \d+ gear/) || [])[1]);
+  await page.click('#screen input[aria-label="Wearing the neurocaster"]');
+  await page.waitForTimeout(120);
+  const poolWithout = Number(((await page.textContent("#screen")).match(/(\d+) base \+ \d+ gear/) || [])[1]);
+  check(poolWithout > poolWith, `untick did not restore dice (${poolWith} then ${poolWithout})`);
+
   await page.evaluate(() => { location.hash = "#/log"; });
   await page.waitForTimeout(60);
   const logText = await page.textContent("#screen");

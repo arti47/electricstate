@@ -5,7 +5,7 @@ import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EM
          THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
          PERSONAL_THREAT_COUNTDOWN, START_SHIFT_BY_SUIT, DESTINATIONS, SOLO_PERSONAL_THREATS,
          NINETIES_VEHICLES, SOLO_UNSTICK, SOLO_PREP_STEPS, SOLO_ARCHETYPE_HOOKS,
-         SOLO_PRINCIPLES } from "../data-solo.js";
+         SOLO_PRINCIPLES, INTERNAL_THREATS_ALLOWED } from "../data-solo.js";
 import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney, listCharacters } from "./store.js";
@@ -144,6 +144,32 @@ function build(rerender) {
   const act = (label, fn, primary = false) =>
     el("button", { class: "btn" + (primary ? " btn-primary" : ""), onclick: fn }, label);
 
+  // Solo runs two to four Travelers with one in the spotlight per Stop, rotated so
+  // everyone leads at least one.
+  const cast = listCharacters();
+  if (cast.length > 1) {
+    const leadId = s.leadId && cast.some((c) => c.id === s.leadId) ? s.leadId : cast[0].id;
+    const led = s.ledStops || {};
+    const lead = cast.find((c) => c.id === leadId);
+    const next = cast[(cast.findIndex((c) => c.id === leadId) + 1) % cast.length];
+    wrap.append(phase("Whose Stop is this?",
+      "One Traveler leads each Stop and the others follow. Rotate, so each of them gets a Stop of their own.",
+      el("div", { class: "card-row" },
+        el("strong", {}, lead?.name || "Unnamed"),
+        el("span", { class: "faint" }, `${led[leadId] || 0} led so far`)),
+      el("div", { class: "faint" },
+        cast.filter((c) => !led[c.id]).length
+          ? `Still waiting for a Stop of their own: ${cast.filter((c) => !led[c.id]).map((c) => c.name).join(", ")}.`
+          : "Everyone has led at least one Stop."),
+      row(
+        act("Hand it to " + (next?.name || "the next one"), () => {
+          write({ leadId: next.id, ledStops: { ...led, [next.id]: (led[next.id] || 0) + 1 } });
+          rerender();
+        }, true),
+        el("a", { class: "btn", href: `#/sheet/${leadId}` }, "Their sheet"))));
+    if (!s.leadId) write({ leadId, ledStops: { ...led, [leadId]: led[leadId] || 1 } });
+  }
+
   // ---------------------------------------------------------------- 1 prepare
   wrap.append(phase("1 · Before you set out",
     "Start, destination, route and vehicle. Leave the Stops unplanned — you generate each one as you arrive.",
@@ -249,7 +275,21 @@ function build(rerender) {
         const read = readTilt(card);
         write({ deck });
         logEvent("Conversation", `${subject} — ${read.label}`, card); rerender();
-        await modal({ title: "Conversation", body: el("div", {}, el("p", {}, `Subject: ${subject}`), el("p", { class: "faint" }, `How it goes: ${read.label}`)), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+        const go = await modal({
+          title: "Conversation",
+          body: el("div", {}, el("p", {}, `Subject: ${subject}`),
+            el("p", { class: "faint" }, `How it goes: ${read.label}`),
+            listCharacters().length > 1
+              ? el("p", { class: "faint" }, read.good
+                  ? "A good one between Travelers lowers the Tension between them."
+                  : "A bad one between Travelers raises the Tension between them.")
+              : null),
+          actions: [
+            listCharacters().length > 1 ? { label: "Adjust Tension", value: "tension" } : null,
+            { label: "Good", value: true, class: "btn-primary" }
+          ].filter(Boolean)
+        });
+        if (go === "tension") location.hash = "#/tension";
       }),
       act("Traveler event", async () => {
         const ev = TRAVELER_EVENTS[d6() - 1];
@@ -299,7 +339,11 @@ function build(rerender) {
   }
 
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "How to play this way"),
-    el("ul", { class: "list" }, ...SOLO_PRINCIPLES.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
+    el("ul", { class: "list" }, ...SOLO_PRINCIPLES.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x)))),
+    el("p", { class: "faint" }, "Map a Stop as a mind map rather than a floor plan: circle where you are, draw lines to places as you find them, and dot the lines to somewhere you have only heard about. Three or four places visible from the Blocker is enough to open."),
+    INTERNAL_THREATS_ALLOWED
+      ? el("p", { class: "faint" }, "Playing alone also opens up Threats the group rules avoid — addiction, grief, the demons that are already inside. Nobody loses agency to them but you.")
+      : null));
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "When you are stuck"),
     el("ul", { class: "list" }, ...SOLO_UNSTICK.map((x) => el("li", {}, el("div", { style: "padding:6px 4px" }, x))))));
   return wrap;

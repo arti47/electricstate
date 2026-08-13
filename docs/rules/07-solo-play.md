@@ -29,7 +29,7 @@ Personal Threat Countdown (improvised to the Threat): 1 the Threat appears, 2 th
 ## Tilts
 Draw one card to judge whether an element helps or harms, and how much.
 - **Clubs / Spades** — bad for the Travelers. **Hearts / Diamonds** — good.
-- Degree by rank: 2–3 low, 4–6 medium, 7–10 high, J/Q/K/A extreme (ace highest).
+- Degree by rank: 2–3 low, 4–6 medium, 7–9 high, 10–Ace extreme (ace highest). The transcript's table is de-interleaved and cannot settle the split on its own; the secondary summary corroborates this one.
 - Tilts are optional and yield to anything already established.
 
 ## Generators

@@ -161,3 +161,56 @@ only one of the two had a Countdown at all — which is the Stop's entire escala
 Two harness bugs surfaced during this pass and were fixed rather than worked around: a
 selector matching "Blocker resolved" when it meant the "Blocker" table button, and a modal
 parser still expecting the old countdown title.
+
+## Seventh pass — the rules the engine never read
+
+Method changed this time. Rather than re-reading screens, two scripts walked the codebase:
+one listing every export nothing else imports, one listing every named import a file never
+uses. Both are proxies for the same defect the earlier passes kept finding — data extracted
+faithfully, then never called. The scripts found it in a minute where reading had taken a
+pass each.
+
+Then the distilled rules files were read section by section against the engine, which caught
+the rest.
+
+| # | Finding | Fix |
+|---|---|---|
+| 27 | **Full auto was a decorative toggle.** `pending.fullAuto` was set and never read: no second or third burst. | A hit offers the next burst, up to three, each its own roll and logged as such. |
+| 28 | **Ambush cost dice but changed nothing.** The target could still fight back, and it was offered against people already in active combat. | An ambushed target cannot react; the toggle is refused while the combat tracker is running, since everyone in it is already fighting. |
+| 29 | **The neurocaster's real-world penalty was documented and never charged.** `NEUROCASTER_DEFAULT_PENALTY` was unimported; nothing tracked whether one was even on. | `state.wearingCaster`, toggled on the sheet and set when a neurocasting session starts, feeds −2 dice (−1 for a Stimulus GO) into the pool, defaulting to applied and unticked for anything needing neither eyes nor legs. |
+| 30 | **A reaction was free.** Three places said it costs the defender their next turn; nothing marked it. | `forfeitNextTurn` on the combatant; `nextRound` starts them spent and says why. |
+| 31 | **The taser had no mechanism** — only a sentence describing one. | Strength at −2, and a failure forfeits their next turn through the same flag. |
+| 32 | **Freezing was recorded and never surfaced.** `state.frozen` was written in two places and read in none. | Freezing and diving clear of a blast both forfeit the next turn, and the sheet shows it with a control to clear it once sat out. |
+| 33 | **Nothing charged the −2 for acting while driving.** | A Circumstances card on the dice screen, beside the neurocaster. |
+| 34 | **A Spin never cascaded.** The accident table's second-worst result asks for a control roll and a re-roll at +2; `ACCIDENT_REROLL_MODIFIER` was unimported and the parameter unused. | The Spin asks for the roll and re-rolls at +2 on a failure. |
+| 35 | **Lone wolf could not reduce Tension alone**, which is the whole talent. Also, `reduceTension` accepted the same Traveler twice. | `reduceTensionAlone`, gated on the talent; self-pairing refused. |
+| 36 | **The solo personal Threat ran on two counters** — the button counted events, the card path counted history, and both lists are capped. | One counter on the Journey, shared by both routes, reporting when the Threat has played out. |
+| 37 | **A card-fired Stop Countdown ignored the live Stop**, falling back to the D66 table the sixth pass had already superseded. | Both routes call `nextStopCountdown`. |
+| 38 | **Four talents were inert**, all of them `effect.kind: "rule"`: Dirty fighter, Menacing, Techno babbler, Neuroresistant. | Unarmed damage flows through a shared `baseDamage`; the two substitution talents appear as attribute swaps on the dice screen; Neuroresistant gets its single Wits roll to leave, spent once and restored when Hope climbs clear of Bliss. |
+| 39 | **Animals were unreachable.** `ANIMALS` never left the data file, so the guard dog could not be put on the table and would have defended on a guessed pool. | A shared bestiary lookup behind the GM reference, the combat drop-in and `defencePool`. |
+| 40 | **Avatar combat did not cut anybody.** It was a Difficulty-1 progress task; the rules make it damage the *user's* Health with a distinct disconnect-and-trauma outcome. | Damage lands on Health; Incapacitation throws them out, comes round a Stretch later on 1 Health, and routes to the trauma roll with no death rolls in between. |
+| 41 | **Scripted experiences** could not inflict Bliss, and `BLISS.resistExperience` was unused. | A control on the neuroscape screen, with the Wits roll that cancels a point per 6. |
+| 42 | **Helpers inside a neuroscape** were not modelled, though the roller has had helpers since the second pass. | A stepper capped at three, feeding the roll. |
+| 43 | **Cold was a dead flag.** `flags.cold` blocked healing, the hazards screen said it lived on the Time screen, and the Time screen never rolled it. | A Strength roll on the Shift boundary, or the Stretch boundary when it is extreme, setting and clearing the flag. |
+| 44 | **Damage to someone already down resumed the old death-roll tally** instead of restarting it, and left a stabilization in place. | Both reset on any further damage. |
+| 45 | **A Nurse could not help against disease**, though the rule adds their Wits successes to the patient's. | A nurse picker on the disease roll. |
+| 46 | **A firearm at Engaged still rolled Agility.** The book switches it to Strength. | A hint with a one-tap switch, rather than silently overriding the player's choice. |
+| 47 | **Solo had no spotlight rotation**, though Chapter 8 opens by asking for one. | A lead Traveler per Stop, with a hand-over control and a note of who has not led yet. |
+| 48 | Guidance extracted and never shown: solo principles, the mind-map advice, internal Threats, the book's per-archetype Goal and Threat hooks, Threat anatomy, goal directions, special abilities, mechanical NPC quirks, sessions per Stop. | Surfaced on the solo and GM screens where each belongs. |
+
+## A data error, found by testing the rules file against the data
+
+`docs/rules/07-solo-play.md` had the Tilt degrees as 7–10 high and J–A extreme. The data file
+says 7–9 high and 10–A extreme, and the secondary summary agrees with the data. The
+transcript's own table is de-interleaved and cannot settle it either way, so the rules file was
+the outlier and was corrected. A regression test now pins the split.
+
+## Harness
+
+The button audit reported one no-op that did not reproduce: a fixed 220 ms wait lost a race
+with a handler that opens a modal. It now polls for up to 1.5 s, so a slow machine cannot
+manufacture a finding. Three consecutive clean runs after the change.
+
+## Result
+
+71 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.

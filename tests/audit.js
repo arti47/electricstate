@@ -103,15 +103,20 @@ for (const route of ROUTES) {
       findings.push({ route, label, kind: "unclickable", detail: err.message.split("\n")[0] });
       continue;
     }
-    await page.waitForTimeout(220);
-    const after = await snapshot(page);
+    // Poll rather than trusting one fixed wait: a handler that opens a modal can lose a
+    // race with a slow machine and read as a no-op that reproduces nowhere.
+    const differs = (a, b) => a.screen !== b.screen || a.text !== b.text || a.hash !== b.hash ||
+      b.modal || b.toast > a.toast || a.store !== b.store || a.settings !== b.settings;
+    let after = await snapshot(page);
+    for (let waited = 0; waited < 1500 && !differs(before, after); waited += 150) {
+      await page.waitForTimeout(150);
+      after = await snapshot(page);
+    }
 
     const newErrors = errors.slice(errorsBefore);
     if (newErrors.length) findings.push({ route, label, kind: "error", detail: newErrors.join(" | ").slice(0, 200) });
 
-    const changed = before.screen !== after.screen || before.text !== after.text ||
-      before.hash !== after.hash || after.modal || after.toast > before.toast ||
-      before.store !== after.store || before.settings !== after.settings;
+    const changed = differs(before, after);
     // Import JSON opens a native file picker, which is invisible to the page.
     const opensFilePicker = label === "Import JSON";
     if (!changed && !opensFilePicker) {

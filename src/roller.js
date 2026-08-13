@@ -281,6 +281,8 @@ function build(rerender) {
 
   // circumstances that cost dice wherever you are: the helmet on your head, the wheel in your hands
   const casterPenalty = casterDicePenalty(ch);
+  // Most things you do with a helmet on need eyes or legs, so it starts applied.
+  if (casterPenalty && pending.casterOn === undefined) pending.casterOn = true;
   const circumstances = el("div", { class: "card" }, el("h3", {}, "Circumstances"));
   if (casterPenalty) {
     circumstances.append(toggleRow("Wearing the neurocaster",
@@ -358,6 +360,7 @@ function toggleRow(label, key, blurb, rerender) {
     el("span", {}, el("strong", {}, label), el("div", { class: "faint" }, blurb)),
     el("input", {
       type: "checkbox", style: "width:auto;min-height:auto", checked: !!pending[key],
+      "aria-label": label,
       onchange: (e) => { pending[key] = e.target.checked; pending.result = null; rerender(); }
     }));
 }

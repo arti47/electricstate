@@ -163,6 +163,19 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   (All · each Traveler · Table for rolls that belong to nobody), stamps each row with who and when,
   and can be cleared. Rolls with no person behind them — initiative, vehicle accidents, chase
   obstacles — group under Table by design.
-- Verification: `npm test` = 61 invariants + browser smoke; `node tests/audit.js` clicks every
+- **Seventh audit pass (22 findings, all closed).** Method: two scripts — exports nothing
+  imports, imports nothing uses — then the distilled rules files read section by section against
+  the engine. Recurring defect confirmed once more: data extracted, never called. Closed full
+  auto, ambush suppressing reactions, the neurocaster's worn penalty, reactions costing a turn,
+  the taser, freezing, driving, the Spin cascade, Lone wolf alone, two desynced solo Countdown
+  counters, four inert rule-talents, the animal bestiary, avatar combat damaging the user,
+  scripted-experience Bliss, neuroscape helpers, cold exposure, death rolls restarting, the
+  Nurse's disease assist, firearms at Engaged, and the solo spotlight rotation. See
+  `docs/app/AUDIT.md`.
+- Corrected `docs/rules/07-solo-play.md`: Tilt degrees are 7–9 high and 10–Ace extreme (data and
+  secondary summary agree; the transcript's table is de-interleaved and cannot settle it).
+- `tests/audit.js` polls for up to 1.5s after each click instead of waiting a fixed 220ms — the
+  fixed wait manufactured a no-op finding that reproduced nowhere.
+- Verification: `npm test` = 71 invariants + browser smoke; `node tests/audit.js` clicks every
   control on every screen and flags errors, unclickable controls and silent no-ops.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.
