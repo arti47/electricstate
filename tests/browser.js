@@ -509,6 +509,36 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(100);
   check(/What has happened/.test(await page.textContent("#screen")), "solo events did not persist across a reload");
 
+  // A Stop's setting values are sentences. Laid out as a card-row they centre against
+  // their label and a two-line value straddles it, so they are stacked definition rows.
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    db.journey = { ...(db.journey || {}), activeStopId: "s-fmt", stops: [{
+      id: "s-fmt", name: "The Stop", createdAt: Date.now(),
+      setting: { terrain: "Forest", population: "Densely populated. Hundreds or even thousands.",
+        communications: "Isolated. Small road passing by. One neurocaster terminal.",
+        size: "Small. Several houses and facilities within easy walking range.",
+        prosperity: "Prosperous. People live well, roads are cared for.", weather: "Unusually hot or cold" },
+      blocker: "Road covered by sand or fallen rocks", need: "Medicine",
+      conflict: { a: "Store owner", b: "Neurine addicts", over: "Money" },
+      locations: ["Market"], mood: ["Neurograph towers"],
+      countdown: ["A", "B", "C"], countdownProgress: 0, threat: null, resolved: false
+    }] };
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/solo"; });
+  await page.waitForTimeout(150);
+  const defs = await page.evaluate(() =>
+    [...document.querySelectorAll("#screen .def")].map((d) => {
+      const k = d.querySelector(".def-key").getBoundingClientRect();
+      const v = d.querySelector(".def-value").getBoundingClientRect();
+      return { key: d.querySelector(".def-key").textContent, straddles: v.top < k.bottom - 1 };
+    }));
+  check(defs.length === 6, `Stop setting rendered ${defs.length} rows, expected 6`);
+  check(defs.every((d) => !d.straddles),
+    `a Stop value overlaps its label: ${defs.filter((d) => d.straddles).map((d) => d.key).join(", ")}`);
+
   // gm: roll up a Stop
   await page.evaluate(() => { location.hash = "#/gm"; });
   await page.waitForTimeout(80);

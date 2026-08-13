@@ -207,6 +207,16 @@ a { color: inherit; }
   box-shadow: var(--shadow);
 }
 .card-row { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
+
+/* Label above, value below. A card-row centres a wrapping value against its label, so a
+   two-line sentence straddles it — fine for "Hope 3/5", unreadable for a Stop's setting. */
+.def { padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.def:first-of-type { border-top: 0; }
+.def-key {
+  display: block; margin-bottom: 1px;
+  font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint);
+}
+.def-value { display: block; }
 .muted { color: var(--ink-dim); }
 .faint { color: var(--ink-faint); font-size: .82rem; }
 .mono { font-family: var(--mono); }

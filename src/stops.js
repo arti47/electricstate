@@ -95,8 +95,8 @@ export function resolveStop(id) {
 /** Shared renderer, so a Stop looks the same whoever rolled it. */
 export function stopCard(stop, { onCountdown, onResolve, compact = false } = {}) {
   if (!stop) return null;
-  const row = (k, v) => el("div", { class: "card-row", style: "padding:3px 0" },
-    el("span", { class: "faint" }, k), el("span", { style: "text-align:right" }, v));
+  const row = (k, v) => el("div", { class: "def" },
+    el("span", { class: "def-key" }, k), el("span", { class: "def-value" }, v));
 
   const card = el("div", { class: "card" },
     el("div", { class: "card-row" },
