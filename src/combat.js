@@ -166,7 +166,7 @@ function build(rerender) {
       el("span", {}, upNext ? el("strong", {}, `${upNext.name} is up`) : el("strong", {}, "Everyone has gone")),
       el("span", { class: "faint" }, upNext ? `${waiting} still to act` : "End the round")),
     el("p", { class: "faint" }, `One move and one action, or two moves — the move comes first. A reaction costs your next turn but covers every attack until then.`),
-    el("div", { class: "btn-row" },
+    el("div", { class: "btn-grid" },
       el("button", {
         class: "btn" + (upNext ? "" : " btn-primary"), onclick: () => { nextRound(c); rerender(); }
       }, "Next round"),
@@ -229,28 +229,37 @@ function combatantCard(combatant, c, rerender) {
   }
 
   card.append(el("div", { class: "card-row", style: "margin-top:6px" },
-    el("span", { class: "faint" }, `Zone ${combatant.zone}`),
-    el("div", { class: "btn-row" },
-      el("button", { class: "btn", "aria-label": `${combatant.name} back a zone`, onclick: () => update({ zone: Math.max(1, combatant.zone - 1) }) }, "←"),
-      el("button", { class: "btn", "aria-label": `${combatant.name} forward a zone`, onclick: () => update({ zone: combatant.zone + 1 }) }, "→"))));
+    el("span", { class: "faint" }, "Zone"),
+    el("div", { class: "stepper" },
+      el("button", {
+        class: "stepper-btn", "aria-label": `${combatant.name} back a zone`,
+        disabled: combatant.zone <= 1,
+        onclick: () => update({ zone: Math.max(1, combatant.zone - 1) })
+      }, "←"),
+      el("span", { class: "stepper-value" }, combatant.zone),
+      el("button", {
+        class: "stepper-btn", "aria-label": `${combatant.name} forward a zone`,
+        onclick: () => update({ zone: combatant.zone + 1 })
+      }, "→"))));
 
   // Dual-realm: a character acts in one realm per round and is inert in the other.
   if (ch?.neurocaster) {
     card.append(el("div", { class: "card-row" },
-      el("span", { class: "faint" }, "This round acts in"),
-      el("div", { class: "btn-row" },
+      el("span", { class: "faint" }, "Acts in"),
+      el("div", { class: "seg", role: "group", "aria-label": "Realm this round" },
         ...["real", "neuroscape"].map((realm) => el("button", {
-          class: "btn" + (combatant.realm === realm ? " btn-primary" : ""),
+          class: "seg-item" + (combatant.realm === realm ? " is-on" : ""),
+          "aria-pressed": combatant.realm === realm ? "true" : "false",
           onclick: () => update({ realm })
-        }, realm === "real" ? "The world" : "The network")))));
+        }, realm === "real" ? "World" : "Network")))));
     if (combatant.realm === "neuroscape") {
       card.append(el("p", { class: "faint" },
         `Inert out here until ${poss(combatant)} next turn — ${subj(combatant)} cannot answer an attack in the real world.`));
     }
   }
 
-  card.append(el("div", { class: "btn-row", style: "margin-top:8px" },
-    el("button", { class: "btn btn-primary", onclick: () => update({ acted: true }) }, `${Subj(combatant)} has acted`),
+  card.append(el("div", { class: "btn-grid", style: "margin-top:8px" },
+    el("button", { class: "btn btn-primary", onclick: () => update({ acted: true }) }, "Turn spent"),
     el("button", {
       class: "btn", onclick: async () => {
         const { setTarget } = await import("./roller.js");

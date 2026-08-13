@@ -133,12 +133,14 @@ a { color: inherit; }
 
 /* ---------------------------------------------------------------- vitals */
 .vitals {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  /* Flex, not grid: auto-fit leaves an empty cell whenever the tile count is not a
+     multiple of the column count, and a blank slab in the header reads as a bug. */
+  display: flex; flex-wrap: wrap;
   gap: 1px; background: var(--line-soft);
   border-bottom: 1px solid var(--line);
   position: sticky; top: 53px; z-index: 15;
 }
-.vital { background: var(--bg-sunk); padding: 6px 8px; text-align: center; }
+.vital { flex: 1 1 60px; background: var(--bg-sunk); padding: 6px 8px; text-align: center; }
 .vital-label { display: block; font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
 .vital-value { font: 600 1.05rem/1.2 var(--mono); }
 .vital.is-danger .vital-value { color: var(--danger); }
@@ -153,7 +155,7 @@ a { color: inherit; }
 
 /* The name of whoever the vitals bar is currently about, and a way to change it. */
 .vital-switch {
-  grid-column: 1 / -1; background: var(--bg-sunk);
+  flex: 1 0 100%; background: var(--bg-sunk);
   display: flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 34px; padding: 6px 10px; width: 100%;
   border: 0; border-bottom: 1px solid var(--line-soft);
@@ -163,19 +165,61 @@ a { color: inherit; }
 button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
 .vital-switch.is-static { cursor: default; color: var(--ink-dim); }
 
-/* The line under a Traveler's name: what they are, and a switch for who they are. */
-.identity { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-
-/* A two-option switch that reads as one control rather than two buttons. */
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
-.seg-item {
-  min-height: 34px; padding: 6px 14px;
-  background: var(--bg-sunk); color: var(--ink-dim);
-  border: 0; cursor: pointer;
-  font: 600 .7rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+/* The line under a Traveler's name: what this one is, and a switch for who. */
+.identity {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap; margin: 0 0 var(--gap);
 }
-.seg-item + .seg-item { border-left: 1px solid var(--line); }
-.seg-item.is-on { background: var(--accent); color: #10120f; }
+.identity > .faint { flex: 1 1 auto; min-width: 0; }
+.identity-pronouns {
+  display: block; margin-top: 2px;
+  font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);
+}
+
+/* A two-option switch: one control, not two buttons. Deliberately quiet — accent is
+   reserved for the thing you press, and a setting is not that. */
+.seg {
+  flex: 0 0 auto;
+  display: inline-flex; border: 1px solid var(--line); border-radius: 999px;
+  overflow: hidden; background: var(--bg-sunk);
+}
+.seg-item {
+  min-height: 32px; padding: 0 13px;
+  background: transparent; color: var(--ink-faint);
+  border: 0; cursor: pointer;
+  font: 600 .68rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+}
+.seg-item.is-on { background: var(--bg-raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.seg-item:not(.is-on):hover { color: var(--ink-dim); }
+
+/* A stepper is one control. Three loose boxes with gaps between them are not. */
+.stepper {
+  display: inline-flex; align-items: stretch; flex: 0 0 auto;
+  border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: var(--bg-sunk);
+}
+.stepper-btn {
+  width: 46px; min-height: 40px;
+  background: transparent; color: var(--ink); border: 0; cursor: pointer;
+  font: 400 1.25rem/1 var(--font); 
+}
+.stepper-btn:disabled { color: var(--ink-faint); opacity: .45; cursor: default; }
+.stepper-btn:not(:disabled):hover { background: var(--bg-raised); }
+.stepper-value {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 3.2ch; padding: 0 2px;
+  border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+  font: 600 1.15rem/1 var(--mono);
+}
+
+/* Actions of equal standing, in equal cells — a wrapped btn-row leaves an orphan. */
+.btn-grid {
+  display: grid; gap: 8px; margin-bottom: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+}
+.btn-grid > .btn { width: 100%; }
+/* An odd last action would sit alone in half a row and wrap its label; give it the row. */
+.btn-grid > .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
 /* A phase card that folds away: same skin as a card, summary as its heading. */
 .phase-fold > summary {
@@ -194,6 +238,9 @@ button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
   overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
 }
 .subnav::-webkit-scrollbar { display: none; }
+/* The row scrolls inside itself; fade the right edge so a clipped pill reads as more. */
+.subnav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
 .subnav-item {
   flex: 0 0 auto; padding: 7px 12px;
   border: 1px solid var(--line); border-radius: 999px;

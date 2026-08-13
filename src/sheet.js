@@ -49,7 +49,7 @@ export function renderVitals(ch, { onSwitch = null } = {}) {
   host.replaceChildren(...[switcher(ch, onSwitch), ...tiles].filter(Boolean));
   host.hidden = false;
 
-  if (lost) host.append(el("div", { class: "vital is-danger", style: "grid-column:1/-1" },
+  if (lost) host.append(el("div", { class: "vital is-danger", style: "flex:1 0 100%" },
     el("span", { class: "vital-label" }, "Lost in the Electric State"),
     el("span", { class: "vital-value" }, "cannot disconnect")));
 }
@@ -110,15 +110,15 @@ function build(ch, rerender) {
       el("h1", { style: "margin:0" }, ch.name || "Unnamed"),
       el("a", { class: "btn", href: "#/home" }, "Back")),
     el("div", { class: "identity" },
-      el("span", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
+      el("span", { class: "faint" },
+        [arch?.name, ch.song].filter(Boolean).join(" · "),
+        el("span", { class: "identity-pronouns" }, `${subj(ch)} · ${obj(ch)} · ${poss(ch)}`)),
       el("div", { class: "seg", role: "group", "aria-label": "Gender" },
         ...GENDERS.map((g) => el("button", {
           class: "seg-item" + (genderOf(ch) === g.id ? " is-on" : ""),
           "aria-pressed": genderOf(ch) === g.id ? "true" : "false",
           onclick: () => patch((c) => { c.gender = g.id; })
         }, g.label)))),
-    el("p", { class: "faint" },
-      `The app calls this Traveler ${subj(ch)}, ${obj(ch)}, ${poss(ch)} — tap to change it.`),
     explain("Everything about this Traveler, and everything that happens. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply dice penalties to rolls automatically, and gear degrades as you push rolls with it."),
     ch.descriptorWords?.length ? el("p", { class: "faint" }, ch.descriptorWords.join(" · ")) : null);
 
@@ -144,7 +144,7 @@ function build(ch, rerender) {
 
   // The things you reach for mid-scene, directly under the vitals rather than below
   // eight cards of reference. Rally and the death roll appear only when they apply.
-  wrap.append(el("div", { class: "btn-row" },
+  wrap.append(el("div", { class: "btn-grid" },
     el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll dice"),
     el("button", { class: "btn", onclick: async () => { const { damageDialog } = await import("./roller.js"); damageDialog(ch, rerender); } }, "Take damage"),
     el("button", { class: "btn", onclick: async () => { const { traumaticEventDialog } = await import("./roller.js"); await traumaticEventDialog(ch, rerender); } }, "Traumatic event"),
@@ -234,14 +234,14 @@ function stepper(label, value, max, onChange, kind, min = 0) {
   return el("div", { class: "card-row", style: "padding:6px 0" },
     el("div", {}, el("strong", {}, label),
       max != null ? el("span", { class: "faint" }, ` / ${max}`) : null),
-    el("div", { class: "btn-row" },
+    el("div", { class: "stepper" },
       el("button", {
-        class: "btn", "aria-label": `Lower ${label}`,
+        class: "stepper-btn", "aria-label": `Lower ${label}`,
         disabled: min != null && v <= min, onclick: () => onChange(v - 1)
       }, "−"),
-      el("span", { class: "mono", style: "min-width:2.5ch;text-align:center;font-size:1.2rem" }, v),
+      el("span", { class: "stepper-value" }, v),
       el("button", {
-        class: "btn", "aria-label": `Raise ${label}`,
+        class: "stepper-btn", "aria-label": `Raise ${label}`,
         disabled: max != null && v >= max, onclick: () => onChange(v + 1)
       }, "+")));
 }

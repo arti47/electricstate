@@ -667,7 +667,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     text: document.getElementById("screen").textContent
   }));
   check(asWoman.stored === "female", `gender did not persist (${asWoman.stored})`);
-  check(/she, her, her/.test(asWoman.text), "the sheet does not show the pronouns it will use");
+  check(/she · her · her/.test(asWoman.text), "the sheet does not show the pronouns it will use");
   check(/is-on/.test(await page.innerHTML("#screen .seg")), "the switch does not show which option is set");
 
   // And the app narrates with it: a Traveler at zero Health is offered a rally by name.

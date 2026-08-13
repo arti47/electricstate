@@ -272,4 +272,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   `src/` or `data*.js` — comments and `${expressions}` excluded. `npm run pronouns` runs it
   alone. Where no specific person is in scope, name the thing ("the target", "the other
   driver"); the `data-journey.js` Kicker and destination tables are second person.
+- **Three shared control shapes, and when to use which.** `.seg` — two or three exclusive
+  options as one pill switch (gender, realm this round); deliberately quiet, because accent is
+  reserved for the thing you press. `.stepper` — one bordered group of − value + (or ← zone →),
+  never three loose boxes with gaps. `.btn-grid` — actions of equal standing in equal cells,
+  with an odd last child spanning the row; a wrapped `.btn-row` leaves an orphan that wraps its
+  own label. `.vitals` is flex, not grid: auto-fit left a blank slab whenever the tile count
+  did not divide the column count.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

@@ -488,3 +488,24 @@ plural pronoun anywhere on the rendered sheet.
 ## Result
 
 100 invariants, browser smoke clean, three probes clean, button audit clean.
+
+---
+
+# Sixteenth pass — the controls did not look like controls
+
+Reported as "the button layout is all messed up", and it was: the gender switch had landed in
+a header that had no room for it, and looking properly showed the same three defects repeated
+across the app.
+
+| # | Finding | Fix |
+|---|---|---|
+| 98 | **A wrapped `.btn-row` leaves an orphan.** Three actions of equal standing came out two-then-one, and the orphan sat in half a row wrapping its own label onto two lines — the sheet's play actions, the fight-level actions, the per-combatant actions. | `.btn-grid`: equal cells, `auto-fit minmax(132px, 1fr)`, and an odd last child spanning the row. |
+| 99 | **Steppers were three separate boxes with gaps** — a big square minus, a floating number, a big square plus, none of them aligned to each other down the card. | `.stepper`: one bordered group, fixed 46px buttons either side of a fixed-width value. Zone in the combat tracker uses the same shape. |
+| 100 | **Two exclusive options rendered as two full-width buttons.** In a combatant card at 360px the realm choice stacked vertically and collided with its own label. | `.seg`, the same switch the gender control uses. Quiet, not accent-filled: the accent belongs to the action you press, not to a setting. |
+| 101 | The vitals header left a blank slab whenever the tile count did not divide the column count — five tiles in a six-column auto-fit grid. | Flex, with each tile `flex: 1 1 60px`. |
+| 102 | The section nav scrolls inside itself, so the pill at the right edge was hard-clipped and read as broken. | A mask fades the last 24px, which is what "there is more this way" looks like. |
+| 103 | "He has acted" as a button label is a sentence about someone, where a button wants an instruction. | "Turn spent". |
+
+## Result
+
+100 invariants, browser smoke clean, three probes clean, button audit clean.
