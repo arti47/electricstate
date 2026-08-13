@@ -64,7 +64,7 @@ re-derive it, attributed to whoever rolled, filterable; `aria-live` announced) �
 export/import backup** in Settings · **scene/session lifecycle engine** (the app owns
 boundary events, with confirmation summary + one-step undo) · searchable rules library
 (**every automated surface links to its rules-library entry**) · **per-screen "what this
-does" note** (§6.2) · **first-session tutorial** · bestiary/NPC compendium · Firebase
+does" note** (§6.6) · **first-session tutorial** (§6.6) · bestiary/NPC compendium · Firebase
 multiplayer party with shared combat tracker (gated per above) · GM screen.
 **Conditional:** solo mode (only if official solo rules exist) · expansion content (only
 if expansion books are supplied; commitment tiers set at Stage B) · power/spell automation
@@ -223,7 +223,7 @@ features), faction/template picks (+ mandatory selections), age/background/exper
 tiers (+ modifiers), starting power/feat picks. For each: what it grants, what it
 constrains, what makes the result legal. **Record the creation steps that happen after the
 character sheet is full** — the party's shared entity, the destination, the relationships
-between characters. They are the ones every implementation forgets (§6.2, "next step").
+between characters. They are the ones every implementation forgets (§6.3.7, "the next step is named").
 
 **3.8 Shared group entity — CONDITIONAL.** If the game has a party-level entity (noble
 House, crew, ship, warband, covenant, colony, caravan): its **own creation wizard** (steps,
@@ -249,7 +249,7 @@ and the **exact dying/death procedure** step by step, including every escape hat
 gets a dedicated guided UI — it is the highest-stakes moment in play and must be
 impossible to run wrong. **Record what happens on each terminal outcome**: surviving often
 triggers a lasting-injury roll, dying often triggers a new character. Both are part of the
-procedure and both get an onward route in the UI (§6.2).
+procedure and both get an onward route in the UI (§6.3.6).
 
 **3.10a Archetype exceptions to the damage model — CONDITIONAL.** Some games publish a
 class that takes damage under different rules entirely (a machine body, an incorporeal
@@ -430,7 +430,7 @@ newly discovered rules ambiguities — never for permission to continue.
   vitals, labeled icon-only buttons (**including checkboxes**, which the layout harness
   measures), `aria-current` nav.
 - **Responsive:** phone-first; zero horizontal overflow at 320, 360 and 390px on every
-  screen, in a realistic mid-campaign state (§11.5).
+  screen, in a realistic mid-campaign state (§11.2.6).
 
 ---
 
@@ -464,7 +464,7 @@ One module per responsibility; explicit `import`/`export`, nothing smuggled thro
 | Module | Responsibility |
 |---|---|
 | `core.js` | Foundational constants, DOM/util helpers (incl. the null-safe `add`), raw dice functions. No imports. |
-| `ui.js` | Themed modals/toasts/confirm/prompt, the collapsible **explain()** note, and the pinned **actionBar()** (§6.2). |
+| `ui.js` | Themed modals/toasts/confirm/prompt, the collapsible **explain()** note (§6.6), and the pinned **actionBar()** (§6.2). |
 | `rules.js` | Pure rules lookups over the data libraries. Lookups that can resolve a **character-owned** entry (an invented ability) take the character as an optional second argument. |
 | `derived.js` | Character-derived calculations (effective maxima, encumbrance, equipped gear, condition modifiers, rule-conflict resolution, data normalization/migration). |
 | `settings.js` | Feature/content toggles (expansions, solo, GM screen, advanced automation). |
@@ -480,59 +480,196 @@ One module per responsibility; explicit `import`/`export`, nothing smuggled thro
 | `gm.js` | GM dashboard. |
 | `screens.js` | Top-level screen renderers (home/rules/settings) + roll-log view. |
 | `tutorial.js` | First-session walkthrough. |
-| `router.js` | Bottom-nav routing, **section nav** (§6.2), conditional tab gating. |
+| `router.js` | Bottom-nav routing, **section nav** (§6.3.1), conditional tab gating. |
 | `main.js` | Entry point / boot. |
 
 When adding or moving a `src/` file: update the project CLAUDE.md's file tables **and**
 the service-worker app-shell list, then bump `CACHE_VERSION` — in the same change.
 
-### 6.2 Interface rules — **LOCKED**
+### 6.2 Screen anatomy — **LOCKED**
 
-These are not style preferences. Each one is a defect that shipped in a reference build and
-was found by measurement, not by reading (§11.4, §11.5).
+Design for the real situation: a phone held in one hand, at arm's length, on a dim table,
+by someone mid-conversation who has three seconds of attention to spare. Everything below
+follows from that.
+
+Every screen sits inside the same frame. Four regions are fixed; only one scrolls.
+
+```
+┌──────────────────────────────┐
+│ app header  (brand · theme)  │  sticky, ~52px
+├──────────────────────────────┤
+│ resource header (vitals)     │  sticky under it, shown on in-play screens
+├──────────────────────────────┤
+│ section nav  (pill row)      │  first thing inside the scroll area
+│                              │
+│ screen content  ← scrolls    │
+│                              │
+├──────────────────────────────┤
+│ action bar  (primary action) │  fixed above the tab bar, when the screen has one
+├──────────────────────────────┤
+│ tab bar  (4–6 tabs)          │  fixed, safe-area padded
+└──────────────────────────────┘
+```
+
+**The contract:**
+- The body carries bottom padding of `tab-bar height + safe-area + gap`, so the last
+  control is never half-hidden. The action bar adds its own **spacer element**, returned
+  together with the bar by one helper so a caller cannot forget it.
+- The resource header is **sticky under the app header**, not part of the scroll: the two
+  or three numbers that decide every choice in the game stay visible while you read
+  anything else. It follows whoever is currently in context — the Traveler whose sheet is
+  open, or the one selected on the dice screen.
+- **Colour is reserved for meaning.** Pick one palette family for the game's mood and spend
+  colour only on semantics: one hue for damage and loss, one for the game's signature
+  resource, danger states also carrying text so colour is never the sole channel.
+- **Zoom is off** (`user-scalable=no`, `maximum-scale=1`, `touch-action: manipulation`) and
+  every input is ≥16px so mobile browsers do not zoom on focus. A stray pinch mid-roll is
+  only ever a nuisance in a play aid.
+- **Reduced motion honoured**; no animation carries information.
+
+### 6.3 Placing controls — gameplay flow — **LOCKED**
+
+Layout is a rules question, not a taste question: the app should read like the game's own
+sequence of play.
 
 1. **Two-level navigation.** The bottom tab bar holds 4–6 tabs. **Any tab that owns more
    than one route carries a section nav** — a horizontally scrolling pill row at the top of
    every screen in that group, listing its siblings and marking the current one. Without
    it, routes beyond the first are reachable only from a link buried at the foot of another
-   screen. Screens you go *into* rather than flick between (the wizard, a character sheet)
-   are excluded.
+   screen; in the reference build twelve of eighteen routes were in that state. Screens you
+   go *into* rather than flick between (the wizard, a character sheet) are excluded.
 2. **The primary action is above the fold, always.** The one control a screen exists for —
-   Roll, End Shift, Next — never sits below the viewport on a phone. Where the screen's
-   content is long, pin the action in a bar fixed above the tab bar, carrying its own
-   context (the pool size, the current shift, the step number). The helper returns the bar
-   **and its spacer together** so a caller cannot forget the spacer and have the bar cover
-   the last card. **The layout harness asserts this per screen** (§11.4).
-3. **Live state travels.** State that changes what the player should do next — a fight in
-   progress, a countdown running — is shown wherever they are, as a badge on the section
-   nav. State visible only on the screen that owns it is state nobody sees.
-4. **Every procedure ends somewhere.** A terminal outcome (stabilized, dead, blocker
-   resolved, task complete) offers the next thing the rules call for, as an action in the
-   same dialog. A modal that says "you survived" and stops leaves the player to remember a
-   screen they have not opened.
-5. **Destructive actions confirm, and say what is lost.** Ending a fight discards tracked
-   enemy health; clearing a log discards it. Name the loss in the confirmation.
-6. **Tap targets ≥ 44px effective.** A checkbox renders at ~13px unless styled; wrap every
-   option row in a `<label>` so the whole row is the target, and never let an inline style
-   override the stylesheet's sizing. **The harness measures the label, not the box.**
-7. **Long values stack; short values sit inline.** A flex row centres its children, so a
-   two-line sentence straddles its one-line label. Use an inline row only where the value is
-   short (`Hope 3/5`); use a stacked definition row (label above, value below, full width)
-   for anything sentence-length.
-8. **Density is a feature.** Lists that grow without bound (roll logs, combatant lists,
-   event records) page or collapse: show a session's worth and offer the rest. Items that
-   are done (a combatant who has acted) collapse to a line. Reference cards that are read
-   rarely (background, notes) fold. **Test at session-3 density, not at zero** (§11.5).
-9. **Long screens get a jump row.** Where a screen is legitimately long (a full character
-   sheet), add an in-page nav of the same pill component rather than hiding content.
-10. **Every screen explains itself.** A collapsed "what this does" note, closed by default,
-    in the app's own voice: what the surface is for and which rule it automates. Plus a
-    linked tutorial for a first session.
-11. **The rules library is an accordion**, grouped by subject in session order, collapsed
-    until opened, with search that auto-opens matches.
-12. **The next step is named.** Where the game's own procedure continues past the current
-    screen (creation ends, but the party still needs a destination and relationships), the
-    home screen names the next step until the group is ready to play.
+   Roll, End Shift, Next — never sits below the viewport on a phone. Where the content is
+   long, pin the action in the bar, carrying its own context: the pool size, the current
+   shift and day, the step number and name. **The layout harness asserts this per screen**
+   (§11.2.5).
+3. **Order controls by the sequence of play, and say so.** A screen that hosts a procedure
+   presents its controls in the order the book performs them, in numbered phases with a
+   line each on what the phase is for — *1 Before you set out · 2 On the road · 3 Arriving ·
+   4 Playing the scene · 5 Turning the screw · 6 Ending it*. An unordered row of twelve
+   buttons is a reference card, not a play aid. Phases used once (prep, wrap-up) fold away;
+   the ones used every scene stay open.
+4. **Frequency decides height.** On any screen, order blocks by how often they are touched
+   in play, not by how the rulebook chapters them. On a character sheet that means: vitals,
+   then the actions you take mid-scene (roll, take damage, resist), then conditions and
+   gear, then the identity fields written once at creation. Reference before action is the
+   most common layout mistake and the easiest to measure.
+5. **In-scene before between-scene.** Within a subsystem, the rolls made during a scene
+   come before the repairs, resupply and bookkeeping done between them.
+6. **Every screen leads somewhere.** A screen that ends a procedure offers the next one the
+   rules call for. A GM screen links to the dice and the tracker; a solo scene links to
+   combat when it turns violent; a stabilized character is offered the injury roll; a dead
+   one is offered the wizard. **A terminal outcome with no onward route** — a modal that
+   says "you survived" and stops — leaves the player to remember a screen they have never
+   opened.
+7. **The next step is named.** Where the game's own procedure continues past the current
+   screen (creation ends, but the party still needs a destination, a vehicle and
+   relationships), the home screen names the next step until the group is ready to play.
+   Otherwise a party sits looking finished with the game's Hope economy switched off.
+8. **Live state travels.** State that changes what to do next — a fight in progress, a
+   countdown running, a character dying — is shown wherever you are, as a badge on the
+   section nav. State visible only on the screen that owns it is state nobody sees.
+9. **No dead ends and no re-entry.** If tapping through to another screen is part of a
+   flow (attack from the combat tracker → dice screen), the destination shows what it is
+   part of and offers the way back. Never make the player re-type a number the app already
+   knows.
+10. **Tap targets ≥ 44px effective.** A checkbox renders at ~13px unless styled; wrap every
+    option row in a `<label>` so the whole row is the target, and never let an inline style
+    override the stylesheet. **The harness measures the label, not the box.**
+
+### 6.4 Feedback and dialogs — **LOCKED**
+
+- **Toast** for a result that needs no decision ("Repaired. Hull 4/6"). **Modal** for a
+  result the player must read before continuing, or any choice. **Inline** for state that
+  persists (a status note on the sheet).
+- **A result dialog shows the dice, the arithmetic and the consequence** — the raw dice,
+  what modified them, the outcome in the game's own language, and what the app changed as
+  a result. A number with no working shown is a number the table will argue about.
+- **Modal actions are ordered primary-first**, everywhere, without exception.
+- **Destructive actions confirm and name the loss.** "Ending the fight discards zones,
+  rounds and every Threat's remaining health" — not "Are you sure?".
+- **Boundary events summarise.** Anything that fires a bundle of changes (end of scene,
+  session, day) reports exactly what changed, line by line, with **one-step undo**.
+- **Refusals explain the rule.** When the app blocks something, it says which rule blocked
+  it: "Only a Lone wolf can settle it without the other person there", not "Not allowed".
+- **Empty states point forward.** An empty screen names the thing to do and links to it.
+
+### 6.5 Density and long screens — **LOCKED**
+
+Test at **session-three density**, not at zero (§11.2.6). Under real load:
+
+- Lists that grow without bound (roll logs, combatant lists, event records) **page**: show
+  a session's worth, offer the rest. A hundred log entries is fifteen phone screens.
+- Items that are **done** collapse to a line — a combatant who has taken their turn keeps
+  their name, health and an undo, and gives up everything else.
+- Reference blocks read rarely (background, notes, prep, wrap-up) **fold**.
+- A screen that is legitimately long (a full character sheet) gets a **jump row** — the same
+  pill component, in-page — rather than hiding content.
+- **Long values stack; short values sit inline.** A flex row centres its children, so a
+  two-line sentence straddles its one-line label. Inline rows for `Hope 3/5`; stacked
+  definition rows (label above, value below, full width) for anything sentence-length.
+
+### 6.6 Teaching the game — **LOCKED**
+
+The app is many players' first contact with the system. Four layers, each with a different
+job; build all four, and never let one substitute for another.
+
+**1. `explain()` — a "what this does" note on every screen.**
+- A `<details>` collapsed by default, directly under the screen's heading, so it costs
+  nothing to the player who does not need it.
+- **Two to four sentences, in the app's own voice**, answering: what is this surface for,
+  what does the app do for me here, and what does the game charge me for it. Name the rule,
+  do not quote the book.
+- Written for someone who has not read the rulebook. *"Build a pool and roll it. One 6
+  succeeds; extra 6s add damage. Pushing re-rolls everything that is not a 1 or a 6, and
+  the app charges the Hope and gear damage that follow."*
+- The harness asserts every one is present and starts collapsed.
+
+**2. Rules-library links — the depth behind the note.**
+- A searchable library, one entry per automated rule, in the app's own words, with the book
+  page cited.
+- **An accordion grouped by subject in session order**, collapsed until opened, with search
+  that auto-opens matches — a flat scroll of forty rules is unusable at a table.
+- **Every automated surface links to its entry.** A status note about death rolls links to
+  the death-roll entry; the link opens that entry, expanded and scrolled to.
+
+**3. The tutorial — a first session, step by step.**
+- Its own route, linked from the home screen while no character exists and permanently from
+  Settings.
+- One step per thing the player must do, in play order, each saying **what to tap and why
+  the game asks for it** — not what the button is called. Cover the whole first session:
+  make a character, set up the group, read the sheet, make a roll, push it, take damage,
+  end a scene, end the session.
+- If the game has a solo mode, the tutorial covers it as a second track: what the pacing
+  device is, when to draw, how to read an oracle result.
+- Steps are `<details>` so the whole thing is skimmable, and the tutorial is a *screen*,
+  not a modal sequence — a player returns to it mid-session.
+
+**4. In-context teaching — the part that actually lands.**
+- **Say why, at the moment it costs something.** When a push takes a point of Hope, the
+  result says so; when a condition subtracts dice, the pool shows the condition by name.
+- **Label the mechanism, not just the number.** `4 ⌊2⌋` in a Bliss tile with "Permanent
+  inline" beats a second unexplained track.
+- **Surface the book's own guidance where it applies** — solo principles on the solo screen,
+  pacing advice and threat-building on the GM screen, safety tools in Settings before play.
+- **House aids identify themselves** wherever they are rolled (§2.2).
+
+### 6.7 The measurement contract
+
+These are the numbers the harness enforces (§11.1). Design to them, and they never become
+findings:
+
+| Property | Requirement |
+|---|---|
+| Horizontal overflow | none at 320 / 360 / 390px, in stress state |
+| Primary action | above the fold, no scrolling, on every screen that has one |
+| Controls under the tab bar | none (excluding collapsed panels) |
+| Tap target | ≥ 44px effective, measured on the wrapping label |
+| Input font size | ≥ 16px |
+| `explain()` note | present on every screen, collapsed by default |
+| Stray `null` / `undefined` / `NaN` text | none, on any route, in any state |
+| Console errors | zero, on every route |
+| Screen length under stress | no unbounded list; pages or collapses |
 
 ---
 
@@ -617,13 +754,14 @@ and append a changelog row; estimated counts yield to real counts (record them);
 
 **Each ledger row also names the module that will consume the table.** A row whose consumer
 column is empty is a table on its way to being extracted and never called (§0). At the end
-of every phase, the dead-data scan (§11.1) must agree with the ledger.
+of every phase, the dead-data scan (§11.2.1) must agree with the ledger.
 
 ### 9.2 Phases — build strictly in order
 
 - **Phase 0 — Foundations:** scaffold all §6 files; extract the **complete, verified**
   core data library per the ledger (multiple sub-phases for large books) — data before
-  features; theme; PWA shell; app shell with router, two-level nav (§6.2) and local storage.
+  features; theme; PWA shell; app shell with router, the §6.2 frame, two-level nav (§6.3.1)
+  and local storage.
 - **Phase 1 — Creation Wizard(s):** the §3.7 flow with honest §3.4 generation, all §3.5
   derivations, legality validation at every step; the group-entity wizard if §3.8 exists;
   pregens if published (validated against the formulas, §2.1).
@@ -656,14 +794,14 @@ of every phase, the dead-data scan (§11.1) must agree with the ledger.
   sheets, drop-in combatants, hand out damage/conditions, rollable §3.21 reference tables,
   and the book's own "how to build one" guidance); power-automation engine; advanced
   automation behind one shared toggle.
-- **Hardening (always):** the harnesses of §11.1, the accessibility pass, the §6.2
-  interface rules, and the **audit protocol of §11 run to a clean pass**.
+- **Hardening (always):** the harnesses of §11.1, the accessibility pass, the §6.2–§6.7
+  layout, flow and teaching rules, and the **audit protocol of §11 run to a clean pass**.
 
 **Per-feature spec format (mandatory for every roadmap item):**
 - **Rule:** the canonical mechanic with exact numbers (cited to the source).
 - **Target:** file · module · function.
 - **Behavior/UI:** what to build and where it appears — including *where on the screen*
-  relative to §6.2.
+  relative to §6.2–§6.5, and the `explain()` line it carries (§6.6).
 - **Schema:** new fields — name · type · default · location (and §7 updated).
 - **Acceptance:** how to confirm it works in a browser, and which harness check pins it.
 
@@ -737,7 +875,7 @@ repeat the cycle until a full cycle produces nothing, and record everything in
 - Nothing at the foot of a screen sits under the fixed tab bar (skipping controls inside
   collapsed panels — they keep their last layout position and read as buried while being
   unreachable).
-- **Each screen's primary action is above the fold without scrolling** (§6.2.2).
+- **Each screen's primary action is above the fold without scrolling** (§6.3.2).
 - Section nav reaches every sibling route and marks the current one; live-state badges
   appear only when the state is live.
 - No checkbox has an effective tap target under 40px (measure the wrapping label).
@@ -776,7 +914,7 @@ with a handler that opens a modal and manufactures findings that reproduce nowhe
    buckle here — a hundred log entries is fifteen phone screens.
 7. **Flow walk.** Play a whole session through the app and ask at each step: *what do I tap
    next, and how many taps is it?* Look specifically for terminal states with no onward
-   route (§6.2.4), procedures that require remembering a screen, and state that is invisible
+   route (§6.3.6), procedures that require remembering a screen, and state that is invisible
    from where you need it.
 
 ### 11.3 Where the findings actually are
@@ -820,11 +958,11 @@ version of each before declaring a phase done.
 | D-4 | A state field is written and never read (`frozen`, `stunned`) | Nothing visibly breaks | Dead-data scan |
 | D-5 | Two counters for one procedure disagree | Only after both paths are used | One-record rule (§10.12) |
 | D-6 | A degradable resource has no repair path | Nobody degrades it in testing | Flow walk |
-| D-7 | A terminal outcome offers no next step | The modal reads as complete | Flow walk (§6.2.4) |
+| D-7 | A terminal outcome offers no next step | The modal reads as complete | Flow walk (§6.3.6) |
 | D-8 | The primary action is below the fold | You always scroll during development | Measured layout (§11.2.5) |
 | D-9 | A list grows without bound | Fine with three entries | Stress state (§11.2.6) |
 | D-10 | An inline style overrides the stylesheet (13px checkboxes) | Looks deliberate | Tap-target measurement |
-| D-11 | A wrapping value straddles its label in a flex row | Only with long text | Definition rows (§6.2.7) |
+| D-11 | A wrapping value straddles its label in a flex row | Only with long text | Definition rows (§6.5) |
 | D-12 | An archetype exception is not branched on everywhere | The common path works | §3.10a checklist |
 | D-13 | Two surfaces generate the same record in two shapes | Each works alone | One-record rule (§10.11) |
 | D-14 | A guard passes against the bug it was written for | Green is reassuring | Prove it bites (§10.6) |
@@ -887,6 +1025,6 @@ source).
 
 | Version | Date | Change |
 |---|---|---|
-| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 interface rules (two-level nav, pinned action bar, live-state badges, terminal routes, density, tap targets, definition rows, explain notes, next-step prompt) — each one a measured defect. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §13 catalogue of fifteen named defect classes. |
+| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §13 catalogue of fifteen named defect classes. |
 | v2 | 2026-07-06 | Lessons from the Dune: Adventures in the Imperium reference build: new §3 slots (opposed-test sequence 3.2, meta-currencies 3.3, group entity 3.8, scene/session lifecycle 3.12, extended/progress tasks 3.13); mandatory Data Extraction Ledger (§9.1); Stage B split into checkpoint + standard product Q&A (§4.2); local-first default with First Session Playable milestone gating Phase 5; mandatory roll log, JSON export/import, persistent resource header, lifecycle confirm+undo, rules-citation links; notebook extraction warning about summarized procedures; kickoff prompt embedded (§13). |
 | v1 | — | Original template from the first reference implementation. |
