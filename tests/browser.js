@@ -45,6 +45,16 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth > document.documentElement.clientWidth);
     check(!overflow, `${viewport.width}px: route ${route} overflows horizontally`);
+    // A nullish value handed to a bare node.append() stringifies onto the page as its
+    // own text node, so look for that exactly rather than for a substring in the copy.
+    const stray = await page.evaluate(() => {
+      const walk = document.createTreeWalker(document.getElementById("screen"), NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (["null", "undefined", "NaN", "[object Object]"].includes(n.textContent.trim())) return n.textContent.trim();
+      }
+      return null;
+    });
+    check(!stray, `route ${route} rendered a stray "${stray}"`);
   }
 
   // nothing at the foot of a screen may sit under the fixed tab bar
@@ -188,6 +198,29 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     }));
   });
   check(saved.length === 1, `wizard saved ${saved.length} characters, expected 1`);
+
+  // Home takes a different branch once a Traveler exists, and another once the group is
+  // ready — the state where the next-step nudge returns nothing. That is exactly where a
+  // bare append(null) printed the word "null" above the New Traveler button.
+  for (const journey of [null, { destination: "The coast", vehicle: { name: "Van", hull: 6 } }]) {
+    await page.evaluate((j) => {
+      const db = JSON.parse(localStorage.getItem("electricState.v1"));
+      db.journey = j;
+      localStorage.setItem("electricState.v1", JSON.stringify(db));
+      location.hash = "#/home";
+    }, journey);
+    await page.reload({ waitUntil: "networkidle" });
+    await page.evaluate(() => { location.hash = "#/home"; });
+    await page.waitForTimeout(80);
+    const homeStray = await page.evaluate(() => {
+      const walk = document.createTreeWalker(document.getElementById("screen"), NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (["null", "undefined", "NaN"].includes(n.textContent.trim())) return n.textContent.trim();
+      }
+      return null;
+    });
+    check(!homeStray, `home rendered a stray "${homeStray}" (journey ${journey ? "set" : "empty"})`);
+  }
   if (saved[0]) {
     const c = saved[0];
     const total = Object.values(c.attrs).reduce((a, b) => a + b, 0);

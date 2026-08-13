@@ -1,6 +1,6 @@
 // Foundational constants, DOM helpers and raw dice. No imports.
 
-export const CACHE_VERSION = "es-v31";
+export const CACHE_VERSION = "es-v32";
 export const STORAGE_KEY = "electricState.v1";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -21,6 +21,19 @@ export function el(tag, props = {}, ...children) {
     node.append(c instanceof Node ? c : document.createTextNode(String(c)));
   }
   return node;
+}
+
+/**
+ * Append children, skipping the empty ones. `el()` already drops nullish children, but a
+ * bare `node.append(x)` stringifies null into the page — which is how a literal "null"
+ * once rendered above the home screen's New Traveler button.
+ */
+export function add(parent, ...children) {
+  for (const c of children.flat()) {
+    if (c == null || c === false) continue;
+    parent.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return parent;
 }
 
 export const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));

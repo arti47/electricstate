@@ -1,5 +1,5 @@
 // Top-level screen renderers. Phase 1-3 screens (wizard, sheet, roller) mount here later.
-import { $, el } from "./core.js";
+import { $, el, add } from "./core.js";
 import { Settings, TOGGLES, set as setSetting, get as getSetting } from "./settings.js";
 import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLogKey,
          filterRollLog, clearRollLog, resetAll } from "./store.js";
@@ -29,7 +29,7 @@ export function homeScreen() {
         el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—"))));
     }
     wrap.append(el("div", { class: "card" }, list));
-    wrap.append(nextStep(chars));
+    add(wrap, nextStep(chars));
     // Journey, Time and Tension are one tap away in the section nav above.
     wrap.append(el("div", { class: "btn-row" },
       el("a", { class: "btn", href: "#/create" }, "New Traveler")));
