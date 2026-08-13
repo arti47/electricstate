@@ -136,6 +136,14 @@ Establish this order in the project CLAUDE.md on day one and never deviate:
   tools, "how to build a threat" checklists and per-archetype suggestions are content the
   app should surface. In reference builds these were extracted and then never shown — the
   same defect as §0, wearing a different coat.
+- **Rules live in appendices, sidebars and stat blocks too.** A single guard-dog stat block
+  in a bestiary appendix, a "minor NPCs use 2 in everything" line in a margin, a safety
+  note before a table — these are rules with no chapter of their own and they are the ones
+  a chapter-by-chapter sweep misses. Read the boxed text.
+- **A permission the book grants is a feature.** "You may create a new talent", "you may
+  reduce this alone", "either side may declare it over" — permissions read like flavour and
+  are mechanics. Each one needs a control. If the app can only do the thing the book
+  presents as the default path, it has quietly removed a rule.
 - **Multiple books supplied:** the core rulebook populates `data.js`; each additional
   official book becomes its own `data-<name>.js` behind a content toggle, off by default
   (§8). The Stage B Q&A assigns each book a **commitment tier** (committed / stretch /
@@ -170,7 +178,10 @@ which archetype (or novel shape) the game actually is, per slot.
 
 **3.1 Core resolution mechanic.** The dice mechanic, success criteria, crit/fumble rules,
 modifier model, the advantage mechanism, and the push/re-roll economy (with its costs and
-legality limits) if one exists.
+legality limits) if one exists. **Flag every rule that repeats itself** — "on a hit you may
+fire again", "if that fails, roll again at +2", "further damage restarts the count". These
+cascade rules are implemented as single shots by default and the repetition is silently
+lost; each one needs an explicit loop with its own termination condition and cap.
 *Archetypes:* roll-under d20/d100 (Call of Cthulhu, RuneQuest — natural extremes
 crit/fumble; advantage = roll extra dice, keep best/worst); d20+modifier vs DC
 (D&D/Pathfinder — advantage = 2d20-keep, scaling proficiency); 2d6+stat tiered outcomes
@@ -645,6 +656,14 @@ job; build all four, and never let one substitute for another.
 - Steps are `<details>` so the whole thing is skimmable, and the tutorial is a *screen*,
   not a modal sequence — a player returns to it mid-session.
 
+**Voice, throughout all four layers.** The app speaks in the game's register, not in
+UI-ese, and **uses the book's own names for states** — if the book says Busted, Breakdown,
+Incapacitated, so does the app, so that what a player reads on screen is what the table
+says out loud. Where the app must name something the book does not (a screen, a control),
+name it from the fiction rather than from the interface: *Travelers*, not *Characters*;
+*The Journey*, not *Campaign settings*. Empty states get the same treatment — they are the
+first thing a new player reads.
+
 **4. In-context teaching — the part that actually lands.**
 - **Say why, at the moment it costs something.** When a push takes a point of Hope, the
   result says so; when a condition subtracts dice, the pool shows the condition by name.
@@ -752,9 +771,30 @@ values; write the table (paraphrased, cited); **tick the checkbox in the same ch
 and append a changelog row; estimated counts yield to real counts (record them);
 **an unticked box = data not extracted; never build UI against an unticked table.**
 
-**Each ledger row also names the module that will consume the table.** A row whose consumer
-column is empty is a table on its way to being extracted and never called (§0). At the end
-of every phase, the dead-data scan (§11.2.1) must agree with the ledger.
+### 9.1a Rules Traceability Ledger — mandatory
+
+The extraction ledger tracks whether a table exists. That is necessary and not sufficient:
+in the reference build every table existed and dozens of rules still did nothing. Track the
+whole path instead. **One row per rule, five columns:**
+
+| Rule | Data | Engine | Surface | Test |
+|---|---|---|---|---|
+| Push: 1s on base dice cost Hope | `PUSH` | `roller.resolvePush` | Dice screen result card | `pushing keeps 1s and 6s` |
+| Reacting costs your next turn | `COMBAT_REACTIONS.cost` | `combat.forfeitNextTurn` | Combatant card + opposed dialog | `a reaction costs the defender their next turn` |
+| Wearing a caster: −2 real-world | `NEUROCASTERS[].realWorldPenalty` | `roller.casterDicePenalty` | Dice circumstances card | `the neurocaster costs dice only while worn` |
+
+- **A row with a gap is the §0 defect, visible before it ships.** Data but no engine: a
+  number nobody reads. Engine but no surface: a function nobody can reach. Surface but no
+  test: a rule that will regress silently. No test column entry is acceptable for any rule
+  the engine automates.
+- Fill the row **when you build the rule**, not at audit time. The audit then becomes a
+  check that the ledger is honest, which is a much cheaper thing to verify.
+- Rules the app deliberately does **not** automate get a row too, with `guidance only` in
+  the engine column — that is the explicit marking §10.13 requires, and it stops a later
+  pass rediscovering the same non-decision.
+- At the end of every phase, the dead-data scan (§11.2.1) must agree with this ledger. A
+  disagreement means either the scan found something the ledger missed, or the ledger is
+  describing work that was never done.
 
 ### 9.2 Phases — build strictly in order
 
@@ -843,6 +883,44 @@ of every phase, the dead-data scan (§11.2.1) must agree with the ledger.
     paths deriving the same count from different sources will disagree, and capped history
     lists cannot be counted at all.
 
+### 10.1 Authoring rules that prevent §0
+
+The audit protocol *finds* inert rules. These four stop you writing them. In the reference
+build they would have prevented roughly half of eighty-five findings.
+
+13. **Explain and enforce, in the same change.** The moment you write UI copy that states
+    a mechanic — a blurb under a toggle, a line in a modal, a sentence on a card — you owe
+    one of two things in that same change: **the engine enforcing it**, or the copy
+    explicitly marked as guidance the app does not automate. Never a third option. Almost
+    every inert rule in the reference build began as an honest sentence describing
+    something nothing did: *"Reacting costs them their next turn"* appeared in three
+    dialogs and was enforced in none. Grep your own copy for imperative rule language
+    ("costs", "may not", "must", "instead of", "each", "per") and check each hit has an
+    enforcer.
+14. **Every flag has a setter, a reader and a clearer.** A boolean or counter on state is
+    not done when it is written. Name all three call sites in the same change: what sets
+    it, what reads it, and **what clears it** — usually normalization or the lifecycle
+    engine. Two reference-build flags were written and read nowhere; two more were set and
+    never cleared, so a condition became permanent. If you cannot name the clearer, the
+    flag is a leak.
+15. **Defaults follow the fiction.** When a rule applies unless something prevents it, its
+    control **defaults to on**. A dice penalty for wearing a helmet, shipped defaulting to
+    off, is a rule that will never once apply in play. Ask of every toggle: what happens if
+    the player never touches this — is that the game's default state or the opposite of it?
+16. **One lookup per kind of thing.** Everything that can stand opposite the party — major
+    threats, minor NPCs, animals — resolves through **one function**, not one per data
+    file. The moment a second list exists, one surface will know about it and three will
+    not, and the ones that do not will silently fall back to a guessed value. The same
+    applies to abilities: one resolver that also sees character-owned entries (§3.14a).
+17. **A shape change ships a migration and a fixture.** Any change to a stored shape adds
+    the migration **and** a test that loads a hand-written old-shape record and asserts the
+    new one comes out right. Migrations that were never run against real old data are
+    hopes, not code.
+18. **Reversibility is inventoried.** List every action that destroys state. Each one either
+    undoes (a snapshot the user can revert) or confirms while naming the loss (§6.4).
+    Reference builds ship with undo on the lifecycle engine and nothing else, and the
+    unprotected actions are exactly the ones taken at the end of a tense scene.
+
 ---
 
 ## 11. Audit protocol — mandatory before "done"
@@ -927,8 +1005,38 @@ with a handler that opens a modal and manufactures findings that reproduce nowhe
   scene escape hatches, lifecycle bundles, one-advance-per-X gates, and **every rule that
   costs a turn** (reactions, freezing, stuns) — that last category is written as prose in
   three places and enforced in none, over and over.
+- **Subsystem seams concentrate bugs.** The places where two modules meet — tracker and
+  roller, solo and GM, sheet and lifecycle — are where state gets described instead of
+  shared, where a value gets re-typed instead of read, and where two shapes of one record
+  appear. When a pass is short of leads, walk the seams: for each pair of modules that
+  touch the same entity, ask what each one knows that the other should.
 - **Re-verification method:** pull the app's value from the data files, query the source
   for the canonical value, compare; corroborate surprising answers before editing.
+
+### 11.4 Cadence — what to run, and when
+
+Passes are not equally expensive. Run them at the frequency their cost justifies:
+
+| Pass | Cost | Run it |
+|---|---|---|
+| Parse gate + unit harness | seconds | every change |
+| Dead-data scan (§11.2.1) | seconds | every change that adds data or a rule |
+| Browser smoke | ~1 min | before every commit |
+| Interaction audit | ~1 min | end of every feature |
+| Rules read-through (§11.2.2) | hours | end of every phase, and every audit cycle |
+| Measured layout / stress (§11.2.5–6) | ~10 min | end of every phase, after any layout change |
+| Flow walk (§11.2.7) | ~30 min | end of every phase, and before calling it done |
+
+**The stopping rule:** the build is done when **one complete cycle of all seven passes
+produces no finding**. Not when a pass is clean — the reference build had clean passes at
+six, eight and ten, and the next cycle found eleven, four and eight things respectively.
+A cycle that produces only cosmetic findings is still a cycle that produced findings.
+
+**When a pass finds nothing, suspect the pass.** Two consecutive empty passes of the same
+type usually means the method has stopped reaching new ground, not that the ground is
+clean — change the seed state, change the width, change the order you read in. The most
+productive passes in the reference build came from changing the *method*: from reading to
+scanning, from scanning to measuring, from measuring at zero state to measuring under load.
 
 ---
 
@@ -967,6 +1075,14 @@ version of each before declaring a phase done.
 | D-13 | Two surfaces generate the same record in two shapes | Each works alone | One-record rule (§10.11) |
 | D-14 | A guard passes against the bug it was written for | Green is reassuring | Prove it bites (§10.6) |
 | D-15 | A fixed wait in a harness manufactures a finding | Fails once in ten runs | Poll, don't wait |
+| D-16 | A cascade rule ("roll again", "fire again") implemented as a single shot | The first roll works | Grep the source for repetition language (§3.1) |
+| D-17 | A flag is set and never cleared, so a condition becomes permanent | Only on the second occurrence | Setter/reader/clearer rule (§10.14) |
+| D-18 | A default-off control for a rule that applies by default | The rule simply never fires | Defaults follow the fiction (§10.15) |
+| D-19 | Two modules describe the same state instead of sharing it | Each works in isolation | Seam walk (§11.3) |
+| D-20 | A rule in an appendix, sidebar or stat block is never extracted | The chapter sweep looked complete | Read boxed text (§2) |
+| D-21 | A destructive action has neither undo nor confirmation | Nobody does it during testing | Reversibility inventory (§10.18) |
+| D-22 | A permission the book grants has no control | It reads as flavour | Permissions are features (§2) |
+| D-23 | A lookup exists per data file instead of per concept | The main list works | One lookup per kind (§10.16) |
 
 ---
 
@@ -1025,6 +1141,6 @@ source).
 
 | Version | Date | Change |
 |---|---|---|
-| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §13 catalogue of fifteen named defect classes. |
+| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. |
 | v2 | 2026-07-06 | Lessons from the Dune: Adventures in the Imperium reference build: new §3 slots (opposed-test sequence 3.2, meta-currencies 3.3, group entity 3.8, scene/session lifecycle 3.12, extended/progress tasks 3.13); mandatory Data Extraction Ledger (§9.1); Stage B split into checkpoint + standard product Q&A (§4.2); local-first default with First Session Playable milestone gating Phase 5; mandatory roll log, JSON export/import, persistent resource header, lifecycle confirm+undo, rules-citation links; notebook extraction warning about summarized procedures; kickoff prompt embedded (§13). |
 | v1 | — | Original template from the first reference implementation. |
