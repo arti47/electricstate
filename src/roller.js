@@ -896,13 +896,27 @@ export async function deathRollDialog(ch) {
       next.state.death = null;
       next.state.stabilized = true;
       saveCharacter(next);
-      await modal({ title: "Stabilized", body: el("p", {}, "Three successes. The death rolls stop — but you are still Incapacitated until someone rallies you."), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+      // Surviving Incapacitation is what triggers the D66 serious injury, so offer it here
+      // rather than leaving the player to remember a screen they have not opened yet.
+      const go = await modal({
+        title: "Stabilized",
+        body: el("div", {},
+          el("p", {}, "Three successes. The death rolls stop — but you are still Incapacitated until someone rallies you."),
+          el("p", { class: "faint" }, "Surviving this means rolling for a serious injury.")),
+        actions: [{ label: "Roll for injury", value: "injury", class: "btn-primary" }, { label: "Later", value: false }]
+      });
+      if (go === "injury") location.hash = `#/injury/${ch.id}`;
       break;
     }
     if (state.outcome === "dead") {
       next.state.dead = true;
       saveCharacter(next);
-      await modal({ title: "Dead", body: el("p", {}, "Three failed death rolls. Time to make a new Traveler."), actions: [{ label: "Understood", value: true, class: "btn-danger" }] });
+      const go = await modal({
+        title: "Dead",
+        body: el("p", {}, "Three failed death rolls. Time to make a new Traveler."),
+        actions: [{ label: "Make one", value: "new", class: "btn-danger" }, { label: "Not yet", value: false }]
+      });
+      if (go === "new") location.hash = "#/create";
       break;
     }
     saveCharacter(next);

@@ -156,9 +156,12 @@ const clockTime = (ts) => ts
   ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   : "";
 
+const PAGE = 25;
+
 export function rollLogScreen() {
   const host = el("div");
   let filter = "all";
+  let visible = PAGE;
 
   const render = () => {
     const log = getRollLog();
@@ -186,7 +189,7 @@ export function rollLogScreen() {
       const chips = el("div", { class: "chip-row" });
       const chip = (key, label, count) => el("button", {
         class: "chip", type: "button", "aria-pressed": String(filter === key),
-        onclick: () => { filter = key; render(); }
+        onclick: () => { filter = key; visible = PAGE; render(); }
       }, label, el("span", { class: "count" }, String(count)));
 
       chips.append(chip("all", "All", log.length));
@@ -201,7 +204,10 @@ export function rollLogScreen() {
       wrap.append(chips);
     }
 
-    const shown = filterRollLog(filter);
+    // A full log is a hundred rows — eight screens of scrolling to reach the buttons
+    // underneath it. Show a session's worth and let the rest be asked for.
+    const all = filterRollLog(filter);
+    const shown = all.slice(0, visible);
     const list = el("ul", { class: "list" });
     for (const r of shown) {
       list.append(el("li", {}, el("div", { class: "row", style: "padding:10px 4px" },
@@ -213,6 +219,12 @@ export function rollLogScreen() {
           el("span", { class: "faint" }, [r.by || "Table", clockTime(r.ts)].filter(Boolean).join(" · "))))));
     }
     wrap.append(el("div", { class: "card" }, list));
+    if (all.length > shown.length) {
+      wrap.append(el("button", {
+        class: "btn btn-block", style: "margin-bottom:var(--gap)",
+        onclick: () => { visible += PAGE; render(); }
+      }, `Show older (${all.length - shown.length} more)`));
+    }
 
     wrap.append(el("div", { class: "btn-row" },
       el("button", {
@@ -221,6 +233,7 @@ export function rollLogScreen() {
           if (!(await confirmModal("Clear the roll log?", "Every recorded roll is discarded. Nothing else changes.", "Clear"))) return;
           clearRollLog();
           filter = "all";
+          visible = PAGE;
           render();
           showToast("Roll log cleared");
         }

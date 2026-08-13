@@ -391,6 +391,53 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(tinyTargets.length === 0,
     `settings toggles with a target under 40px: ${tinyTargets.map((t) => `${t.label} ${t.h}px`).join(", ")}`);
 
+  // dense state: a full log pages rather than running to eight screens, and combatants
+  // who have taken their turn collapse to a line
+  await page.evaluate(() => {
+    const db = JSON.parse(localStorage.getItem("electricState.v1"));
+    db.rollLog = Array.from({ length: 100 }, (_, i) => ({
+      id: "r" + i, ts: Date.now() - i * 60000, by: "Test Traveler", label: "Strength",
+      dice: [6, 2, 3], outcome: "1 success"
+    }));
+    const me = Object.values(db.characters)[0];
+    db.journey = { ...(db.journey || {}), combat: { active: true, round: 2, startingSide: "travelers",
+      combatants: [
+        { id: me.id, kind: "traveler", name: me.name, side: "travelers", zone: 1, acted: false, realm: "real" },
+        ...Array.from({ length: 6 }, (_, i) => ({ id: "x" + i, kind: "threat", name: "Law Enforcement " + i,
+          threatId: "lawEnforcement", side: "enemies", zone: 2, acted: i < 4, health: 4 }))
+      ] } };
+    localStorage.setItem("electricState.v1", JSON.stringify(db));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+
+  await page.evaluate(() => { location.hash = "#/log"; });
+  await page.waitForTimeout(120);
+  const paged = await page.evaluate(() => ({
+    rows: document.querySelectorAll("#screen .list li").length,
+    more: !!document.querySelector('#screen button')
+      && [...document.querySelectorAll("#screen button")].some((b) => /Show older/.test(b.textContent))
+  }));
+  check(paged.rows <= 25, `roll log rendered ${paged.rows} rows at once`);
+  check(paged.more, "roll log gives no way to see older entries");
+  await page.click('#screen button:has-text("Show older")');
+  await page.waitForTimeout(100);
+  const grown = await page.evaluate(() => document.querySelectorAll("#screen .list li").length);
+  check(grown > paged.rows, `"Show older" did not add rows (${paged.rows} then ${grown})`);
+
+  await page.evaluate(() => { location.hash = "#/combat"; });
+  await page.waitForTimeout(120);
+  const cards = await page.evaluate(() => {
+    const heights = [...document.querySelectorAll("#screen .card")]
+      .filter((c) => /Law Enforcement/.test(c.textContent))
+      .map((c) => Math.round(c.getBoundingClientRect().height));
+    const sorted = [...heights].sort((a, b) => a - b);
+    return { heights, smallest: sorted[0], largest: sorted[sorted.length - 1] };
+  });
+  check(cards.largest > cards.smallest * 1.8,
+    `combatants who acted did not collapse: heights ${JSON.stringify(cards.heights)}`);
+  check(cards.heights.filter((h) => h === cards.smallest).length === 4,
+    `expected the four who acted to be compact, got ${JSON.stringify(cards.heights)}`);
+
   // journey: roll a destination and route features
   await page.evaluate(() => { location.hash = "#/journey"; });
   await page.waitForTimeout(80);

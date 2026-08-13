@@ -170,7 +170,18 @@ function build(rerender) {
         class: "btn" + (upNext ? "" : " btn-primary"), onclick: () => { nextRound(c); rerender(); }
       }, "Next round"),
       el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"),
-      el("button", { class: "btn btn-danger", onclick: () => { endCombat(); rerender(); } }, "End combat"))));
+      el("button", {
+        class: "btn btn-danger",
+        onclick: async () => {
+          const down = c.combatants.filter((x) => x.kind === "threat" && (x.health ?? 1) <= 0).length;
+          const ok = await confirmModal("End the fight?",
+            `Zones, rounds and every Threat's remaining health are discarded.${down ? ` ${down} of them are already down.` : ""} Travelers keep their own Health, and anyone Incapacitated still owes a serious injury roll.`,
+            "End it");
+          if (!ok) return;
+          endCombat();
+          rerender();
+        }
+      }, "End combat"))));
 
   for (const combatant of ordered) {
     wrap.append(combatantCard(combatant, c, rerender));
@@ -186,11 +197,24 @@ function combatantCard(combatant, c, rerender) {
     rerender();
   };
 
-  const card = el("div", { class: "card", style: combatant.acted ? "opacity:.55" : "" },
+  const health = ch ? `${ch.state.health}/${maxHealth(ch)}` : `${combatant.health ?? "?"} hp`;
+
+  // Ten combatants is five screens of identical cards. Whoever has taken their turn
+  // collapses to a line — you only need the ones who have not gone yet.
+  if (combatant.acted) {
+    return el("div", { class: "card", style: "opacity:.55;padding:8px var(--gap)" },
+      el("div", { class: "card-row" },
+        el("span", {}, el("strong", {}, combatant.name),
+          el("span", { class: "faint" }, ` · zone ${combatant.zone}`)),
+        el("div", { class: "btn-row" },
+          el("span", { class: "mono faint" }, health),
+          el("button", { class: "btn", onclick: () => update({ acted: false }) }, "Undo"))));
+  }
+
+  const card = el("div", { class: "card" },
     el("div", { class: "card-row" },
       el("strong", {}, combatant.name),
-      ch ? el("span", { class: "mono faint" }, `${ch.state.health}/${maxHealth(ch)}`)
-         : el("span", { class: "mono faint" }, `${combatant.health ?? "?"} hp`)));
+      el("span", { class: "mono faint" }, health)));
 
   if (combatant.forfeit) {
     card.append(el("p", { class: "faint" }, combatant.forfeit === "stunned"
@@ -224,8 +248,7 @@ function combatantCard(combatant, c, rerender) {
   }
 
   card.append(el("div", { class: "btn-row", style: "margin-top:8px" },
-    el("button", { class: "btn" + (combatant.acted ? "" : " btn-primary"), onclick: () => update({ acted: !combatant.acted }) },
-      combatant.acted ? "Undo turn" : "Took their turn"),
+    el("button", { class: "btn btn-primary", onclick: () => update({ acted: true }) }, "Took their turn"),
     el("button", {
       class: "btn", onclick: async () => {
         const { setTarget } = await import("./roller.js");

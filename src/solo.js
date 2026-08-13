@@ -349,9 +349,10 @@ function build(rerender) {
 
   // ------------------------------------------------------------------- record
   if ((s.events || []).length) {
-    const log = el("div", { class: "card" },
-      el("div", { class: "card-row" },
-        el("h3", { style: "margin:0" }, "What has happened"),
+    // A record, not a control: it belongs below the phases and out of the way.
+    const log = el("details", { class: "card phase-fold" },
+      el("summary", {}, `What has happened (${s.events.length})`),
+      el("div", { class: "btn-row", style: "margin-bottom:8px" },
         el("button", { class: "btn", onclick: () => { write({ events: [] }); rerender(); } }, "Clear")));
     for (const e of s.events.slice(0, 14)) {
       log.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },

@@ -107,8 +107,21 @@ function build(ch, rerender) {
       ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
       : null));
 
+  // The sheet is five screens with a few injuries and a full pack, and the thing you
+  // want is rarely at the top. Jump straight to it.
+  wrap.append(el("nav", { class: "subnav", "aria-label": "Sheet sections" },
+    ...[["sec-attributes", "Attributes"], ["sec-talents", "Talents"], ["sec-conditions", "Conditions"],
+        ["sec-caster", "Neurocaster"], ["sec-gear", "Gear"], ["sec-tension", "Tension"]]
+      .map(([id, label]) => el("a", {
+        class: "subnav-item", href: `#/sheet/${ch.id}`,
+        onclick: (e) => {
+          e.preventDefault();
+          document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+        }
+      }, label))));
+
   // --- attributes
-  const attrGrid = el("div", { class: "card" }, el("h3", {}, "Attributes"));
+  const attrGrid = el("div", { class: "card", id: "sec-attributes" }, el("h3", {}, "Attributes"));
   for (const a of ATTRIBUTES) {
     attrGrid.append(el("div", { class: "card-row", style: "padding:4px 0" },
       el("span", {}, a.label),
@@ -117,7 +130,7 @@ function build(ch, rerender) {
   wrap.append(attrGrid);
 
   // --- talents
-  const talents = el("div", { class: "card" }, el("h3", {}, "Talents"));
+  const talents = el("div", { class: "card", id: "sec-talents" }, el("h3", {}, "Talents"));
   if (!ch.talents?.length) talents.append(el("p", { class: "faint" }, "None yet."));
   for (const id of ch.talents || []) {
     const t = findTalent(id);
@@ -266,7 +279,7 @@ function field(label, value, onSave) {
 
 // ------------------------------------------------------------------ conditions
 function conditionsCard(ch, patch) {
-  const card = el("div", { class: "card" }, el("h3", {}, "Injuries & trauma"));
+  const card = el("div", { class: "card", id: "sec-conditions" }, el("h3", {}, "Injuries & trauma"));
   if (!ch.conditions?.length) card.append(el("p", { class: "faint" }, "None. It won't last."));
   for (const cond of ch.conditions || []) {
     card.append(el("div", { style: "padding:8px 0; border-top:1px solid var(--line-soft)" },
@@ -301,7 +314,7 @@ export function describeCondition(cond) {
 
 // ----------------------------------------------------------------- neurocaster
 function neurocasterCard(ch, patch) {
-  const card = el("div", { class: "card" }, el("h3", {}, "Neurocaster"));
+  const card = el("div", { class: "card", id: "sec-caster" }, el("h3", {}, "Neurocaster"));
   const model = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
   if (!model) {
     card.append(el("p", { class: "faint" }, "None. Without one you cannot enter a neuroscape at all."));
@@ -344,7 +357,7 @@ function neurocasterCard(ch, patch) {
 
 // ------------------------------------------------------------------- inventory
 function inventoryCard(ch, patch) {
-  const card = el("div", { class: "card" }, el("h3", {}, "Gear"));
+  const card = el("div", { class: "card", id: "sec-gear" }, el("h3", {}, "Gear"));
   if (isDronePilot(ch)) { card.append(el("p", { class: "faint" }, "You carry nothing — you are the machine.")); return card; }
 
   const items = ch.inventory?.items || [];
@@ -410,7 +423,7 @@ function inventoryCard(ch, patch) {
 // --------------------------------------------------------------------- tension
 function tensionCard(ch) {
   const others = listCharacters().filter((c) => c.id !== ch.id);
-  const card = el("div", { class: "card" }, el("h3", {}, "Tension"));
+  const card = el("div", { class: "card", id: "sec-tension" }, el("h3", {}, "Tension"));
   if (!others.length) {
     card.append(el("p", { class: "faint" }, "Tension needs someone to feel it toward."));
     return card;
