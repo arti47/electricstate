@@ -316,7 +316,11 @@ function build(rerender) {
         const ev = TRAVELER_EVENTS[d6() - 1];
         logEvent("Traveler event", ev.event); rerender();
         await modal({ title: "Traveler event", body: el("p", {}, ev.event), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
-      }))));
+      })),
+    // When a Stop turns violent, the tracker is where it goes.
+    row(
+      el("a", { class: "btn", href: "#/combat" }, "It turns to a fight"),
+      el("a", { class: "btn", href: "#/dice" }, "Roll for it"))));
 
   // -------------------------------------------------------------- 5 escalate
   wrap.append(phase("5 · Turning the screw",

@@ -235,3 +235,44 @@ line of output, not an hour.
 ## Result
 
 73 invariants, browser smoke clean at 360 and 390px, button audit clean across all 18 routes.
+
+# Ninth pass — gameplay flow and the interface
+
+The first eight passes asked whether the rules were right and whether every control did
+something. Both answers were yes by this point, and the app was still awkward to play from.
+This pass asked a different question: from the seat of someone actually running a session,
+how many taps and how much scrolling does the next thing cost?
+
+## Navigation was the structural problem
+
+Eighteen routes, six tabs, and twelve of those routes hanging off two of them with no visible
+index. Combat, Neuroscape, Hazards, Driving and the Log were reachable only from a button row
+at the *foot* of the dice screen — so reaching the combat tracker mid-fight meant scrolling
+past the entire pool builder first. The same shape on the home tab, where Journey, Time and
+Tension sat below the Traveler list.
+
+| # | Finding | Fix |
+|---|---|---|
+| 53 | Twelve routes had no visible way in. | A section nav at the top of every screen in a tab group, listing its siblings and marking where you are. The wizard, the sheet and the injury picker are places you go *into*, so they keep the screen to themselves. |
+| 54 | **Roll sat below seven cards of setup** — the single most-pressed control in the game. | A bar pinned above the tab bar, carrying the pool size and the manual-entry button with it. |
+| 55 | The dice screen showed no vitals, so you could not see the Hope you were about to spend pushing. | It renders the sheet's own header for whoever is rolling. |
+| 56 | **Attacking from the tracker was one-way.** "Attack this" jumped to the dice screen and left you to find your way back. | A round marker and a way back into the fight, shown only while one is running. |
+| 57 | The sheet's play actions — roll, take damage, traumatic event, rally, death roll — were below eight cards of reference. | Directly under the vitals. The Incapacitated and Breakdown notes carry their own rally and death-roll buttons rather than pointing at a row far below. |
+| 58 | **Combat did not say whose turn it was.** Order was implicit in a flag and an opacity change. | The list sorts by who actually acts next — acting side first, then whoever still has a turn — and the round card names them. |
+| 59 | The Time screen put "End the Journey" beside "End Shift". | Three cadence buttons, then the once-a-campaign ones behind a fold. |
+| 60 | Solo showed six phase cards at once, prep and wrap-up included. | Prep and end-of-Stop fold away; the four you use in a scene stay open. |
+| 61 | **Nothing prompted the book's creation steps 13–16.** A party could look finished with no destination, no vehicle and no Tension — which is the Hope economy switched off. | The home screen names the next step until the group is ready to play. |
+| 62 | Solo and the GM screen had no route into combat or the dice. | Both carry the links their own procedures imply. |
+| 63 | Generating a solo Stop did not move the spotlight, so the rotation the book asks for depended on remembering to press a button. | A new Stop hands the lead to whoever has led fewest; the manual hand-over still overrides it. |
+
+## Harness
+
+The tab-bar clearance guard measured controls inside collapsed panels. Chromium keeps their
+last layout position, so three buttons inside a closed fold read as buried under the nav while
+being unreachable. The guard skips closed panels now and covers the dice and time screens,
+where the new pinned bar makes clearance worth checking.
+
+## Result
+
+76 invariants, browser smoke clean at 360 and 390px including the new section nav and action
+bar, button audit clean across all 18 routes.

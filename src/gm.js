@@ -30,6 +30,13 @@ function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "GM"));
   wrap.append(explain("Everything behind the screen. The party panel watches each Traveler's Bliss against their Hope; the Stop builder rolls a setting, a Blocker, a conflict, locations and a three-step Countdown; and every rollable table in the book is under Roll a table."));
 
+  // A GM runs Threats through the tracker and calls for rolls constantly; both were
+  // three taps away through another tab.
+  wrap.append(el("div", { class: "btn-row", style: "margin-bottom:var(--gap)" },
+    el("a", { class: "btn", href: "#/combat" }, "Combat"),
+    el("a", { class: "btn", href: "#/dice" }, "Dice"),
+    el("a", { class: "btn", href: "#/time" }, "Time")));
+
   wrap.append(partyCard());
   wrap.append(stopBuilder(rerender));
   wrap.append(threatCard());

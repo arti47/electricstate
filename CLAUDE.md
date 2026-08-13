@@ -182,6 +182,16 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **`npm test` parses every source file first.** A missing paren in a screen module reaches the
   browser as a hang, not an error — the unit harness now `node --check`s all of `src/` and
   `data*.js` and fails by filename.
-- Verification: `npm test` = 73 invariants + browser smoke; `node tests/audit.js` clicks every
+- **Ninth pass — gameplay flow and interface (11 findings).** Two-level navigation: a section
+  nav on every screen in a tab group, because twelve of eighteen routes had no visible way in.
+  Roll pinned above the tab bar with the pool size; vitals on the dice screen; a way back into
+  a running fight. Sheet play actions moved under the vitals, with rally and death roll on the
+  status notes themselves. Combat sorts by who acts next and names them. Time separates nightly
+  boundaries from once-a-campaign ones. Solo folds prep and wrap-up. Home names the next
+  creation step until the group has a destination, a vehicle and Tension.
+- UI conventions added: `.subnav` (pill row, scrolls inside itself so the page never scrolls
+  sideways), `.actionbar` (fixed above the tab bar, needs an `.actionbar-spacer` at the end of
+  the screen), `.phase-fold` (a card that collapses).
+- Verification: `npm test` = 76 invariants + browser smoke; `node tests/audit.js` clicks every
   control on every screen and flags errors, unclickable controls and silent no-ops.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

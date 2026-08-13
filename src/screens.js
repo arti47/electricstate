@@ -1,8 +1,8 @@
 // Top-level screen renderers. Phase 1-3 screens (wizard, sheet, roller) mount here later.
 import { $, el } from "./core.js";
 import { Settings, TOGGLES, set as setSetting, get as getSetting } from "./settings.js";
-import { listCharacters, exportJSON, importJSON, getRollLog, rollLogKey, filterRollLog,
-         clearRollLog, resetAll } from "./store.js";
+import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLogKey,
+         filterRollLog, clearRollLog, resetAll } from "./store.js";
 import { searchLibrary } from "./rules.js";
 import { showToast, confirmModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
@@ -29,6 +29,7 @@ export function homeScreen() {
         el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—"))));
     }
     wrap.append(el("div", { class: "card" }, list));
+    wrap.append(nextStep(chars));
     // Journey, Time and Tension are one tap away in the section nav above.
     wrap.append(el("div", { class: "btn-row" },
       el("a", { class: "btn", href: "#/create" }, "New Traveler")));
@@ -48,6 +49,38 @@ export function homeScreen() {
   }
 
   return wrap;
+}
+
+/**
+ * Creation ends at step 12; the book's own steps 13-16 are the Journey, the vehicle, the
+ * shared items and the Tension between everyone. Nothing prompted any of it, so a party
+ * could sit here finished-looking with no destination and no Tension to spend.
+ */
+export function nextStepFor(chars, journey) {
+  if (!chars.length) return null;
+  if (!journey?.destination) {
+    return { id: "journey", title: "Where are you going?", href: "#/journey", label: "Set up the Journey",
+      blurb: "The Journey is the campaign: a destination, a vehicle and three items between you." };
+  }
+  if (!journey?.vehicle) {
+    return { id: "vehicle", title: "Nothing to drive yet", href: "#/journey", label: "The Journey",
+      blurb: "Pick the vehicle and the three shared items in the back." };
+  }
+  const anyTension = chars.some((c) => Object.values(c.tension || {}).some((v) => v > 0));
+  if (chars.length > 1 && !anyTension) {
+    return { id: "tension", title: "No Tension between anyone", href: "#/tension", label: "Set the Tension",
+      blurb: "Each Traveler starts with Tension 1 toward one or two of the others. It is the only reliable way Hope comes back." };
+  }
+  return null;
+}
+
+function nextStep(chars) {
+  const step = nextStepFor(chars, getJourney());
+  if (!step) return null;
+  return el("div", { class: "card", style: "border-left:3px solid var(--accent)" },
+    el("strong", {}, step.title),
+    el("p", { class: "faint" }, step.blurb),
+    el("a", { class: "btn btn-primary", href: step.href }, step.label));
 }
 
 export function rulesScreen() {

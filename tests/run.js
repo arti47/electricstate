@@ -858,6 +858,25 @@ await test("combat orders the list by who actually acts next", () => {
     "acting side first, and within each side whoever still has a turn");
 });
 
+await test("the home screen names the next step in the book's own creation order", async () => {
+  const screens = await import("../src/screens.js");
+  store.resetAll();
+  const a = store.saveCharacter({ name: "A", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  const b = store.saveCharacter({ name: "B", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
+  const nudge = () => screens.nextStepFor(store.listCharacters(), store.getJourney())?.id ?? null;
+
+  assert.equal(nudge(), "journey", "no destination yet");
+  store.saveJourney({ destination: "The coast — to bury someone" });
+  assert.equal(nudge(), "vehicle", "destination but nothing to drive");
+  store.saveJourney({ destination: "The coast — to bury someone", vehicle: { name: "Van", hull: 6 } });
+  assert.equal(nudge(), "tension", "vehicle but nobody carries Tension");
+
+  store.saveCharacter({ ...store.getCharacter(a.id), tension: { [b.id]: 1 } });
+  assert.equal(nudge(), null, "once Tension is set the group is ready and the nudge goes away");
+  assert.equal(screens.nextStepFor([], null), null, "an empty roster gets the create prompt instead");
+  assert.ok(b.id, "two Travelers were needed for the Tension step");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);
