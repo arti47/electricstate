@@ -403,6 +403,8 @@ roadmap to match:
 5. **Table device** — phone / tablet / desktop / mixed. Tunes layout effort (baseline
    stays phone-first regardless).
 6. **Theme default** — follow system (default) / always dark / always light.
+7. **One campaign or many** — a local campaign list, or one game at a time (§14.2). Cheap
+   on day one, expensive once every module assumes there is exactly one.
 
 After the Q&A, build autonomously to completion. Ask further questions **only** for
 newly discovered rules ambiguities — never for permission to continue.
@@ -535,7 +537,11 @@ Every screen sits inside the same frame. Four regions are fixed; only one scroll
   resource, danger states also carrying text so colour is never the sole channel.
 - **Zoom is off** (`user-scalable=no`, `maximum-scale=1`, `touch-action: manipulation`) and
   every input is ≥16px so mobile browsers do not zoom on focus. A stray pinch mid-roll is
-  only ever a nuisance in a play aid.
+  only ever a nuisance in a play aid. **This is an accessibility trade-off and it incurs a
+  debt: pinch-zoom is how low-vision users cope.** Pay it back with a text-size control in
+  Settings that scales the app's own type (a root font-size multiplier, persisted with the
+  theme). Locking zoom without offering that is a regression for the players who need it
+  most — the reference build shipped the lock and never built the control.
 - **Reduced motion honoured**; no animation carries information.
 
 ### 6.3 Placing controls — gameplay flow — **LOCKED**
@@ -752,7 +758,7 @@ any rules the book gates behind table agreement (§3.22) · advanced/GM automati
 
 ## 9. Build roadmap — instantiate with checkboxes in the project CLAUDE.md
 
-At Stage C start, write the project's `CLAUDE.md`: this document's §1 and §5–§13 carried
+At Stage C start, write the project's `CLAUDE.md`: this document's §1 and §5–§14 carried
 over, **§1.1 Product Decisions** (the Stage B Q&A answers), §3 replaced by the
 **completed** System Profile (with the checkpoint rulings recorded inline), the file
 tables made real, the **Data Extraction Ledger** (§9.1), this roadmap instantiated with
@@ -836,6 +842,27 @@ whole path instead. **One row per rule, five columns:**
   automation behind one shared toggle.
 - **Hardening (always):** the harnesses of §11.1, the accessibility pass, the §6.2–§6.7
   layout, flow and teaching rules, and the **audit protocol of §11 run to a clean pass**.
+
+### 9.3 Definition of done — per feature
+
+A feature is done when every line is true. Anything less is a feature that will come back
+as an audit finding, and the audit is more expensive than the checklist.
+
+- [ ] **Rule** cited to the source, with the exact numbers and the edge cases.
+- [ ] **Data** in a `data*.js` file, never inline in a module (§10.2).
+- [ ] **Engine** — a named function that applies it, including any repetition or cascade.
+- [ ] **Surface** — reachable in two taps from where a player would look for it, with its
+      primary action above the fold (§6.3.2).
+- [ ] **Flags** — every state field it introduces has a setter, a reader and a clearer
+      (§10.14).
+- [ ] **Defaults** match what the fiction does when nobody touches the control (§10.15).
+- [ ] **Onward route** on every terminal outcome (§6.3.6).
+- [ ] **Copy** either enforced or marked guidance-only (§10.13), in the book's own state
+      names (§6.6).
+- [ ] **Test** — a unit invariant, plus a browser check if it has a surface; and you have
+      **watched it fail** against the unfixed code (§10.6).
+- [ ] **Traceability row** filled in, all five columns (§9.1a).
+- [ ] **CLAUDE.md** updated in the same change; `CACHE_VERSION` bumped.
 
 **Per-feature spec format (mandatory for every roadmap item):**
 - **Rule:** the canonical mechanic with exact numbers (cited to the source).
@@ -967,6 +994,22 @@ The no-op check is what catches a button wired to a handler that returns early.
 **Poll for the change rather than waiting a fixed interval**; a fixed wait loses the race
 with a handler that opens a modal and manufactures findings that reproduce nowhere.
 
+**D. Committed probes and seed fixtures.** The measured-layout and stress passes need a
+realistic state and a script that reports numbers rather than opinions. **Commit both.** In
+the reference build these were written as scratch files and deleted three times, so every
+pass paid to rebuild them and no two passes measured quite the same thing.
+
+- `tests/fixtures/*.json` — three seed states, loaded by harnesses and probes alike:
+  **fresh** (nothing created), **mid-session** (a full party, a journey, a fight running,
+  a couple of conditions), **stress** (what a table has by session three — see §11.2.6).
+- `tests/probe-layout.mjs` — prints the §6.7 table for every route: height in viewports,
+  control count, primary-action offset, smallest tap target, overflow at each width.
+- `tests/probe-flow.mjs` — walks a scripted session and prints the tap count and route
+  changes for each common sequence (make an attack, resolve damage, end the day).
+
+A probe prints; it does not assert. That is the point — you read the table and notice the
+outlier. Once a number is known-good, it graduates into harness B as an assertion.
+
 ### 11.2 Pass types — run all of them, in this order
 
 1. **Dead-data scan (mechanical).** Two scripts: *every export nothing else imports*, and
@@ -1086,7 +1129,79 @@ version of each before declaring a phase done.
 
 ---
 
-## 14. Kickoff Prompt — copy-paste this to start a project
+## 14. Improvement backlog — features the next build should weigh
+
+The template's mandatory scope (§1) is what a play aid must have. This section is what the
+reference build **wished it had by the end** — gaps found in play and in audit rather than
+guessed at. Treat it as a menu to decide from at Stage B, not as scope: each entry says what
+the gap actually was, so you can judge whether the game you are building has it too.
+
+### 14.1 Gaps the reference build actually hit
+
+1. **A campaign list.** The build assumed **one campaign per device** — `getJourney()`
+   returns *the* journey. Running a second game means wiping the first, and there is no way
+   to keep a finished campaign as a record. Decide this consciously at Stage B: a local
+   campaign list is cheap on day one and expensive to retrofit after every module has
+   learned there is exactly one.
+2. **Undo beyond the lifecycle engine.** One-step undo exists for time boundaries, because
+   §3.12 demanded it, and nowhere else — so ending a fight, clearing a log or deleting a
+   character are irreversible while ending a day is not. A general snapshot-and-revert
+   (one stack, any mutating action pushes) is a modest amount of code and removes a whole
+   class of confirmation dialogs.
+3. **A session record, not just a roll log.** The roll log answers "what did I roll"; the
+   advancement debrief asks "how did you follow your Dream this session" and the app has
+   no answer, though it saw everything that happened. A per-session narrative record —
+   events, conditions taken, Stops resolved, boundaries crossed — turns the debrief from a
+   memory test into a review, and gives a group returning after three weeks a way back in.
+4. **A fast character switcher.** A solo player runs two to four characters and switches
+   constantly; every screen that acts on a character has its own select. One switcher in
+   the persistent header, applying app-wide, would remove the single most repeated
+   interaction in solo play.
+5. **A text-size control** to pay back the zoom lock (§6.2).
+6. **Named instances in the tracker.** Combatants drop in as "Law Enforcement 1, 2, 3".
+   At a table they get names in the first thirty seconds, and the app cannot hold them.
+   Editable combatant names, persisted for the fight.
+7. **A human-readable export.** JSON export protects the data; it does not let a player
+   hand their character to someone, print it, or read it on a device that does not have the
+   app. A rendered character sheet (HTML or plain text) alongside the JSON.
+8. **A repeat-roll affordance.** In play the same pool is rolled repeatedly (attack, attack,
+   attack). "Roll that again" on the result card, and a short list of recent pools, would
+   cut the commonest interaction to one tap.
+9. **A data-integrity action.** Settings should offer "check my data": run normalization,
+   report what it repaired. Migrations run silently at load; when one is wrong, the player
+   sees only strange numbers with no way to say what happened.
+
+### 14.2 Decisions to make consciously rather than by default
+
+- **One campaign or many** (as above) — an architecture decision disguised as a feature.
+- **Portraits.** In the schema from day one, never built. If the game's play does not want
+  them, say so and drop the field; a schema field with no UI is §0 in another costume.
+- **Sound and haptics on rolls.** A dice app that makes no noise is a deliberate choice —
+  make it deliberately, and note it, because it is the first thing playtesters ask about.
+- **A table/landscape layout.** The template is phone-first and says so; a tablet propped in
+  the middle of a table is a different product with a different layout, and building both is
+  a real cost.
+- **Homebrew content.** The scope guard (§10.9) keeps invented content out of the extracted
+  files. Whether players may *add their own* gear, threats or tables through the UI is a
+  separate question — the invented-ability path (§3.14a) is the thin end of it, and once
+  one exists the argument for the rest gets stronger.
+- **Clocks on the header.** If the game's pacing device is a countdown, it competes with the
+  vitals for the persistent header. Decide which the player needs at a glance.
+
+### 14.3 Things to leave alone
+
+- **A build step.** The no-build constraint (§5) survived a 7,000-line app comfortably and
+  is why the thing still runs from a clone in five years.
+- **A component framework.** The element factory plus one module per responsibility held up
+  under eleven audit passes; nothing in the findings would have been prevented by a
+  framework, and several were caused by indirection that a framework would add more of.
+- **Cleverness in the data layer.** Plain arrays and objects with cited page numbers audited
+  clean every single pass. That is not an accident: the data layer is the only part of the
+  system a human can proofread against a book.
+
+---
+
+## 15. Kickoff Prompt — copy-paste this to start a project
 
 > Copy the block below into a fresh chat along with this template file and (if available)
 > the rulebook source. It is kept in sync with this template by design — if you edit one,
@@ -1127,9 +1242,12 @@ Rules & Constraints:
    missing value gets queried, then asked, then marked blocked — never guessed.
 7. Every ledger row names the module that will consume the table. A table with no
    consumer is a table that will be extracted and never called.
-8. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions —
-   including the Data Extraction Ledger with every box unticked — then stop and await my
-   go-ahead for Stage C.
+8. Read §14 (the improvement backlog) before proposing the roadmap, and tell me which of
+   its entries this game actually needs — particularly whether it wants one campaign or
+   many, since that is expensive to retrofit.
+9. On Stage B sign-off, write the project CLAUDE.md per §9 of the instructions — including
+   the Data Extraction Ledger with every box unticked and the Rules Traceability Ledger
+   with its columns defined — then stop and await my go-ahead for Stage C.
 
 Next Steps: Acknowledge these constraints, then ask your first question (the rulebook
 source).
@@ -1141,6 +1259,6 @@ source).
 
 | Version | Date | Change |
 |---|---|---|
-| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. |
+| v3 | 2026-08-13 | Lessons from the Electric State reference build (eleven audit passes). New §0 naming the dominant defect class (data extracted, never called) and §11.2's mechanical dead-data scan that finds it. New §2.1 source precedence + de-interleaved tables + printed-value errata; §2.2 house-aid rules. New §3 slots: 3.3a currency lose-conditions, 3.10a archetype damage exceptions, 3.14a rule-kind abilities, 3.22 safety tools; sharpened 3.9 (rule-rewriting conditions + conflict order), 3.12 (environmental checks), 3.17 (reaction costs, dual scales), 3.20 (solo procedural framing). New §6.2 screen anatomy (the fixed frame, sticky resource header, colour semantics, zoom lock); §6.3 placing controls for gameplay flow (two-level nav, pinned action bar, controls ordered by the sequence of play, frequency decides height, in-scene before between-scene, screens that lead somewhere, the named next step, travelling live state, tap targets); §6.4 feedback and dialogs (toast vs modal vs inline, results that show their working, confirmations that name the loss, refusals that cite the rule); §6.5 density under load; §6.6 the four teaching layers (per-screen explain note, rules-library links, the tutorial, in-context teaching); §6.7 the measurement contract the harness enforces — each rule a measured defect from this build. §9.1 ledger rows now name their consuming module. §10 adds prove-the-guard-bites, one-record and one-counter rules. §11 rewritten as a repeatable multi-pass protocol with three specified harnesses (incl. the parse gate and the interaction audit) and a statement of where findings actually are. New §9.1a Rules Traceability Ledger (rule → data → engine → surface → test, filled while building, gaps visible before they ship). New §10.1 authoring rules that prevent the §0 defect rather than finding it later: explain-and-enforce in the same change, every flag has a setter/reader/clearer, defaults follow the fiction, one lookup per kind of thing, shape changes ship a migration fixture, reversibility is inventoried. New §11.4 cadence table and the stopping rule (a full seven-pass cycle with no finding — clean single passes at six, eight and ten were each followed by cycles finding eleven, four and eight), plus subsystem seams as a lead when a pass runs dry. Extraction rules for appendix/sidebar rules and for permissions the book grants. Cascade rules flagged in §3.1. Voice rule: the app uses the book's own state names. §13 grown to twenty-three named defect classes. New §9.3 per-feature definition of done; §11.1 D committed probes and shared seed fixtures (fresh / mid-session / stress) so every pass measures the same thing; §14 improvement backlog — the nine gaps the reference build actually hit (campaign list, general undo, session record, character switcher, text-size control paying back the zoom lock, named combatants, human-readable export, repeat-roll, data-integrity action), the decisions to make consciously rather than by default, and the three things to leave alone. Stage B gains a seventh question: one campaign or many. |
 | v2 | 2026-07-06 | Lessons from the Dune: Adventures in the Imperium reference build: new §3 slots (opposed-test sequence 3.2, meta-currencies 3.3, group entity 3.8, scene/session lifecycle 3.12, extended/progress tasks 3.13); mandatory Data Extraction Ledger (§9.1); Stage B split into checkpoint + standard product Q&A (§4.2); local-first default with First Session Playable milestone gating Phase 5; mandatory roll log, JSON export/import, persistent resource header, lifecycle confirm+undo, rules-citation links; notebook extraction warning about summarized procedures; kickoff prompt embedded (§13). |
 | v1 | — | Original template from the first reference implementation. |
