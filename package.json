@@ -7,13 +7,14 @@
   "scripts": {
     "test": "node tests/run.js && node tests/browser.js",
     "audit": "node tests/audit.js",
-    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-pwa.mjs",
+    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-onboarding.mjs && node tests/probe-pwa.mjs",
     "probe:layout": "node tests/probe-layout.mjs",
     "probe:flow": "node tests/probe-flow.mjs",
     "probe:pwa": "node tests/probe-pwa.mjs",
     "verify": "npm test && npm run probe && npm run audit",
     "serve": "python3 -m http.server 8080",
-    "pronouns": "node tests/pronoun-scan.mjs"
+    "pronouns": "node tests/pronoun-scan.mjs",
+    "probe:onboarding": "node tests/probe-onboarding.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.47.0"

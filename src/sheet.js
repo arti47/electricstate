@@ -534,7 +534,7 @@ export function injuryScreen(id) {
         el("a", { class: "btn", href: `#/sheet/${id}` }, "Back to the sheet")));
     } else wrap.append(el("div", { class: "card" },
       el("h3", {}, "Serious injury"),
-      el("p", { class: "faint" }, "Rolled after surviving Incapacitation. 11–36 means no lasting harm."),
+      el("p", { class: "faint" }, "Rolled after surviving Incapacitation. A D66 is two dice read as a two-digit number — the first die is the tens. Anything from 11 to 36 means no lasting harm."),
       el("div", { class: "btn-row" },
         el("button", { class: "btn btn-primary", onclick: () => { const r = d66(); add(rollInjury(r), "injury"); } }, "Roll D66"),
         el("button", { class: "btn", onclick: () => picker(SERIOUS_INJURIES, "injury", add) }, "Choose"))));
@@ -542,7 +542,7 @@ export function injuryScreen(id) {
     if (Settings.mentalTrauma()) {
       wrap.append(el("div", { class: "card" },
         el("h3", {}, "Mental trauma"),
-        el("p", { class: "faint" }, "Rolled after a Breakdown you were rallied from, or after being Incapacitated inside a neuroscape."),
+        el("p", { class: "faint" }, "Rolled after a Breakdown you were rallied from, or after being Incapacitated inside a neuroscape. Roll it, or pick one if the table would rather choose."),
         el("div", { class: "btn-row" },
           el("button", { class: "btn btn-primary", onclick: () => { const r = d66(); add(rollTrauma(r), "trauma"); } }, "Roll D66"),
           el("button", { class: "btn", onclick: () => picker(MENTAL_TRAUMAS, "trauma", add) }, "Choose"))));

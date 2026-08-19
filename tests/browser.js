@@ -438,7 +438,19 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(/switched off/i.test(gatedText), "gated screen did not explain why it is empty");
   const homeHint = await page.evaluate(() => { location.hash = "#/home"; return true; });
   await page.waitForTimeout(60);
-  check(/Switched off/.test(await page.textContent("#screen")), "home screen does not mention the hidden surfaces");
+  // A switched-off surface is named, said what it is for, and switchable from here — the
+  // settings screen is not somewhere a first-time solo player would think to look.
+  const offered = await page.evaluate(() => {
+    const t = document.getElementById("screen").textContent;
+    return {
+      names: /Playing on your own\?/.test(t) && /Running this for other people\?/.test(t),
+      explains: /deck of cards answers the questions a GM would/.test(t),
+      switchable: [...document.querySelectorAll("#screen button")].some((b) => /Switch it on/.test(b.textContent))
+    };
+  });
+  check(offered.names, "home screen does not name the hidden surfaces");
+  check(offered.explains, "home screen names solo mode without saying what it is");
+  check(offered.switchable, "a hidden surface cannot be switched on from where it is mentioned");
   await page.evaluate(() => { location.hash = "#/gm"; });
   await page.waitForTimeout(60);
   await page.click('#screen button:has-text("Turn it on")');

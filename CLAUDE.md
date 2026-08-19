@@ -280,4 +280,15 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   own label. `.vitals` is flex, not grid: auto-fit left a blank slab whenever the tile count
   did not divide the column count. A control shares a line only with fixed-length content:
   the gender switch sat beside the archetype and the song and therefore moved sheet to sheet.
+- **The app assumes the player has read nothing.** A 52-word **glossary** in `data-library.js`
+  renders as the first group on the Rules screen and is searchable with the rules; every word
+  the app puts on screen before a player could have learned it is in there, pinned by a unit
+  test. Every screen introduces itself with `explain()`, every empty state carries the action
+  that fills it, every roll result says what happened in a sentence, and abbreviations are
+  spelled out where they appear. Solo mode and the GM screen are advertised on the home screen
+  by what they are, switchable in one tap, rather than named in a line of small print.
+- `tests/probe-onboarding.mjs` is the guard: every route in the empty state must introduce
+  itself and offer something to press, every book word must be defined, and the first five
+  minutes — cold start to tutorial, to a ready-made Traveler, to a first roll — must still work.
+  `npm run probe:onboarding` runs it alone.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

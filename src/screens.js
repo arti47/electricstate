@@ -6,7 +6,7 @@ import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLog
          filterRollLog, clearRollLog, resetAll, listCampaigns, activeCampaignId,
          createCampaign, switchCampaign, renameCampaign, deleteCampaign, checkData,
          canUndo, undoLast, undoLabel } from "./store.js";
-import { searchLibrary } from "./rules.js";
+import { searchLibrary, searchGlossary } from "./rules.js";
 import { showToast, confirmModal, promptModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
 import { TRAUMA_CONSENT_NOTE } from "../data-tables.js";
@@ -37,18 +37,24 @@ export function homeScreen() {
     wrap.append(el("div", { class: "btn-row" },
       el("a", { class: "btn", href: "#/create" }, "New Traveler")));
   }
+  // Naming a switched-off surface tells you it exists; it does not tell you what it is.
+  // Solo mode in particular is somebody's whole reason for opening this app, and the only
+  // route to it was a settings screen they had no reason to visit.
   const hidden = [
-    !Settings.solo() && ["Solo mode", "#/solo"],
-    !Settings.gmScreen() && ["GM screen", "#/gm"]
+    !Settings.solo() && ["solo", "Playing on your own?",
+      "There is a full solo mode: you run two to four Travelers and a deck of cards answers the questions a GM would. No group needed, no preparation.", "#/solo"],
+    !Settings.gmScreen() && ["gmScreen", "Running this for other people?",
+      "The GM screen builds a Stop, watches the party's Bliss and rolls every table in the book.", "#/gm"]
   ].filter(Boolean);
-  if (hidden.length) {
-    wrap.append(el("p", { class: "faint", style: "margin-top:20px" },
-      "Switched off: ",
-      ...hidden.flatMap(([label, href], i) => [
-        i ? " · " : "",
-        el("a", { href }, label)
-      ]),
-      ". Switch on in Settings."));
+  for (const [flag, title, blurb, href] of hidden) {
+    wrap.append(el("div", { class: "card", style: "margin-top:20px" },
+      el("h3", { style: "margin-top:0" }, title),
+      el("p", { class: "faint" }, blurb),
+      el("div", { class: "btn-row" },
+        el("button", {
+          class: "btn", onclick: () => { setSetting(flag, true); location.hash = href; }
+        }, "Switch it on"),
+        el("a", { class: "btn", href: "#/tutorial" }, "How it works"))));
   }
 
   return wrap;
@@ -89,7 +95,7 @@ function nextStep(chars) {
 export function rulesScreen() {
   const wrap = el("div");
   wrap.append(el("h1", {}, "Rules"));
-  wrap.append(explain("Every rule the app automates, in the app's own words, grouped by subject. Panels stay closed until you open one. Searching opens whatever matches, so you can type \"push\" or \"bliss\" instead of hunting."));
+  wrap.append(explain("Every rule the app automates, in the app's own words, grouped by subject — and above the groups, one plain sentence for every word this game uses. Panels stay closed until you open one. Searching opens whatever matches, so you can type \"push\" or \"tilt\" instead of hunting."));
 
   const results = el("div");
   const input = el("input", {
@@ -119,8 +125,18 @@ export function rulesScreen() {
   function render(q = "") {
     results.replaceChildren();
     const hits = searchLibrary(q);
-    if (!hits.length) { results.append(el("p", { class: "empty" }, "Nothing matches that.")); return; }
+    const words = searchGlossary(q);
     const searching = q.trim().length > 0;
+
+    // The rules are grouped by subject, which only helps if you already know what the
+    // subject is called. This is the index for someone who does not: the word they read
+    // on a screen, and a sentence saying what it means.
+    if (words.length) results.append(glossaryGroup(words, searching));
+
+    if (!hits.length) {
+      if (!words.length) results.append(el("p", { class: "empty" }, "Nothing matches that."));
+      return;
+    }
 
     const placed = new Set();
     for (const [tag, title] of GROUPS) {
@@ -141,6 +157,25 @@ export function rulesScreen() {
     });
   }
   return wrap;
+}
+
+function glossaryGroup(entries, searching) {
+  const group = el("details", { class: "rule-group", open: searching },
+    el("summary", {}, "Words this game uses", el("span", { class: "count" }, `${entries.length}`)));
+  const list = el("div", { style: "padding:0 12px 10px" });
+  for (const g of entries) {
+    list.append(el("div", { class: "def" },
+      el("span", { class: "def-key" }, g.term),
+      el("span", { class: "def-value" }, g.text,
+        g.see
+          ? el("a", {
+              class: "faint", style: "display:block;margin-top:2px", href: "#/rules",
+              onclick: () => sessionStorage.setItem("ruleFocus", g.see)
+            }, "The full rule →")
+          : null)));
+  }
+  group.append(list);
+  return group;
 }
 
 function ruleGroup(title, entries, searching, focus) {
@@ -209,7 +244,9 @@ export function rollLogScreen() {
     wrap.append(explain("Every roll the app has made, newest first, and only the last hundred are kept. With more than one Traveler in play, filter by who rolled — rolls that belong to the table rather than a person sit under Table."));
 
     if (!log.length) {
-      wrap.append(el("p", { class: "empty" }, "No rolls recorded yet."));
+      wrap.append(el("div", { class: "empty card" },
+        el("p", {}, "No rolls yet. Everything the app rolls lands here, so you can look back at what actually happened."),
+        el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll some dice")));
       host.replaceChildren(wrap);
       return;
     }

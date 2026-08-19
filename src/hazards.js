@@ -38,7 +38,11 @@ function build(rerender) {
   wrap.append(explain("The things that hurt you without swinging: blasts, fire, falls, disease, cold and hunger. Each rolls its own dice — Blast Power, Intensity, Virulence — where every 6 is a point of damage, and none of these rolls can be pushed."));
 
   if (!chars.length) {
-    wrap.append(el("div", { class: "empty card" }, el("p", {}, "Create a Traveler first.")));
+    // An empty screen that does not say what to do next is a dead end, and a dead end is
+    // where a first-time player stops.
+    wrap.append(el("div", { class: "empty card" },
+      el("p", {}, "Hazards happen to somebody. Make a Traveler and this screen fills in."),
+      el("a", { class: "btn btn-primary", href: "#/create" }, "Create a Traveler")));
     return wrap;
   }
 

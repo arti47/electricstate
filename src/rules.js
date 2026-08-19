@@ -2,7 +2,7 @@
 import { d66Index, fromRangeTable } from "./core.js";
 import { TALENTS, ARCHETYPES, WEAPONS, NEUROCASTERS, ATTRIBUTES, RANGES, BELOW_MIN_RANGE_PENALTY } from "../data.js";
 import { SERIOUS_INJURIES, MENTAL_TRAUMAS, GEAR, SHARED_ITEMS, SERVICES } from "../data-tables.js";
-import { BY_ID as LIBRARY_BY_ID, LIBRARY } from "../data-library.js";
+import { BY_ID as LIBRARY_BY_ID, LIBRARY, GLOSSARY, GLOSSARY_BY_TERM } from "../data-library.js";
 
 /**
  * A talent by id. The book lets a Traveler invent one at a debrief ("or even create a
@@ -27,6 +27,15 @@ export function searchLibrary(query) {
   if (!q) return LIBRARY;
   return LIBRARY.filter((e) =>
     e.title.toLowerCase().includes(q) || e.text.toLowerCase().includes(q) || (e.tags || []).some((t) => t.includes(q)));
+}
+
+/** One word, one sentence. The other index into the rules, for a player who has not read them. */
+export const glossary = (term) => GLOSSARY_BY_TERM[String(term).toLowerCase()] || null;
+
+export function searchGlossary(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return GLOSSARY;
+  return GLOSSARY.filter((g) => g.term.toLowerCase().includes(q) || g.text.toLowerCase().includes(q));
 }
 
 export const rangeBand = (id) => RANGES.find((r) => r.id === id)?.band ?? 0;

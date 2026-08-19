@@ -510,3 +510,39 @@ across the app.
 ## Result
 
 100 invariants, browser smoke clean, three probes clean, button audit clean.
+
+---
+
+# Seventeenth pass — the player who has read nothing
+
+The question this time was not whether a control works but whether someone who has never
+read the rulebook, and has never played a solo RPG, can use it. A fourth probe was written
+to ask that mechanically, and it found more than reading did.
+
+## The probe
+
+`tests/probe-onboarding.mjs` walks every route **in the empty state** and asks three things:
+does the screen introduce itself, is there anything at all to press, and does the app ever
+put a word from the book on screen that it never explains anywhere. Then it plays the first
+five minutes: cold start to the tutorial, cold start to a playable Traveler, first roll.
+
+Its first run reported twelve gaps. Four were the probe measuring badly — a closed accordion's
+own summary is the way into it, a search box is a control even with no label, and the tutorial
+does not owe a "what this does" note because it is one. Eight were real.
+
+## Findings
+
+| # | Finding | Fix |
+|---|---|---|
+| 105 | **The app used forty-odd words from the book and defined about half of them.** Tilt, Kicker, Neurine, base dice, spotlight and the deck appeared on screen and were explained nowhere — and the rules library is grouped by subject, which only helps someone who already knows what the subject is called. | A **glossary**: 52 words, one plain sentence each, rendered as the first group on the Rules screen and searchable with everything else. Each entry links on to the fuller rule where there is one. A unit test pins that every word a player meets before reading anything is in it. |
+| 106 | **Four screens were dead ends when empty.** The roll log, Tension, the Neuroscape and Hazards each said "No Travelers yet" and offered nothing to press. A first-time player lands there and stops. | Every empty state says what the screen is for once it has something, and carries the action that gets it there. |
+| 107 | **Combat let you start a fight with nobody in it** and then reported that everyone had gone. | With no Travelers it explains what the tracker is and points at creation. |
+| 108 | **The creation wizard had no explainer at all** — seven screens of unfamiliar choices with nothing saying what the whole thing was, or that every field can be rolled rather than invented. | An explain note on every step, and the pregen route promoted from a small button to a card that says what it is for: "In a hurry, or new to this? The book prints four finished Travelers." |
+| 109 | **Solo mode is off by default and the home screen mentioned it in six words.** For someone whose entire reason for opening the app is playing alone, that was the whole discovery path. | A card that says what solo mode actually is, switches it on in one tap, and links to the walkthrough. Same for the GM screen. |
+| 110 | **The solo screen listed six numbered phases and never said what the loop was.** Structure is not instruction for someone who has never played without a GM. | A first-run card: ask a question, draw a card, read the answer into the fiction — four steps, and it disappears once the first event is logged. |
+| 111 | **A roll result was a pile of numbers and the word Failure.** Nothing said why, or that failing costs nothing until you push. | One line under every result: "A 6 is a success, and you rolled one. It works — say how." / "No 6, so it did not work. Nothing is spent unless you push." |
+| 112 | **"base + gear", "P2 N2 G2", "11–36"** — three abbreviations doing real work with no expansion anywhere. | Spelled out where they appear, and D66 and D100 added to the glossary. |
+
+## Result
+
+104 invariants, browser smoke clean, four probes clean, button audit clean.

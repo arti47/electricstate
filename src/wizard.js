@@ -474,9 +474,16 @@ function build(rerender) {
   const wrap = el("div", {},
     el("h1", {}, titles[step]),
     el("p", { class: "faint" }, `Step ${draft.step + 1} of ${STEPS.length}`),
+    // Seven screens of choices from a game you may not have read. Say what the whole thing
+    // is for, once, at the top of every step.
+    explain("Seven screens make one Traveler. Nothing here is permanent and nothing has to be invented: every field has a roll button, so you can put the whole character together by tapping if you would rather find out who this Traveler is than decide it. If you want to start playing this minute, tap the ready-made Traveler button on the first screen instead — the book's four ready-made Travelers, complete."),
     body,
     issues.length ? el("div", { class: "card" }, ...issues.map((i) => el("p", { class: "faint" }, i))) : null,
-    draft.step === 0 ? el("div", { class: "btn-row" }, el("button", { class: "btn", onclick: choosePregen }, "Use a pregen")) : null);
+    draft.step === 0
+      ? el("div", { class: "card" },
+          el("p", { class: "faint" }, "In a hurry, or new to this? The book prints four finished Travelers. Take one and you can start playing now."),
+          el("button", { class: "btn btn-block", onclick: choosePregen }, "Use a ready-made Traveler"))
+      : null);
 
   // Seven steps, and Next sat below the content of each one.
   wrap.append(...actionBar({
@@ -725,7 +732,8 @@ function buildTension(rerender, chars) {
   wrap.append(explain("What each Traveler feels toward each other Traveler, from 0 to 2. It is asymmetric on purpose — you can resent someone who thinks you are friends. It adds dice when you two are opposed, and talking it down is how Hope comes back."));
   if (chars.length < 2) {
     wrap.append(el("div", { class: "empty card" },
-      el("p", {}, "Tension needs at least two Travelers. It runs between people, not inside one.")));
+      el("p", {}, "Tension needs at least two Travelers. It runs between people, not inside one."),
+      el("a", { class: "btn btn-primary", href: "#/create" }, "Create another Traveler")));
     return wrap;
   }
   wrap.append(el("p", { class: "faint" }, "Asymmetric on purpose: what you feel toward someone need not be returned. Start at 1 toward one or two others, 0 toward the rest."));

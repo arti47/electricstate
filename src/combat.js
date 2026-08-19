@@ -130,6 +130,14 @@ function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "Combat"));
   wrap.append(explain('Zones rather than a grid. The side that starts the fight acts first, everyone gets a move and an action, and a reaction costs your next turn. Anyone wearing a neurocaster picks a realm each round and is inert in the other one.'));
 
+  if (!c && !listCharacters().length) {
+    wrap.append(el("div", { class: "empty card" },
+      el("p", {}, "A fight needs somebody in it. Make a Traveler and this becomes the tracker: who is where, who has gone, and what health is left."),
+      el("a", { class: "btn btn-primary", href: "#/create" }, "Create a Traveler")));
+    wrap.append(tasksCard(rerender));
+    return wrap;
+  }
+
   if (!c) {
     wrap.append(el("div", { class: "card" },
       el("p", { class: "faint" }, "Zones, not grids. The side that starts the fight acts first — if that is unclear, roll a die and add the best Wits on each side."),

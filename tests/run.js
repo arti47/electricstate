@@ -1171,6 +1171,45 @@ await test("the pronoun scan reads strings and ignores comments and expressions"
     "prose around an expression still counts");
 });
 
+// ------------------------------------------------------------------- glossary
+
+await test("every word the app puts on screen has a plain-language definition", () => {
+  const byTerm = new Set(library.GLOSSARY.map((g) => g.term.toLowerCase()));
+  // The words a player meets before they have read anything.
+  const mustDefine = [
+    "traveler", "journey", "stop", "blocker", "countdown", "tilt", "kicker",
+    "bliss", "hope", "tension", "neurocaster", "neuroscape", "neurine",
+    "push", "archetype", "talent", "attribute", "base die", "gear die",
+    "stretch", "shift", "threat", "dream", "flaw", "incapacitated", "breakdown",
+    "avatar", "drone", "hull", "zone", "engaged", "solo play", "the deck", "spotlight",
+    "d66", "d100", "round", "success", "dice pool", "opposed roll", "helping", "condition"
+  ];
+  const missing = mustDefine.filter((t) => !byTerm.has(t));
+  assert.deepEqual(missing, [], `undefined in the glossary: ${missing.join(", ")}`);
+});
+
+await test("a glossary entry is one plain sentence, not a rule", () => {
+  for (const g of library.GLOSSARY) {
+    assert.ok(g.term && g.text, `${g.term}: empty`);
+    assert.ok(g.text.length <= 260, `${g.term} is ${g.text.length} chars — that is a rule, not a definition`);
+    assert.ok(/[.!?]$/.test(g.text.trim()), `${g.term} does not end in a full stop`);
+  }
+});
+
+await test("every glossary cross-reference points at a rule that exists", () => {
+  const ids = new Set(library.LIBRARY.map((r) => r.id));
+  const broken = library.GLOSSARY.filter((g) => g.see && !ids.has(g.see)).map((g) => `${g.term} → ${g.see}`);
+  assert.deepEqual(broken, [], `dangling references: ${broken.join(", ")}`);
+});
+
+await test("the glossary is searchable by the word a player actually read", () => {
+  assert.equal(rules.glossary("Tilt").term, "Tilt");
+  assert.equal(rules.glossary("tilt").term, "Tilt", "case does not matter");
+  assert.equal(rules.glossary("nonsense"), null);
+  assert.ok(rules.searchGlossary("bliss").length >= 2, "searching a word finds the entries that mention it");
+  assert.equal(rules.searchGlossary("").length, library.GLOSSARY.length, "no query lists everything");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

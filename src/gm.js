@@ -48,7 +48,11 @@ function build(rerender) {
 function partyCard() {
   const chars = listCharacters();
   const card = el("div", { class: "card" }, el("h3", {}, "The party"));
-  if (!chars.length) { card.append(el("p", { class: "faint" }, "No Travelers yet.")); return card; }
+  if (!chars.length) {
+    card.append(el("p", { class: "faint" }, "No Travelers yet. This panel watches each Traveler's Bliss against that same Traveler's Hope during play."),
+      el("a", { class: "btn", href: "#/create" }, "Create a Traveler"));
+    return card;
+  }
   for (const c of chars) {
     const bliss = c.state?.bliss ?? 0;
     const lost = bliss >= (c.state?.hope ?? 0);

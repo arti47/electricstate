@@ -69,7 +69,9 @@ function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "Neuroscape"));
   wrap.append(explain("Jacking in. A task's Difficulty is how many successful rolls it needs, one per Stretch, with gear dice from whichever neurocaster attribute suits the job. Every failed roll adds a point of Bliss before you even consider pushing — which is how the network takes people."));
   if (!chars.length) {
-    wrap.append(el("div", { class: "empty card" }, el("p", {}, "No Travelers yet.")));
+    wrap.append(el("div", { class: "empty card" },
+      el("p", {}, "Nobody to jack in. Make a Traveler, fit a neurocaster, and come back."),
+      el("a", { class: "btn btn-primary", href: "#/create" }, "Create a Traveler")));
     return wrap;
   }
 
@@ -102,7 +104,8 @@ function build(rerender) {
 
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" }, el("strong", {}, NEUROCASTERS.find((n) => n.id === ch.neurocaster).name),
-      el("span", { class: "mono faint" }, `P${caster.processor} N${caster.network} G${caster.graphics}`)),
+      el("span", { class: "mono faint" },
+        `Processor ${caster.processor} · Network ${caster.network} · Graphics ${caster.graphics}`)),
     el("p", { class: "faint" }, "The helmet is on: real-world actions needing mobility or vision lose dice, and you act in one realm per round. Take it off on the sheet when you are done."),
     el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;margin-top:8px" },
       el("span", {}, el("strong", {}, "Plugged into a terminal"), el("div", { class: "faint" }, `+${WIRED_BONUS} dice to everything`)),

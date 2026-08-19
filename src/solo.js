@@ -246,6 +246,23 @@ function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "Solo"));
   wrap.append(explain("Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing."));
 
+  // Someone who has never played solo does not need more tables; they need to be told what
+  // the loop is. It stays until the first card is drawn, then never appears again.
+  if (!(s.events || []).length) {
+    wrap.append(el("div", { class: "card" },
+      el("h3", {}, "Never done this before?"),
+      el("p", { class: "faint" }, "There is no GM and no script. You ask a question out loud, draw a card, and read the answer into the fiction — that is the entire game."),
+      el("ol", {},
+        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Set out: below, roll a destination and a vehicle. Do not plan the Stops.")),
+        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Arrive somewhere: Generate a Stop. It hands you a Blocker — the reason you cannot drive on.")),
+        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Play it out. Whenever you do not know what happens next, Draw a card. Whenever you want to know if something is good or bad, Tilt.")),
+        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Deal with the Blocker, end the Stop, drive on. Time passes on the Time screen."))),
+      el("p", { class: "faint" }, "Nothing you roll is binding. If a card contradicts something you have already decided, throw it out."),
+      el("div", { class: "btn-row" },
+        el("a", { class: "btn", href: "#/tutorial" }, "The longer walkthrough"),
+        el("a", { class: "btn", href: "#/rules" }, "What the words mean"))));
+  }
+
   const phase = (title, blurb, ...kids) =>
     el("div", { class: "card" }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
   // Prep happens once; it should not sit above the controls you use every scene.

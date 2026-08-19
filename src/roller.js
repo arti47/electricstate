@@ -334,6 +334,10 @@ function build(rerender) {
     el("div", { class: "card-row" },
       el("strong", {}, `${pool.base} base + ${pool.gear} gear`),
       el("span", { class: "faint" }, `${pool.base + pool.gear} dice`)),
+    // "base" and "gear" are the whole push economy in two words, and nothing said which
+    // was which until you had already pushed and lost something.
+    el("div", { class: "faint" },
+      "Base dice come from you, gear dice from what you are holding. It only matters when you push: a 1 left on a base die costs Hope, a 1 on a gear die breaks the gear."),
     mods.notes.length ? el("div", { class: "faint" }, "Conditions: " + mods.notes.join(", ")) : null,
     tension ? el("div", { class: "faint" }, `Tension +${tension}`) : null,
     rangeMod ? el("div", { class: "faint" }, `Range ${rangeMod}`) : null,
@@ -435,6 +439,12 @@ function resultCard(ch, pool, legality, rerender) {
       el("span", { class: "mono faint" }, [...r.base, ...r.gear].join(" "))),
     el("div", { class: "faint" },
       `base ${r.base.join(" ") || "—"}${r.gear.length ? ` · gear ${r.gear.join(" ")}` : ""}`));
+
+  // A pile of numbers and the word "Failure" is not a result to someone who has not read
+  // the book. Say what happened and why, in one line, every time.
+  card.append(el("p", { class: "faint" }, total
+    ? `A 6 is a success, and you rolled ${total === 1 ? "one" : total}. It works — say how.`
+    : "No 6, so it did not work. Nothing is spent unless you push."));
 
   if (total > 1) card.append(el("p", { class: "faint" }, `${total - 1} extra ${total - 1 === 1 ? "success" : "successes"} — +${total - 1} damage in combat, or a better result elsewhere.`));
 
