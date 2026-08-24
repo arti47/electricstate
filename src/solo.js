@@ -54,11 +54,6 @@ export function rollStopCountdown() {
   return { roll: null, event: STOP_THREAT_COUNTDOWN[0].event };
 }
 
-/** Solo and the GM screen build the same record, so either can pick up the other's Stop. */
-export function generateStop(name = "") {
-  return makeStop(name);
-}
-
 export function generateThreat() {
   const type = THREAT_TYPES[d6() - 1];
   const subs = THREAT_SUBTYPES[type.type];

@@ -546,3 +546,74 @@ does not owe a "what this does" note because it is one. Eight were real.
 ## Result
 
 104 invariants, browser smoke clean, four probes clean, button audit clean.
+
+---
+
+# Eighteenth pass — does the app implement the book, and can you reach what it does?
+
+Two specs, committed, failing on opposite mistakes. Everything before this pass walked the
+code. Neither of these does only that.
+
+## Coverage — source document → code
+
+`docs/coverage.json` maps **136 requirements read out of the transcript** — chapters 3, 4, 5,
+6 and 8, the character sheet and the pregens — to the artefact that implements each, with a
+line citation so a reader can go and check. `tests/coverage.mjs` fails if a marker vanishes,
+if an entry has no citation, or if anything not `implemented` has no note.
+
+The list was **not** derived from the code, and that is the whole point: a checklist built by
+scanning `src/` maps onto `src/` perfectly and passes forever while telling you nothing.
+
+Its first run failed on four of my own entries — three markers pointing at a rules file whose
+name I had misremembered, and one at a function that does not exist. That is the spec doing
+its job on the day it was written.
+
+| status | count |
+|---|---|
+| implemented | 118 |
+| partial | 9 |
+| deliberately-omitted | 9 |
+| unknown | 0 |
+
+Three markers had to be repointed once the reachability spec ran, because they named a
+**provenance constant rather than the implementation** — `FIREARM_RULES`, `VEHICLE_DAMAGE`
+and a `generateStop` alias. Coverage alone would have stayed green on all three: the constant
+existed, so the mapping held, while nothing read it. That is precisely the gap the second
+spec closes.
+
+## Reachability — code → user
+
+`tests/reachability.mjs`, eight classes. Its first run found eighteen, of which these were real:
+
+| # | Finding | Fix |
+|---|---|---|
+| 113 | **`useHopeItem` was implemented, unit-tested, and reachable from nowhere.** Worse, the data it needs was thrown away: adding gear to a pack dropped the item's `hope` block, so even a caller would have had nothing to read. A Walkman, a bottle, a dog — the whole "a moment with this returns a point of Hope" rule was inert. | The gear list carries `hope` and `alcohol` through, and an item that has them offers "Take a moment with it", speaking the refusal out loud when the once-per-Shift cap or hunger blocks it. |
+| 114 | **`resetRoller`, `resetNeuro` and `resetWizard` existed and nothing called them.** Three screens keep working state in a module variable, so switching campaign, importing a save or erasing everything left the previous game's half-built Traveler and pending roll sitting there. | `clearTransientScreens()` on campaign switch, campaign creation, import and erase. |
+| 115 | **`inventoryCard` and `neurocasterCard` referenced `rerender` without taking it** — a ReferenceError waiting behind a busted item or a busted neurocaster, both of which need a pushed roll to reach. Found while wiring 113. | Both take the callback. |
+| 116 | `generateStop`, `rollDescriptors` and `validAttributes` were duplicates of `makeStop`, `pickDistinct` and the wizard's own validation. | Deleted; the tests and the coverage marker point at the survivor. |
+| 117 | `TRAUMA_RESIST` and `FIREARM_RULES` recorded rules the engine re-implemented as magic numbers beside them — `-3` for an ambush, a hardcoded `"strength"`. Two sources for one rule. | The engine reads the constants. |
+
+The rest were provenance constants that exist to record where a number came from and are meant
+to be read by a person. Each is exempt **with its reason** written next to it, because a
+detector reporting three known warnings is a detector everyone learns to ignore.
+
+## Proving both specs fail
+
+Coverage: renamed `isLost`; the spec named `bliss-lose-condition` and exited 1. Restored, green.
+
+Reachability: injected one synthetic defect per class — an unreferenced function, an unsurfaced
+table, a hidden div, a wired-to-nothing button, a `#/nowhere` link, a glossary entry pointing at
+a rule that is not there, a service-worker entry with no file, a hand-removed modal backdrop.
+All eight were named and the runner exited 1.
+
+**Two traps found in my own detectors while doing that**, both of the kind that make a check
+pass forever:
+- a table composed into another table in the same file reads as orphaned unless you count
+  mentions beyond the declaration and the `export default` list;
+- "is it ever revealed?" written as a bare `/hidden = false/` over the whole corpus matches
+  some *other* element's reveal, so it can never fire. It must be tied to the id.
+
+## Result
+
+104 invariants, coverage clean, reachability clean, browser smoke clean, four probes clean,
+button audit clean.

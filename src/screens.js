@@ -7,8 +7,18 @@ import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLog
          createCampaign, switchCampaign, renameCampaign, deleteCampaign, checkData,
          canUndo, undoLast, undoLabel } from "./store.js";
 import { searchLibrary, searchGlossary } from "./rules.js";
+import { resetRoller } from "./roller.js";
+import { resetNeuro } from "./neurocasting.js";
+import { resetWizard } from "./wizard.js";
 import { showToast, confirmModal, promptModal, explain } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
+
+/**
+ * Three screens keep their working state in a module variable — the roll on the dice
+ * table, the neurocasting session, the half-built Traveler. None of it belongs to the
+ * next campaign, so anything that swaps the game underneath them has to say so.
+ */
+function clearTransientScreens() { resetRoller(); resetNeuro(); resetWizard(); }
 import { TRAUMA_CONSENT_NOTE } from "../data-tables.js";
 
 export function homeScreen() {
@@ -406,7 +416,10 @@ function campaignCard() {
           el("div", { class: "faint" }, `${chars} Traveler${chars === 1 ? "" : "s"}${c.journey?.destination ? ` · ${c.journey.destination}` : ""}`)),
         el("div", { class: "btn-row" },
           !isActive ? el("button", {
-            class: "btn", onclick: () => { switchCampaign(c.id); showToast(`Now playing ${c.name}.`); location.hash = "#/home"; }
+            class: "btn", onclick: () => {
+              switchCampaign(c.id); clearTransientScreens();
+              showToast(`Now playing ${c.name}.`); location.hash = "#/home";
+            }
           }, "Play") : null,
           el("button", {
             class: "btn", onclick: async () => {
@@ -431,7 +444,7 @@ function campaignCard() {
     onclick: async () => {
       const name = await promptModal("New Journey", { label: "Name it", value: "" });
       if (!name) return;
-      createCampaign(name);
+      createCampaign(name); clearTransientScreens();
       showToast(`${name} started.`);
       location.hash = "#/home";
     }
@@ -512,6 +525,7 @@ function doImport() {
     if (!file) return;
     try {
       const count = importJSON(await file.text());
+      clearTransientScreens();
       showToast(`Imported ${count} Traveler${count === 1 ? "" : "s"}.`);
       location.hash = "#/home";
     } catch (err) {
@@ -523,7 +537,8 @@ function doImport() {
 
 async function doReset() {
   if (await confirmModal("Erase everything?", "Every Traveler, the Journey and the roll log on this device will be deleted. Export first if you want a copy.", "Erase")) {
-    resetAll(); showToast("All local data erased."); location.hash = "#/home";
+    resetAll(); clearTransientScreens();
+    showToast("All local data erased."); location.hash = "#/home";
   }
 }
 

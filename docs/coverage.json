@@ -1,0 +1,1014 @@
+{
+  "$comment": [
+    "COVERAGE MAP — what the source document asks for, and where this app does it.",
+    "",
+    "Built by reading docs/source/core-rulebook-transcript.md section by section, NOT by",
+    "scanning the code. A list derived from the code would map onto the code perfectly and",
+    "prove nothing. Every entry cites the transcript line it came from so a reader can check.",
+    "",
+    "WHAT A GREEN RUN PROVES: that a named code artefact exists for each requirement.",
+    "WHAT IT DOES NOT PROVE: that the artefact is correct. A constant can exist and hold the",
+    "wrong number; a function can exist and implement the rule backwards. Behavioural",
+    "correctness is the job of tests/run.js and the audit passes in docs/app/AUDIT.md.",
+    "Where a rule's correctness is cheap to assert, prefer a behavioural test as the marker.",
+    "",
+    "Coverage is built incrementally. An honest partial map that grows beats a complete map",
+    "that lies. Anything not yet checked against the source is `unknown`, never `partial`."
+  ],
+  "sourceDocument": {
+    "title": "The Electric State Roleplaying Game",
+    "publisher": "Free League Publishing / Fria Ligan AB",
+    "edition": "2024 core rulebook, first English printing",
+    "readFrom": "docs/source/core-rulebook-transcript.md (17,569 lines, extracted from the PDF)",
+    "transcriptCaveats": "docs/TRANSCRIPT-ISSUES.md — de-interleaved tables, dropped dice glyphs, glued running headers",
+    "chaptersRead": [
+      "3 Your Traveler",
+      "4 Combat & Neuronics",
+      "5 The Journey",
+      "6 Threats",
+      "8 The Lone Traveler",
+      "Character sheet",
+      "Pre-made Travelers"
+    ],
+    "chaptersClassifiedWithoutFullRead": [
+      "1 Welcome to the Electric State",
+      "2 The State of Pacifica",
+      "7 Into the Dust"
+    ],
+    "builtAt": "2026-08-24"
+  },
+  "markerFormat": "path/to/file.js#symbol — the file must exist and contain the symbol as a whole word.",
+  "entries": [
+    {
+      "id": "archetype-one-per-group",
+      "source": "docs/source/core-rulebook-transcript.md:2536 (Ch3 ARCHETYPE)",
+      "summary": "Ten archetypes; no more than one Traveler of each in a group.",
+      "marker": "data.js#ARCHETYPES",
+      "status": "implemented"
+    },
+    {
+      "id": "archetype-key-attribute",
+      "source": "docs/source/core-rulebook-transcript.md:2545 (Ch3 ARCHETYPE)",
+      "summary": "Each archetype names a key attribute and suggests three talents.",
+      "marker": "data.js#ARCHETYPES",
+      "status": "implemented"
+    },
+    {
+      "id": "attributes-roll",
+      "source": "docs/source/core-rulebook-transcript.md:2557 (Ch3 ATTRIBUTES)",
+      "summary": "Roll four dice, re-rolling 1s until all show 2+, and assign the scores freely.",
+      "marker": "src/wizard.js#stepAttributes",
+      "status": "implemented"
+    },
+    {
+      "id": "attributes-range",
+      "source": "docs/source/core-rulebook-transcript.md:2560 (Ch3 ATTRIBUTES)",
+      "summary": "Attributes are rated 2 to 6.",
+      "marker": "data.js#ATTRIBUTE_MAX",
+      "status": "implemented"
+    },
+    {
+      "id": "attributes-bonus-talent",
+      "source": "docs/source/core-rulebook-transcript.md:2578 (Ch3 ATTRIBUTES)",
+      "summary": "A starting attribute total of 15 or lower earns an extra starting talent.",
+      "marker": "src/derived.js#qualifiesForBonusTalent",
+      "status": "implemented"
+    },
+    {
+      "id": "attributes-point-buy",
+      "source": "docs/source/core-rulebook-transcript.md:2582 (Ch3 Alternative Method)",
+      "summary": "Alternative method: distribute 16 points, nothing below 2 or above 6.",
+      "marker": "data.js#POINT_BUY_TOTAL",
+      "status": "implemented"
+    },
+    {
+      "id": "roll-success",
+      "source": "docs/source/core-rulebook-transcript.md:2660 (Ch3 rolling)",
+      "summary": "A 6 on any die is a success; one is enough.",
+      "marker": "src/roller.js#successes",
+      "status": "implemented"
+    },
+    {
+      "id": "npcs-never-push",
+      "source": "docs/source/core-rulebook-transcript.md:2673 (Ch3 sidebar)",
+      "summary": "NPCs roll as players do but never push.",
+      "marker": "src/combat.js#defencePool",
+      "status": "partial",
+      "note": "The engine never offers a push to a Threat — opposed defence rolls resolve without one — but there is no explicit flag or test naming this rule, so it holds by omission rather than by construction."
+    },
+    {
+      "id": "push",
+      "source": "docs/source/core-rulebook-transcript.md:2676 (Ch3 A PUSHING)",
+      "summary": "Push a roll: re-roll everything not showing a 1 or a 6; each 1 afterwards costs a point of Hope.",
+      "marker": "src/roller.js#resolvePush",
+      "status": "implemented"
+    },
+    {
+      "id": "gear-dice",
+      "source": "docs/source/core-rulebook-transcript.md:2686 (Ch3 A GEAR)",
+      "summary": "Gear adds dice; after a push a 1 on a gear die reduces the gear bonus, and at zero the gear is Busted.",
+      "marker": "src/roller.js#applyRollCosts",
+      "status": "implemented"
+    },
+    {
+      "id": "multiple-successes",
+      "source": "docs/source/core-rulebook-transcript.md:2698 (Ch3 A MULTIPLE SUCCESSES)",
+      "summary": "Extra 6s improve the result — more damage in combat, a better outcome elsewhere.",
+      "marker": "src/roller.js#damageWithExtras",
+      "status": "implemented"
+    },
+    {
+      "id": "helping",
+      "source": "docs/source/core-rulebook-transcript.md:2714 (Ch3 A HELPING ROLLS)",
+      "summary": "Up to three others give +1 die each; in combat helping uses the helper's turn.",
+      "marker": "src/roller.js#helpers",
+      "status": "implemented"
+    },
+    {
+      "id": "opposed-rolls",
+      "source": "docs/source/core-rulebook-transcript.md:2727 (Ch3 A OPPOSED ROLLS)",
+      "summary": "Against active resistance, roll off; only the active party may push.",
+      "marker": "src/roller.js#resolveOpposed",
+      "status": "implemented"
+    },
+    {
+      "id": "opposed-tension-dice",
+      "source": "docs/source/core-rulebook-transcript.md:2737 (Ch3 A OPPOSED ROLLS)",
+      "summary": "Between two Travelers, each side adds bonus dice equal to its Tension toward the other.",
+      "marker": "src/roller.js#tensionToward",
+      "status": "implemented"
+    },
+    {
+      "id": "open-opposed-rolls",
+      "source": "docs/source/core-rulebook-transcript.md:2742 (Ch3 Open Opposed Rolls)",
+      "summary": "When both sides are active both may push; a tie is a compromise, or a re-roll.",
+      "marker": "data.js#OPPOSED",
+      "status": "implemented"
+    },
+    {
+      "id": "health-formula",
+      "source": "docs/source/core-rulebook-transcript.md:2795 (Ch3 Health)",
+      "summary": "Starting maximum Health is (Strength + Agility) / 2, rounded up, raised by Tough.",
+      "marker": "src/derived.js#maxHealth",
+      "status": "implemented"
+    },
+    {
+      "id": "hope-formula",
+      "source": "docs/source/core-rulebook-transcript.md:2806 (Ch3 Hope)",
+      "summary": "Starting maximum Hope is (Wits + Empathy) / 2, rounded up, raised by Dreamer.",
+      "marker": "src/derived.js#maxHope",
+      "status": "implemented"
+    },
+    {
+      "id": "bliss-lose-condition",
+      "source": "docs/source/core-rulebook-transcript.md:2812 (Ch3 A NEURONICS & BLISS)",
+      "summary": "Bliss equal to or above current Hope means you cannot leave the Electric State on your own.",
+      "marker": "src/neurocasting.js#isLost",
+      "status": "implemented"
+    },
+    {
+      "id": "talents-starting",
+      "source": "docs/source/core-rulebook-transcript.md:2833 (Ch3 A STARTING TALENT)",
+      "summary": "Start with one talent, or two after a bad attribute roll; each talent is learned once.",
+      "marker": "src/wizard.js#stepTalents",
+      "status": "implemented"
+    },
+    {
+      "id": "talents-list",
+      "source": "docs/source/core-rulebook-transcript.md:2840 (Ch3 TALENTS)",
+      "summary": "The full talent list, each giving bonus dice or a specific feat.",
+      "marker": "data.js#TALENTS",
+      "status": "implemented"
+    },
+    {
+      "id": "talent-invent",
+      "source": "docs/source/core-rulebook-transcript.md:3050 (Ch3 talents)",
+      "summary": "A Traveler may create a new talent rather than take a listed one.",
+      "marker": "src/rules.js#customTalents",
+      "status": "implemented"
+    },
+    {
+      "id": "dream",
+      "source": "docs/source/core-rulebook-transcript.md:3064 (Ch3 A DREAM)",
+      "summary": "Every Traveler has a Dream, with a table per archetype.",
+      "marker": "data.js#dreams",
+      "status": "implemented"
+    },
+    {
+      "id": "flaw",
+      "source": "docs/source/core-rulebook-transcript.md:3087 (Ch3 A FLAW)",
+      "summary": "Every Traveler has a Flaw, with a table per archetype.",
+      "marker": "data.js#flaws",
+      "status": "implemented"
+    },
+    {
+      "id": "description",
+      "source": "docs/source/core-rulebook-transcript.md:3118 (Ch3 A DESCRIPTION)",
+      "summary": "Describe the Traveler.",
+      "marker": "data-names.js#DESCRIPTOR_TABLES",
+      "status": "partial",
+      "note": "The book asks for a description but prints no table. The three description tables are a house aid, flagged HOUSE_AID, not book content."
+    },
+    {
+      "id": "name",
+      "source": "docs/source/core-rulebook-transcript.md:3132 (Ch3 A NAME)",
+      "summary": "Name the Traveler.",
+      "marker": "data-names.js#FIRST_NAMES",
+      "status": "partial",
+      "note": "House-aid name tables; the book prints no name table. Pairs follow the book's own pregen convention."
+    },
+    {
+      "id": "vehicle",
+      "source": "docs/source/core-rulebook-transcript.md:3332 (Ch3 YOUR VEHICLE)",
+      "summary": "The group shares one vehicle.",
+      "marker": "data.js#VEHICLES",
+      "status": "implemented"
+    },
+    {
+      "id": "personal-goal",
+      "source": "docs/source/core-rulebook-transcript.md:3342 (Ch3 A PERSONAL GOAL)",
+      "summary": "Each Traveler has a personal Goal for the Journey.",
+      "marker": "data-names.js#GOAL_SEEDS",
+      "status": "partial",
+      "note": "The book references a personal Goal table it never prints (ruling A17). The seed-word table is a house aid; the free-text Goal field itself is book content."
+    },
+    {
+      "id": "personal-threat",
+      "source": "docs/source/core-rulebook-transcript.md:3363 (Ch3 A PERSONAL THREAT)",
+      "summary": "Each Traveler has a personal Threat.",
+      "marker": "data-solo.js#SOLO_PERSONAL_THREATS",
+      "status": "implemented"
+    },
+    {
+      "id": "shared-items",
+      "source": "docs/source/core-rulebook-transcript.md:3395 (Ch3 A SHARED ITEMS)",
+      "summary": "The group carries three shared items, rolled on a D66 table.",
+      "marker": "data-tables.js#SHARED_ITEMS",
+      "status": "implemented"
+    },
+    {
+      "id": "tension-effects",
+      "source": "docs/source/core-rulebook-transcript.md:3672 (Ch3 A EFFECTS OF TENSION)",
+      "summary": "Tension 0-2 toward each other Traveler, adding dice in opposed rolls.",
+      "marker": "data.js#TENSION",
+      "status": "implemented"
+    },
+    {
+      "id": "tension-starting",
+      "source": "docs/source/core-rulebook-transcript.md:3680 (Ch3 A STARTING TENSION)",
+      "summary": "Set starting Tension at creation, asymmetrically.",
+      "marker": "src/wizard.js#tensionScreen",
+      "status": "implemented"
+    },
+    {
+      "id": "tension-reducing",
+      "source": "docs/source/core-rulebook-transcript.md:3747 (Ch3 A REDUCING TENSION)",
+      "summary": "Reducing Tension in a calm scene returns Hope to both sides.",
+      "marker": "src/lifecycle.js#reduceTension",
+      "status": "implemented"
+    },
+    {
+      "id": "tension-changing",
+      "source": "docs/source/core-rulebook-transcript.md:3755 (Ch3 A CHANGING TENSION)",
+      "summary": "Tension rises and falls in play.",
+      "marker": "src/wizard.js#tensionScreen",
+      "status": "implemented"
+    },
+    {
+      "id": "advancement-debrief",
+      "source": "docs/source/core-rulebook-transcript.md:3781 (Ch3 DEVELOPING YOUR TRAVELER)",
+      "summary": "At a session debrief, roll a die against an attribute: higher raises it, equal or lower earns a talent.",
+      "marker": "data.js#ADVANCEMENT",
+      "status": "implemented"
+    },
+    {
+      "id": "advancement-flaw-lock",
+      "source": "docs/source/core-rulebook-transcript.md:3800 (Ch3 DEVELOPING YOUR TRAVELER)",
+      "summary": "Overcoming the Flaw grants three rolls at once and ends further improvement.",
+      "marker": "src/lifecycle.js#improvementLocked",
+      "status": "implemented"
+    },
+    {
+      "id": "drone-pilot",
+      "source": "docs/source/core-rulebook-transcript.md:4244 (Ch3 DRONE PILOT)",
+      "summary": "The Drone Pilot takes damage as a drone: no death rolls, no serious injuries, repairs rather than healing.",
+      "marker": "data.js#DRONE_PILOT_RULES",
+      "status": "implemented"
+    },
+    {
+      "id": "zones-and-range",
+      "source": "docs/source/core-rulebook-transcript.md:4819 (Ch4 ZONES & RANGE)",
+      "summary": "Combat uses zones and range bands rather than a grid.",
+      "marker": "data.js#RANGES",
+      "status": "implemented"
+    },
+    {
+      "id": "rounds-initiative",
+      "source": "docs/source/core-rulebook-transcript.md:4869 (Ch4 ROUNDS)",
+      "summary": "Rounds; the side that starts the fight acts first, otherwise roll a die and add the best Wits.",
+      "marker": "data.js#INITIATIVE",
+      "status": "implemented"
+    },
+    {
+      "id": "actions-and-moves",
+      "source": "docs/source/core-rulebook-transcript.md:4885 (Ch4 ACTIONS & MOVES)",
+      "summary": "One move and one action per round, or two moves.",
+      "marker": "data.js#ACTION_ECONOMY",
+      "status": "implemented"
+    },
+    {
+      "id": "ranged-combat",
+      "source": "docs/source/core-rulebook-transcript.md:4939 (Ch4 RANGED COMBAT)",
+      "summary": "Ranged attacks roll Agility plus weapon dice within the weapon's range band.",
+      "marker": "data.js#WEAPONS",
+      "status": "implemented"
+    },
+    {
+      "id": "firearms-engaged",
+      "source": "docs/source/core-rulebook-transcript.md:5060 (Ch4 RANGED COMBAT)",
+      "summary": "A firearm used at Engaged range hits on Strength rather than Agility.",
+      "marker": "src/roller.js#FIREARM_RULES",
+      "status": "implemented"
+    },
+    {
+      "id": "full-auto",
+      "source": "docs/source/core-rulebook-transcript.md:5088 (Ch4 A AMMUNITION & FULL AUTO)",
+      "summary": "Full auto: a hit may be followed by another burst, up to three, emptying the magazine.",
+      "marker": "data.js#FULL_AUTO_MAX_BURSTS",
+      "status": "implemented"
+    },
+    {
+      "id": "ammunition-tracking",
+      "source": "docs/source/core-rulebook-transcript.md:5088 (Ch4 A AMMUNITION & FULL AUTO)",
+      "summary": "Ammunition is not counted round by round.",
+      "marker": "data.js#FULL_AUTO_MAX_BURSTS",
+      "status": "deliberately-omitted",
+      "note": "The book does not ask for a bullet count; only full auto emptying a magazine is mechanical. No ammo surface is built (see CLAUDE.md scope guard)."
+    },
+    {
+      "id": "ambushes",
+      "source": "docs/source/core-rulebook-transcript.md:5397 (Ch4 AMBUSHES)",
+      "summary": "An unaware target cannot fight back or dodge; sneaking into close combat costs dice.",
+      "marker": "src/roller.js#ambush",
+      "status": "implemented"
+    },
+    {
+      "id": "incapacitated-death-rolls",
+      "source": "docs/source/core-rulebook-transcript.md:5414 (Ch4 A INCAPACITATED)",
+      "summary": "At zero Health you are Incapacitated and roll for death each turn until stabilized.",
+      "marker": "data.js#DEATH",
+      "status": "implemented"
+    },
+    {
+      "id": "recovery",
+      "source": "docs/source/core-rulebook-transcript.md:5651 (Ch4 A RECOVERY)",
+      "summary": "Health returns while resting; a Nurse doubles it.",
+      "marker": "data.js#RECOVERY",
+      "status": "implemented"
+    },
+    {
+      "id": "neurocasting-damage",
+      "source": "docs/source/core-rulebook-transcript.md:5659 (Ch4 A NEUROCASTING DAMAGE)",
+      "summary": "Damage taken inside a neuroscape lands on the real body.",
+      "marker": "src/neurocasting.js#applyNeuroResult",
+      "status": "implemented"
+    },
+    {
+      "id": "serious-injuries",
+      "source": "docs/source/core-rulebook-transcript.md:5667 (Ch4 A SERIOUS INJURIES)",
+      "summary": "Surviving Incapacitation means rolling a D66 serious injury.",
+      "marker": "data-tables.js#SERIOUS_INJURIES",
+      "status": "implemented"
+    },
+    {
+      "id": "traumatic-events",
+      "source": "docs/source/core-rulebook-transcript.md:5731 (Ch4 A TRAUMATIC EVENTS)",
+      "summary": "A traumatic event costs Hope unless resisted with Empathy; losing any Hope freezes you for a turn.",
+      "marker": "src/roller.js#resolveTraumaticEvent",
+      "status": "implemented"
+    },
+    {
+      "id": "breakdown",
+      "source": "docs/source/core-rulebook-transcript.md:5766 (Ch4 A BREAKDOWN)",
+      "summary": "At zero Hope you have a Breakdown and may take a mental trauma.",
+      "marker": "data-tables.js#MENTAL_TRAUMAS",
+      "status": "implemented"
+    },
+    {
+      "id": "explosions",
+      "source": "docs/source/core-rulebook-transcript.md:6003 (Ch4 A EXPLOSIONS)",
+      "summary": "Explosions roll Blast Power in dice; every 6 is a point of damage.",
+      "marker": "data.js#EXPLOSIVES",
+      "status": "implemented"
+    },
+    {
+      "id": "fire",
+      "source": "docs/source/core-rulebook-transcript.md:6039 (Ch4 A FIRE)",
+      "summary": "Fire has an Intensity and spreads.",
+      "marker": "data.js#FIRES",
+      "status": "implemented"
+    },
+    {
+      "id": "cold",
+      "source": "docs/source/core-rulebook-transcript.md:6081 (Ch4 A COLD)",
+      "summary": "Cold bites each Shift, or each Stretch when extreme, and blocks healing.",
+      "marker": "src/lifecycle.js#cold",
+      "status": "implemented"
+    },
+    {
+      "id": "falling",
+      "source": "docs/source/core-rulebook-transcript.md:6152 (Ch4 A FALLING)",
+      "summary": "Falling damage scales with the distance fallen.",
+      "marker": "src/hazards.js#fallingDamage",
+      "status": "implemented"
+    },
+    {
+      "id": "hunger-thirst",
+      "source": "docs/source/core-rulebook-transcript.md:6158 (Ch4 A HUNGER & THIRST)",
+      "summary": "Going without food and water costs a Strength roll and blocks recovery.",
+      "marker": "src/lifecycle.js#fed",
+      "status": "implemented"
+    },
+    {
+      "id": "sleep-deprivation",
+      "source": "docs/source/core-rulebook-transcript.md:6165 (Ch4 A SLEEP DEPRIVATION)",
+      "summary": "Going without sleep blocks Hope recovery.",
+      "marker": "src/lifecycle.js#slept",
+      "status": "implemented"
+    },
+    {
+      "id": "neurocaster-models",
+      "source": "docs/source/core-rulebook-transcript.md:6194 (Ch4 A THE NEUROCASTER)",
+      "summary": "Neurocasters have Processor, Network and Graphics ratings and cost dice in the real world.",
+      "marker": "data.js#NEUROCASTERS",
+      "status": "implemented"
+    },
+    {
+      "id": "wired-wireless",
+      "source": "docs/source/core-rulebook-transcript.md:6232 (Ch4 A WIRED & WIRELESS)",
+      "summary": "A wired connection to a terminal adds dice.",
+      "marker": "data.js#WIRED_BONUS",
+      "status": "implemented"
+    },
+    {
+      "id": "inside-a-neuroscape",
+      "source": "docs/source/core-rulebook-transcript.md:6324 (Ch4 A INSIDE A NEUROSCAPE)",
+      "summary": "A character acts in one realm per round and is inert in the other.",
+      "marker": "src/combat.js#realm",
+      "status": "implemented"
+    },
+    {
+      "id": "bliss-and-hope",
+      "source": "docs/source/core-rulebook-transcript.md:6357 (Ch4 A BLISS & HOPE)",
+      "summary": "Failed neurocasting rolls add Bliss before any push; Bliss fades slowly and can become permanent.",
+      "marker": "data.js#BLISS",
+      "status": "implemented"
+    },
+    {
+      "id": "hacking",
+      "source": "docs/source/core-rulebook-transcript.md:6559 (Ch4 A HACKING THE NETWORK)",
+      "summary": "Hacking a system is a Difficulty in successful rolls, one per Stretch.",
+      "marker": "data.js#HACK_DIFFICULTY",
+      "status": "implemented"
+    },
+    {
+      "id": "finding-information",
+      "source": "docs/source/core-rulebook-transcript.md:6520 (Ch4 neuronics)",
+      "summary": "Finding information has its own Difficulty ladder.",
+      "marker": "data.js#INFO_DIFFICULTY",
+      "status": "implemented"
+    },
+    {
+      "id": "avatars",
+      "source": "docs/source/core-rulebook-transcript.md:6613 (Ch4 A INTERACTING WITH AVATARS)",
+      "summary": "Interacting with avatars: persuading, fighting and rewriting belief, each with its own attribute pairing.",
+      "marker": "data.js#NEURO_TASKS",
+      "status": "implemented"
+    },
+    {
+      "id": "using-a-drone",
+      "source": "docs/source/core-rulebook-transcript.md:6748 (Ch4 A USING A DRONE)",
+      "summary": "Piloting a drone from inside the network.",
+      "marker": "data.js#DRONES",
+      "status": "implemented"
+    },
+    {
+      "id": "consumer-drones",
+      "source": "docs/source/core-rulebook-transcript.md:6788 (Ch4 A CONSUMER DRONES)",
+      "summary": "Consumer drone stat blocks.",
+      "marker": "data.js#DRONES",
+      "status": "implemented"
+    },
+    {
+      "id": "military-drones",
+      "source": "docs/source/core-rulebook-transcript.md:6799 (Ch4 A MILITARY DRONES)",
+      "summary": "Military drone stat blocks.",
+      "marker": "docs/source/core-rulebook-transcript.md#MILITARY",
+      "status": "deliberately-omitted",
+      "note": "Checked at transcript 6799-6805: the book gives military drones prose only — no stat block, and it says few remain operational. There is nothing to implement. If a supplement stats them, this becomes a real requirement."
+    },
+    {
+      "id": "drone-growths",
+      "source": "docs/source/core-rulebook-transcript.md:6806 (Ch4 A DRONE GROWTHS)",
+      "summary": "Drone growths as a Threat.",
+      "marker": "data-npcs.js#droneGrowth",
+      "status": "implemented"
+    },
+    {
+      "id": "robots",
+      "source": "docs/source/core-rulebook-transcript.md:6819 (Ch4 A ROBOTS)",
+      "summary": "Robots as a Threat.",
+      "marker": "data-npcs.js#robot",
+      "status": "implemented"
+    },
+    {
+      "id": "vehicle-attributes",
+      "source": "docs/source/core-rulebook-transcript.md:6967 (Ch4 A VEHICLE ATTRIBUTES)",
+      "summary": "Vehicles have Maneuverability, Speed, Hull, Armor and passenger capacity.",
+      "marker": "data-vehicles.js#VEHICLES",
+      "status": "implemented"
+    },
+    {
+      "id": "vehicle-stunts",
+      "source": "docs/source/core-rulebook-transcript.md:7100 (Ch4 vehicles)",
+      "summary": "A stunt is an Agility roll with Maneuverability as gear dice; failure means an accident.",
+      "marker": "data-vehicles.js#STUNTS",
+      "status": "implemented"
+    },
+    {
+      "id": "ramming",
+      "source": "docs/source/core-rulebook-transcript.md:7300 (Ch4 vehicles)",
+      "summary": "Ramming at Engaged range: each vehicle deals half its starting Hull.",
+      "marker": "data-vehicles.js#RAMMING",
+      "status": "implemented"
+    },
+    {
+      "id": "vehicle-damage",
+      "source": "docs/source/core-rulebook-transcript.md:7516 (Ch4 A VEHICLE DAMAGE)",
+      "summary": "Vehicle damage reduces Hull and Maneuverability; at zero it is Wrecked.",
+      "marker": "src/hazards.js#wrecked",
+      "status": "partial",
+      "note": "Wrecked-at-zero-Hull and the spare-part requirement for repairs are implemented; component damage on a single big hit (transcript 7516) is not, and VEHICLE_DAMAGE records it in prose rather than in numbers the engine can read."
+    },
+    {
+      "id": "aircraft",
+      "source": "docs/source/core-rulebook-transcript.md:7548 (Ch4 A AIRCRAFT)",
+      "summary": "Aircraft use altitude in zones and crash for altitude x 3 damage when Wrecked.",
+      "marker": "data-vehicles.js#VEHICLES",
+      "status": "deliberately-omitted",
+      "note": "No aircraft surface is built. The Journey is a road story with one ground vehicle shared by the group (Ch3 YOUR VEHICLE); altitude tracking has nothing to attach to. Revisit if the app ever tracks a second vehicle."
+    },
+    {
+      "id": "chases",
+      "source": "docs/source/core-rulebook-transcript.md:7640 (Ch4 CHASES)",
+      "summary": "Chases use range bands and an opposed Agility roll each round, ignoring zones and Speed.",
+      "marker": "src/hazards.js#chaseStep",
+      "status": "implemented"
+    },
+    {
+      "id": "damage-to-gear",
+      "source": "docs/source/core-rulebook-transcript.md:7772 (Ch4 A DAMAGE TO GEAR)",
+      "summary": "Gear degrades through pushed rolls and is Busted at bonus zero.",
+      "marker": "src/roller.js#applyRollCosts",
+      "status": "implemented"
+    },
+    {
+      "id": "repairing-gear",
+      "source": "docs/source/core-rulebook-transcript.md:7841 (Ch4 A REPAIRING GEAR)",
+      "summary": "Repairs need tools, a Shift and a Wits roll; a wrecked vehicle also needs a spare part.",
+      "marker": "src/roller.js#repairDialog",
+      "status": "implemented"
+    },
+    {
+      "id": "journey-starting-point",
+      "source": "docs/source/core-rulebook-transcript.md:8167 (Ch5 A STARTING POINT)",
+      "summary": "The Journey begins somewhere the group chooses.",
+      "marker": "data-journey.js#JOURNEY_PLACES",
+      "status": "partial",
+      "note": "The book asks the question and prints no table; the place and purpose tables are a house aid."
+    },
+    {
+      "id": "journey-route",
+      "source": "docs/source/core-rulebook-transcript.md:8184 (Ch5 A JOURNEY ROUTE)",
+      "summary": "The route between start and destination, and what lies along it.",
+      "marker": "data-journey.js#ROUTE_FEATURES",
+      "status": "partial",
+      "note": "House-aid table; the book asks for a route but prints no generator."
+    },
+    {
+      "id": "journey-length",
+      "source": "docs/source/core-rulebook-transcript.md:8508 (Ch5 THE JOURNEY)",
+      "summary": "How many Stops a Journey runs to.",
+      "marker": "data-gm.js#JOURNEY_LENGTH",
+      "status": "implemented"
+    },
+    {
+      "id": "preparing-stops",
+      "source": "docs/source/core-rulebook-transcript.md:8587 (Ch5 PREPARING STOPS)",
+      "summary": "A Stop is prepared as Setting, Blocker, Situation, Countdown, Locations and Threats.",
+      "marker": "src/stops.js#makeStop",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-setting",
+      "source": "docs/source/core-rulebook-transcript.md:8629 (Ch5 A SETTING)",
+      "summary": "The Setting: terrain, population, communications, size, prosperity, weather.",
+      "marker": "data-gm.js#SETTING",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-blocker",
+      "source": "docs/source/core-rulebook-transcript.md:8700 (Ch5 PREPARING STOPS)",
+      "summary": "A Blocker keeps the Travelers at the Stop.",
+      "marker": "data-gm.js#BLOCKERS",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-needs",
+      "source": "docs/source/core-rulebook-transcript.md:9394 (Ch5 A NEEDS)",
+      "summary": "What the Stop needs from the Travelers.",
+      "marker": "data-gm.js#NEEDS",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-situation",
+      "source": "docs/source/core-rulebook-transcript.md:9411 (Ch5 A THE SITUATION)",
+      "summary": "The Situation: a conflict already running between two parties over something.",
+      "marker": "data-gm.js#CONFLICT_PARTIES",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-threats",
+      "source": "docs/source/core-rulebook-transcript.md:9419 (Ch5 A THREATS)",
+      "summary": "Threats attached to a Stop.",
+      "marker": "data-npcs.js#THREATS",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-minor-npcs",
+      "source": "docs/source/core-rulebook-transcript.md:9430 (Ch5 A MINOR NPCS)",
+      "summary": "Minor NPCs have a flat attribute baseline and at most one talent.",
+      "marker": "data-gm.js#MINOR_NPC_BASELINE",
+      "status": "implemented"
+    },
+    {
+      "id": "stop-locations",
+      "source": "docs/source/core-rulebook-transcript.md:9500 (Ch5 PREPARING STOPS)",
+      "summary": "Locations within a Stop.",
+      "marker": "data-gm.js#LOCATIONS",
+      "status": "implemented"
+    },
+    {
+      "id": "starting-a-session",
+      "source": "docs/source/core-rulebook-transcript.md:9982 (Ch5 A STARTING A SESSION)",
+      "summary": "Advice on opening a session.",
+      "marker": "docs/rules/05-journey-stops.md#session",
+      "status": "deliberately-omitted",
+      "note": "GM prose with no mechanical surface. The app implements the session boundary and debrief it feeds into (see advancement-debrief); the advice itself is not reproduced, per the scope guard on setting and prose text."
+    },
+    {
+      "id": "improvising",
+      "source": "docs/source/core-rulebook-transcript.md:10131 (Ch5 A IMPROVISING)",
+      "summary": "Advice on improvising at the table.",
+      "marker": "docs/rules/05-journey-stops.md#improvising",
+      "status": "deliberately-omitted",
+      "note": "GM prose, no mechanics. Not reproduced."
+    },
+    {
+      "id": "playing-scenes",
+      "source": "docs/source/core-rulebook-transcript.md:10234 (Ch5 A PLAYING SCENES)",
+      "summary": "Advice on framing and cutting scenes.",
+      "marker": "docs/rules/05-journey-stops.md#scenes",
+      "status": "deliberately-omitted",
+      "note": "GM prose, no mechanics. Not reproduced."
+    },
+    {
+      "id": "playing-in-neuroscapes",
+      "source": "docs/source/core-rulebook-transcript.md:10254 (Ch5 A PLAYING IN NEUROSCAPES)",
+      "summary": "Running scenes that straddle the real world and a neuroscape.",
+      "marker": "src/combat.js#realm",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-characteristics",
+      "source": "docs/source/core-rulebook-transcript.md:10382 (Ch6 A CHARACTERISTICS)",
+      "summary": "A Threat has attributes, talents, gear and a stat block.",
+      "marker": "data-npcs.js#THREAT_ANATOMY",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-health-hope",
+      "source": "docs/source/core-rulebook-transcript.md:10388 (Ch6 A HEALTH & HOPE)",
+      "summary": "Threats have Health but no Hope, and make no death rolls.",
+      "marker": "data-npcs.js#THREATS",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-modifying",
+      "source": "docs/source/core-rulebook-transcript.md:10395 (Ch6 A MODIFYING THREATS)",
+      "summary": "Threats can be modified with special abilities.",
+      "marker": "data-npcs.js#SPECIAL_ABILITIES",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-location",
+      "source": "docs/source/core-rulebook-transcript.md:10425 (Ch6 A LOCATION)",
+      "summary": "A Threat has a location within the Stop.",
+      "marker": "data-npcs.js#THREAT_ANATOMY",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-goal",
+      "source": "docs/source/core-rulebook-transcript.md:10433 (Ch6 A GOAL)",
+      "summary": "A Threat's goal points either at the Stop or at the Travelers.",
+      "marker": "data-npcs.js#THREAT_GOAL_KINDS",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-law-enforcement",
+      "source": "docs/source/core-rulebook-transcript.md:10479 (Ch6 A LAW ENFORCEMENT)",
+      "summary": "Law enforcement as a Threat, with a Countdown.",
+      "marker": "data-npcs.js#lawEnforcement",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-secret-agents",
+      "source": "docs/source/core-rulebook-transcript.md:10493 (Ch6 A SECRET AGENTS)",
+      "summary": "Secret agents as a Threat.",
+      "marker": "data-npcs.js#secretAgent",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-crazed-killers",
+      "source": "docs/source/core-rulebook-transcript.md:10576 (Ch6 A CRAZED KILLERS)",
+      "summary": "Crazed killers as a Threat.",
+      "marker": "data-npcs.js#crazedKiller",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-cultists",
+      "source": "docs/source/core-rulebook-transcript.md:10680 (Ch6 A CULTISTS)",
+      "summary": "Cultists as a Threat.",
+      "marker": "data-npcs.js#cultist",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-business-leaders",
+      "source": "docs/source/core-rulebook-transcript.md:10796 (Ch6 A BUSINESS LEADERS)",
+      "summary": "Business leaders as a Threat.",
+      "marker": "data-npcs.js#businessLeader",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-robots",
+      "source": "docs/source/core-rulebook-transcript.md:10897 (Ch6 A ROBOTS)",
+      "summary": "Robots as a Threat, with a Countdown.",
+      "marker": "data-npcs.js#robot",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-systems",
+      "source": "docs/source/core-rulebook-transcript.md:11028 (Ch6 A SYSTEMS)",
+      "summary": "Systems: bodiless entities inside the network, acting through human agents.",
+      "marker": "data-npcs.js#system",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-extreme-weather",
+      "source": "docs/source/core-rulebook-transcript.md:11087 (Ch6 A EXTREME WEATHER)",
+      "summary": "Extreme weather as a Threat with no personality or motive.",
+      "marker": "data-npcs.js#environmental",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-disease",
+      "source": "docs/source/core-rulebook-transcript.md:11123 (Ch6 A DISEASE)",
+      "summary": "Disease as a Threat, with a Virulence rolled against.",
+      "marker": "data.js#DISEASES",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-personal",
+      "source": "docs/source/core-rulebook-transcript.md:11150 (Ch6 PERSONAL THREATS)",
+      "summary": "Personal Threats run their own Countdown of three steps.",
+      "marker": "data-npcs.js#PERSONAL_THREAT_RULES",
+      "status": "implemented"
+    },
+    {
+      "id": "threat-minor-npcs",
+      "source": "docs/source/core-rulebook-transcript.md:11195 (Ch6 MINOR NPCS)",
+      "summary": "Minor NPCs as opposition.",
+      "marker": "data-gm.js#MINOR_NPC_BASELINE",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-core-principles",
+      "source": "docs/source/core-rulebook-transcript.md:15074 (Ch8 A CORE PRINCIPLES)",
+      "summary": "The principles of playing alone.",
+      "marker": "data-solo.js#SOLO_PRINCIPLES",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-preparations",
+      "source": "docs/source/core-rulebook-transcript.md:15105 (Ch8 A PREPARATIONS)",
+      "summary": "The solo prep checklist: steps 1-7 of Journey prep, with step 8 left for play.",
+      "marker": "data-solo.js#SOLO_PREP_STEPS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-start-destination",
+      "source": "docs/source/core-rulebook-transcript.md:15141 (Ch8 A STARTING POINT & DESTINATION)",
+      "summary": "A D6 table of destinations.",
+      "marker": "data-solo.js#DESTINATIONS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-journey-route",
+      "source": "docs/source/core-rulebook-transcript.md:15188 (Ch8 A JOURNEY ROUTE)",
+      "summary": "Choosing the route alone.",
+      "marker": "data-journey.js#ROUTE_FEATURES",
+      "status": "partial",
+      "note": "House-aid table; the book gives the step but no generator."
+    },
+    {
+      "id": "solo-number-of-stops",
+      "source": "docs/source/core-rulebook-transcript.md:15199 (Ch8 A NUMBER OF STOPS)",
+      "summary": "How many Stops a solo Journey runs to.",
+      "marker": "data-gm.js#JOURNEY_LENGTH",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-goals-threats",
+      "source": "docs/source/core-rulebook-transcript.md:15208 (Ch8 A PERSONAL GOALS & THREATS)",
+      "summary": "Per-archetype Goal and Threat suggestions.",
+      "marker": "data-solo.js#SOLO_ARCHETYPE_HOOKS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-vehicle",
+      "source": "docs/source/core-rulebook-transcript.md:15307 (Ch8 A YOUR VEHICLE)",
+      "summary": "A table of period vehicles.",
+      "marker": "data-solo.js#NINETIES_VEHICLES",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-playing-travelers",
+      "source": "docs/source/core-rulebook-transcript.md:15416 (Ch8 A PLAYING YOUR TRAVELERS)",
+      "summary": "Run two to four Travelers, one in the spotlight per Stop, rotated.",
+      "marker": "src/solo.js#passTheSpotlight",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-triggering-events",
+      "source": "docs/source/core-rulebook-transcript.md:15474 (Ch8 A TRIGGERING EVENTS)",
+      "summary": "Face cards fire events; the suit selects which kind.",
+      "marker": "data-solo.js#EVENT_TRIGGERS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-personal-threats",
+      "source": "docs/source/core-rulebook-transcript.md:15505 (Ch8 PERSONAL THREATS)",
+      "summary": "The personal Threat closes in over three steps.",
+      "marker": "src/solo.js#advancePersonalThreat",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-encounters",
+      "source": "docs/source/core-rulebook-transcript.md:15533 (Ch8 ENCOUNTERS)",
+      "summary": "Minor encounters between Stops, read with a Tilt; they can be driven past.",
+      "marker": "data-solo.js#MINOR_ENCOUNTERS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-stops-basics",
+      "source": "docs/source/core-rulebook-transcript.md:15555 (Ch8 A BASICS)",
+      "summary": "Generating a Stop on arrival rather than preparing it.",
+      "marker": "src/stops.js#makeStop",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-stop-countdown",
+      "source": "docs/source/core-rulebook-transcript.md:15765 (Ch8 A STOP COUNTDOWN)",
+      "summary": "The Stop Countdown table.",
+      "marker": "data-solo.js#STOP_THREAT_COUNTDOWN",
+      "status": "partial",
+      "note": "The printed table stops at 56; rolls of 61-66 have no entry. The app re-rolls those, which is a house ruling and is flagged as one in rollStopCountdown."
+    },
+    {
+      "id": "solo-npc-personality",
+      "source": "docs/source/core-rulebook-transcript.md:15918 (Ch8 A PERSONALITY TYPE)",
+      "summary": "NPC personality type by card rank.",
+      "marker": "data-solo.js#NPC_PERSONALITY",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-npc-emotion",
+      "source": "docs/source/core-rulebook-transcript.md:16100 (Ch8 NPC BEHAVIOR)",
+      "summary": "NPC current emotion by card rank.",
+      "marker": "data-solo.js#NPC_EMOTION",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-npc-motive",
+      "source": "docs/source/core-rulebook-transcript.md:16268 (Ch8 A MOTIVE)",
+      "summary": "NPC motive by suit.",
+      "marker": "data-solo.js#NPC_MOTIVE",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-npc-method",
+      "source": "docs/source/core-rulebook-transcript.md:16307 (Ch8 A METHOD)",
+      "summary": "NPC method by suit.",
+      "marker": "data-solo.js#NPC_METHOD",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-npc-quirk",
+      "source": "docs/source/core-rulebook-transcript.md:16392 (Ch8 A QUIRK)",
+      "summary": "An NPC quirk rolled on the D66 table.",
+      "marker": "data-gm.js#NPC_QUIRKS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-npc-predisposition",
+      "source": "docs/source/core-rulebook-transcript.md:16400 (Ch8 A PREDISPOSITION)",
+      "summary": "An NPC's predisposition toward the Travelers, read as a Tilt.",
+      "marker": "src/solo.js#readTilt",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-tilts",
+      "source": "docs/source/core-rulebook-transcript.md:16409 (Ch8 TILTS)",
+      "summary": "A Tilt: suit gives direction, rank gives degree.",
+      "marker": "data-solo.js#TILT",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-traveler-events",
+      "source": "docs/source/core-rulebook-transcript.md:16490 (Ch8 TRAVELER EVENTS)",
+      "summary": "Traveler events, rolled on a D6.",
+      "marker": "data-solo.js#TRAVELER_EVENTS",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-tension-tracking",
+      "source": "docs/source/core-rulebook-transcript.md:16593 (Ch8 A TENSION TRACKING)",
+      "summary": "Tension between Travelers is tracked in solo play too.",
+      "marker": "src/lifecycle.js#reduceTensionAlone",
+      "status": "implemented"
+    },
+    {
+      "id": "solo-deck-pacing",
+      "source": "docs/source/core-rulebook-transcript.md:15560 (Ch8 A BASICS)",
+      "summary": "The deck is the pacing clock and is not reshuffled until spent.",
+      "marker": "src/solo.js#freshDeck",
+      "status": "implemented"
+    },
+    {
+      "id": "character-sheet",
+      "source": "docs/source/core-rulebook-transcript.md:16602 (Character sheet)",
+      "summary": "The printed character sheet's fields.",
+      "marker": "src/screens.js#readableExport",
+      "status": "partial",
+      "note": "The app's sheet carries every field, but the printed layout is not reproduced; the plain-text export is the nearest equivalent."
+    },
+    {
+      "id": "pregens",
+      "source": "docs/source/core-rulebook-transcript.md:16677 (Pre-made Travelers)",
+      "summary": "Four pre-made Travelers, each with a paired name.",
+      "marker": "data-pregens.js#PREGENS",
+      "status": "implemented"
+    },
+    {
+      "id": "pregen-carbone-hope",
+      "source": "docs/source/core-rulebook-transcript.md:16677 (Pre-made Travelers)",
+      "summary": "The Carbone sheet prints Hope 4 where the formula gives 5.",
+      "marker": "data-pregens.js#PREGEN_ERRATA",
+      "status": "implemented"
+    },
+    {
+      "id": "setting-chapter-1",
+      "source": "docs/source/core-rulebook-transcript.md:254 (Ch1 WELCOME)",
+      "summary": "Chapter 1: what the game is and the tone of Pacifica.",
+      "marker": "docs/source/core-rulebook-transcript.md#CHAPTER",
+      "status": "deliberately-omitted",
+      "note": "Setting prose. The app is a play aid, not a reader, and the scope guard forbids reproducing setting text."
+    },
+    {
+      "id": "setting-chapter-2",
+      "source": "docs/source/core-rulebook-transcript.md:919 (Ch2 THE STATE OF PACIFICA)",
+      "summary": "Chapter 2: the state of Pacifica, its places and history.",
+      "marker": "docs/source/core-rulebook-transcript.md#PACIFICA",
+      "status": "deliberately-omitted",
+      "note": "Setting prose and a map. Deliberately absent — the house tables describe places by what they are, never by name, to stay inside the scope guard."
+    },
+    {
+      "id": "scenario-into-the-dust",
+      "source": "docs/source/core-rulebook-transcript.md:11361 (Ch7 INTO THE DUST)",
+      "summary": "Chapter 7: the introductory scenario Into the Dust.",
+      "marker": "docs/source/core-rulebook-transcript.md#DUST",
+      "status": "deliberately-omitted",
+      "note": "A published adventure. The app builds Stops rather than shipping one, and reproducing it would be reproducing the book."
+    }
+  ]
+}

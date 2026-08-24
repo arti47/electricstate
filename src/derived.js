@@ -30,10 +30,6 @@ export function attributeTotal(ch) {
 }
 export const qualifiesForBonusTalent = (total) => total <= 15;
 
-export function validAttributes(attrs) {
-  return Object.values(attrs || {}).every((v) => v >= ATTRIBUTE_MIN && v <= ATTRIBUTE_MAX);
-}
-
 /** Sum of dice modifiers a character's conditions impose on a given roll context. */
 export function conditionModifiers(ch, context = {}) {
   let mod = 0;

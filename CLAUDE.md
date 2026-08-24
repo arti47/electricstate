@@ -291,4 +291,24 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   itself and offer something to press, every book word must be defined, and the first five
   minutes — cold start to tutorial, to a ready-made Traveler, to a first roll — must still work.
   `npm run probe:onboarding` runs it alone.
+- **Two committed specs that fail on opposite mistakes.** `npm run coverage` walks *source
+  document → code*: `docs/coverage.json` maps 136 requirements read out of the transcript
+  (chapters 3, 4, 5, 6, 8, the sheet and the pregens) to the code artefact that implements
+  each, and the spec fails if a marker vanishes, a citation is missing, or a `partial` /
+  `deliberately-omitted` / `unknown` entry has no note. `npm run reachability` walks *code →
+  user*: orphan functions, orphan tables, unrevealed markup, inert controls, broken `#/route`
+  targets, dangling rule references, files the service worker ships but does not have, and
+  dialogs closed by hand. Both run inside `npm test`.
+- **The coverage list must never be derived from the code.** A checklist built by scanning
+  `src/` maps onto `src/` by construction and passes forever while proving nothing. Every
+  entry cites a transcript line so a reader can go and check it. Anything unchecked is
+  `unknown`, never `partial`.
+- A green coverage run proves a *mapping* exists, not that the implementation is right — a
+  constant can exist and hold the wrong number. Behavioural correctness is `tests/run.js` and
+  the passes in `docs/app/AUDIT.md`.
+- **False-positive traps the reachability spec has already hit**, kept so nobody re-derives
+  them: a table composed into another table *in the same file* looks orphaned unless you
+  count mentions beyond the declaration and the `export default` list; and an "is it ever
+  revealed" check written as a bare `/hidden = false/` over the whole corpus matches some
+  other element's reveal and can therefore never fire — tie it to the id.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

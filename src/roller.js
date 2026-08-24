@@ -3,7 +3,7 @@
 import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6 } from "./core.js";
 import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
          BODY_ARMOR, COVER, NEUROCASTERS, NEUROCASTER_DEFAULT_PENALTY, TASER_RULE,
-         FULL_AUTO_MAX_BURSTS, TRAUMATIC_EVENTS, RANGES } from "../data.js";
+         FULL_AUTO_MAX_BURSTS, TRAUMATIC_EVENTS, RANGES, FIREARM_RULES, TRAUMA_RESIST } from "../data.js";
 import { STUNTS } from "../data-vehicles.js";
 import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss, isDronePilot } from "./derived.js";
 import { SURGERY } from "../data-tables.js";
@@ -264,7 +264,8 @@ function build(rerender) {
     if (rangeMod === null) weaponCard.append(el("p", { style: "color:var(--danger)" }, "Out of range — this weapon cannot reach that far."));
     else if (rangeMod < 0) weaponCard.append(el("p", { class: "faint" }, `${rangeMod} dice for firing inside its minimum range.`));
     // A gun used at arm's length is still a gun, but it is Strength that lands the shot.
-    if (chosen.min !== "engaged" && (pending.range || "engaged") === "engaged" && pending.attr !== "strength") {
+    if (chosen.min !== "engaged" && (pending.range || "engaged") === "engaged"
+        && pending.attr !== FIREARM_RULES.firearmsInCloseCombat.attr) {
       weaponCard.append(el("div", { class: "card-row" },
         el("span", { class: "faint" }, "A firearm in close combat hits on Strength, not Agility."),
         el("button", {
@@ -321,7 +322,8 @@ function build(rerender) {
   const talentDice = pending.talents.reduce((sum, id) => sum + (findTalent(id, ch)?.effect.bonus || 0), 0);
   const tension = pending.opposedId ? tensionToward(ch, pending.opposedId) : 0;
   const weaponGear = chosen && chosen.gearBonusSource !== "neurocasterNetwork" ? (chosen.bonus || 0) : 0;
-  const ambushMod = pending.ambush && (pending.range || "engaged") === "engaged" ? -3 : 0;
+  const ambushMod = pending.ambush && (pending.range || "engaged") === "engaged"
+    ? FIREARM_RULES.ambush.closeCombatModifier : 0;
   const pool = buildPool({
     attributeValue: ch.attributes[pending.attr],
     talentBonus: talentDice + tension,
@@ -671,10 +673,11 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
 export function resolveTraumaticEvent(potential, sixes, ch) {
   const flashbacks = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "traumaticLossPlus"));
   const worse = flashbacks ? potential + 1 : potential;
-  const lost = Math.max(0, worse - sixes);
+  const lost = Math.max(0, worse - sixes * TRAUMA_RESIST.eachSuccessReduces);
   const panic = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "autoBreakdownOnHopeLoss"));
   const violent = (ch.conditions || []).some((c) => (c.effects || []).some((e) => e.rule === "attackInsteadOfFreeze"));
-  return { lost, freeze: lost > 0 && !violent, violent: lost > 0 && violent, breakdown: lost > 0 && panic };
+  const freezes = TRAUMA_RESIST.freezeOnLoss && lost > 0;
+  return { lost, freeze: freezes && !violent, violent: freezes && violent, breakdown: lost > 0 && panic };
 }
 
 export async function traumaticEventDialog(ch, onDone) {

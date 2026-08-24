@@ -204,10 +204,10 @@ function build(ch, rerender) {
   wrap.append(conditionsCard(ch, patch));
 
   // --- neurocaster
-  wrap.append(neurocasterCard(ch, patch));
+  wrap.append(neurocasterCard(ch, patch, rerender));
 
   // --- inventory
-  wrap.append(inventoryCard(ch, patch));
+  wrap.append(inventoryCard(ch, patch, rerender));
 
   // --- tension
   wrap.append(tensionCard(ch));
@@ -370,7 +370,7 @@ export function describeCondition(cond) {
 }
 
 // ----------------------------------------------------------------- neurocaster
-function neurocasterCard(ch, patch) {
+function neurocasterCard(ch, patch, rerender) {
   const card = el("div", { class: "card", id: "sec-caster" }, el("h3", {}, "Neurocaster"));
   const model = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
   if (!model) {
@@ -413,7 +413,7 @@ function neurocasterCard(ch, patch) {
 }
 
 // ------------------------------------------------------------------- inventory
-function inventoryCard(ch, patch) {
+function inventoryCard(ch, patch, rerender) {
   const card = el("div", { class: "card", id: "sec-gear" }, el("h3", {}, "Gear"));
   if (isDronePilot(ch)) { card.append(el("p", { class: "faint" }, "You carry nothing — you are the machine.")); return card; }
 
@@ -437,7 +437,21 @@ function inventoryCard(ch, patch) {
         ? stepper("Gear bonus", item.bonus, item.maxBonus ?? item.bonus,
             (v) => patch((c) => { c.inventory.items[i].bonus = Math.max(0, v); }), "gear")
         : null,
-      item.uses != null ? el("div", { class: "faint" }, `${item.uses} uses left`) : null));
+      item.uses != null ? el("div", { class: "faint" }, `${item.uses} uses left`) : null,
+      item.hope
+        ? el("div", {},
+            el("div", { class: "faint" }, `A moment with this returns ${item.hope.amount} Hope, once per ${item.hope.per}${item.hope.healthCost ? `, at ${item.hope.healthCost} Health` : ""}.`),
+            el("button", {
+              class: "btn", onclick: async () => {
+                const { useHopeItem } = await import("./lifecycle.js");
+                const result = useHopeItem(ch, item);
+                if (!result.ok) { showToast(result.reason, "danger"); return; }
+                if (item.uses != null) patch((c) => { c.inventory.items[i].uses = Math.max(0, item.uses - 1); });
+                else rerender();
+                showToast(`${ch.name}: +1 Hope.`);
+              }
+            }, "Take a moment with it"))
+        : null));
   }
 
   // Body armor: worn armor soaks damage but costs Agility, so it is equipped, not just carried.
@@ -461,7 +475,12 @@ function inventoryCard(ch, patch) {
           const g = GEAR.find((x) => x.id === pick.value);
           if (!g) return;
           patch((c) => {
-            c.inventory.items.push({ name: g.name, bonus: g.bonus || null, maxBonus: g.bonus || null, uses: g.uses ?? null, gearId: g.id });
+            c.inventory.items.push({
+              name: g.name, bonus: g.bonus || null, maxBonus: g.bonus || null,
+              uses: g.uses ?? null, gearId: g.id,
+              // Carried through, or the Hope-from-an-item rule has nothing to read.
+              hope: g.hope || null, alcohol: !!g.alcohol
+            });
           });
         }
       }, "Add"),

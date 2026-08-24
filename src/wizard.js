@@ -212,14 +212,6 @@ export function formatSeeds({ words, amplified }) {
     .join(" · ");
 }
 
-/** Distinct rows from one table — for content tables, where a repeat is just noise. */
-export function rollDescriptors(count = SEED_ROLLS, table = GOAL_SEEDS) {
-  const picked = new Set();
-  let guard = 0;
-  while (picked.size < Math.min(count, table.length) && guard++ < 500) picked.add(fromD100(table));
-  return [...picked];
-}
-
 /** One word from each descriptor table, so a description always covers build, wear and manner. */
 export function rollDescriptorSet(tables = DESCRIPTOR_TABLES) {
   return tables.map((t) => ({ id: t.id, label: t.label, word: fromD100(t.table) }));

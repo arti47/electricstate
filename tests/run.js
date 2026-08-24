@@ -333,7 +333,7 @@ await test("progress tasks count successes and optional failures", () => {
 });
 
 const soloMod = await import("../src/solo.js");
-
+const stopsMod = await import("../src/stops.js");
 await test("a fresh deck is 52 unique cards and draws without replacement", () => {
   const deck = soloMod.freshDeck();
   assert.equal(deck.length, 52);
@@ -370,7 +370,7 @@ await test("the solo Stop Countdown never returns the unassigned 61-66 band", ()
 });
 
 await test("solo generators return complete Stops and Threats", () => {
-  const stop = soloMod.generateStop();
+  const stop = stopsMod.makeStop();
   for (const key of ["terrain", "population", "communications", "size", "prosperity", "weather"]) {
     assert.ok(stop.setting[key], `stop missing ${key}`);
   }
@@ -610,12 +610,11 @@ await test("damage lands wherever the combatant's health lives", () => {
   assert.equal(combatMod.damageCombatant("t1", 99).health, 0, "health never goes negative");
 });
 
-const stopsMod = await import("../src/stops.js");
 
 await test("solo and the GM screen build the same Stop record", () => {
   store.resetAll();
   const gmStop = stopsMod.makeStop("Littleville");
-  const soloStop = soloMod.generateStop();
+  const soloStop = stopsMod.makeStop();
   assert.deepEqual(Object.keys(gmStop).sort(), Object.keys(soloStop).sort(),
     "one shape, or neither screen can read the other's Stop");
   for (const stop of [gmStop, soloStop]) {
