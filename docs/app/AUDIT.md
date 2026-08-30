@@ -617,3 +617,46 @@ pass forever:
 
 104 invariants, coverage clean, reachability clean, browser smoke clean, four probes clean,
 button audit clean.
+
+---
+
+# Nineteenth pass — how do you actually play?
+
+Reported plainly: "I still don't know how to start playing the game, and sustaining play and
+ending the game well." Every audit before this one made the app more correct, more reachable
+and better explained, and none of them touched the thing being asked for.
+
+The pieces were all there. Nothing joined them.
+
+| # | Finding | Fix |
+|---|---|---|
+| 118 | **The app went silent exactly when play started.** `nextStepFor` named the next setup step — make a Traveler, set a destination, pick a vehicle, set Tension — and returned `null` the moment setup was done. That is the moment a table sits down and asks what happens now. | `whatNow(state)` in `src/play.js`: a pure function over the saved game returning one of nine steps across six phases, from an empty roster all the way to a finished Journey. The home screen renders it and it changes every time the state does. |
+| 119 | **No procedure anywhere.** `#/tutorial` is a feature tour — "tap Travelers, then New Traveler". Nothing said how to open a session, what a scene is, when to roll, when to fire a Countdown, or when to stop. | `#/play`, "Running a session": three acts that open on the one you are in — getting started, keeping it going, stopping well — written as instructions to a person at a table. |
+| 120 | **Nothing said what to do when a session goes badly**, which is the most common reason a new group stops playing. | Five failure modes and the move for each: nobody acting, a planning meeting, a silent player, no Hope left, nobody knowing what happens next. |
+| 121 | **Ending was implemented and hidden.** The session debrief, the week interval and the end-of-Journey epilogue all lived inside a collapsed "Bigger boundaries" fold on the Time screen. The debrief is where advancement happens *at all*, and the epilogue is the only way a campaign finishes rather than being deleted. | The state machine routes to all three at the moment they are due, and the guide's third act says what each is for. |
+
+## What the state machine says
+
+| phase | when | what it tells you |
+|---|---|---|
+| setup | no Traveler, destination, vehicle or Tension | the next thing to fill in |
+| open | on the road, or just arrived | start driving not arriving; open with the place, not the problem |
+| play | Countdown running, or a fight | scene, roll, consequence, repeat — and fire the Countdown when it stalls |
+| crisis | Countdown spent | everything is on the table; resolve it or drive out with it unresolved |
+| close | Blocker dealt with | drive on, or end the session while the memory is fresh |
+| done | Journey ended | keep it as a record; a new Journey starts clean |
+
+## Guards
+
+Three unit tests: the setup ladder still runs in the book's order; every phase after it returns
+a step (the state the app used to have no answer for); and every one of the nine steps has a
+title, a blurb and somewhere to go. The onboarding probe adds `#/play` to its route walk and
+asserts the guide covers starting, sustaining, stopping, where-you-are and what-to-do-when-stuck.
+
+The reachability spec immediately reported `nextStepFor` as an orphan once the home screen
+stopped calling it — which is the pair of specs working as intended, one pass after they landed.
+
+## Result
+
+107 invariants, coverage clean (137 mapped), reachability clean, browser smoke clean, four
+probes clean, button audit clean.

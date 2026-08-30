@@ -662,25 +662,25 @@
       "id": "starting-a-session",
       "source": "docs/source/core-rulebook-transcript.md:9982 (Ch5 A STARTING A SESSION)",
       "summary": "Advice on opening a session.",
-      "marker": "docs/rules/05-journey-stops.md#session",
-      "status": "deliberately-omitted",
-      "note": "GM prose with no mechanical surface. The app implements the session boundary and debrief it feeds into (see advancement-debrief); the advice itself is not reproduced, per the scope guard on setting and prose text."
+      "marker": "src/play.js#playScreen",
+      "status": "partial",
+      "note": "The book's prose is not reproduced, but the procedure it describes now is: src/play.js gives a three-act session guide and a live state machine that names where the group is. What is missing is the book's own worked examples."
     },
     {
       "id": "improvising",
       "source": "docs/source/core-rulebook-transcript.md:10131 (Ch5 A IMPROVISING)",
       "summary": "Advice on improvising at the table.",
-      "marker": "docs/rules/05-journey-stops.md#improvising",
-      "status": "deliberately-omitted",
-      "note": "GM prose, no mechanics. Not reproduced."
+      "marker": "src/play.js#STUCK",
+      "status": "partial",
+      "note": "The advice is not reproduced. What the app gives instead is the five failure modes and what to do about each — nobody acting, a planning meeting, a silent player, no Hope left, nobody knowing what happens next."
     },
     {
       "id": "playing-scenes",
       "source": "docs/source/core-rulebook-transcript.md:10234 (Ch5 A PLAYING SCENES)",
       "summary": "Advice on framing and cutting scenes.",
-      "marker": "docs/rules/05-journey-stops.md#scenes",
-      "status": "deliberately-omitted",
-      "note": "GM prose, no mechanics. Not reproduced."
+      "marker": "src/play.js#whatNow",
+      "status": "partial",
+      "note": "Scene framing and cutting are given as procedure in the session guide rather than as the book's prose; the state machine names the current phase so the table knows which kind of scene is due."
     },
     {
       "id": "playing-in-neuroscapes",
@@ -1009,6 +1009,13 @@
       "marker": "docs/source/core-rulebook-transcript.md#DUST",
       "status": "deliberately-omitted",
       "note": "A published adventure. The app builds Stops rather than shipping one, and reproducing it would be reproducing the book."
+    },
+    {
+      "id": "journey-ends",
+      "source": "docs/source/core-rulebook-transcript.md:8508 (Ch5 THE JOURNEY)",
+      "summary": "A Journey ends when it ends — arriving is not required, and the game is about what the road cost.",
+      "marker": "src/lifecycle.js#epilogue",
+      "status": "implemented"
     }
   ]
 }

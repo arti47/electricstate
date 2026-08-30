@@ -223,6 +223,27 @@ button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
 /* An odd last action would sit alone in half a row and wrap its label; give it the row. */
 .btn-grid > .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
+/* Where you are in a session. The one card on the home screen that changes every time
+   something happens, so it gets the accent edge and nothing else does. */
+.whatnow { border-left: 3px solid var(--accent); }
+.whatnow-phase {
+  font: 600 .62rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 6px;
+}
+
+/* "you are here" on the act you are in. A bare span ran straight into the heading, so it
+   reads as one phrase; this makes it a badge. */
+.phase-fold > summary .count {
+  margin-left: 8px; padding: 2px 7px; border-radius: 999px;
+  background: var(--accent); color: #10120f;
+  font-size: .6rem; letter-spacing: .08em;
+}
+
+/* The numbered procedure in the session guide: a list you read, not a list you press. */
+.playsteps { margin: 0 0 var(--gap); padding-left: 1.3em; }
+.playsteps li { padding: 6px 0; }
+.playsteps li + li { border-top: 1px solid var(--line-soft); }
+
 /* A phase card that folds away: same skin as a card, summary as its heading. */
 .phase-fold > summary {
   list-style: none; cursor: pointer;

@@ -7,6 +7,7 @@ import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLog
          createCampaign, switchCampaign, renameCampaign, deleteCampaign, checkData,
          canUndo, undoLast, undoLabel } from "./store.js";
 import { searchLibrary, searchGlossary } from "./rules.js";
+import { whatNowCard } from "./play.js";
 import { resetRoller } from "./roller.js";
 import { resetNeuro } from "./neurocasting.js";
 import { resetWizard } from "./wizard.js";
@@ -75,32 +76,12 @@ export function homeScreen() {
  * shared items and the Tension between everyone. Nothing prompted any of it, so a party
  * could sit here finished-looking with no destination and no Tension to spend.
  */
-export function nextStepFor(chars, journey) {
-  if (!chars.length) return null;
-  if (!journey?.destination) {
-    return { id: "journey", title: "Where are you going?", href: "#/journey", label: "Set up the Journey",
-      blurb: "The Journey is the campaign: a destination, a vehicle and three items between you." };
-  }
-  if (!journey?.vehicle) {
-    return { id: "vehicle", title: "Nothing to drive yet", href: "#/journey", label: "The Journey",
-      blurb: "Pick the vehicle and the three shared items in the back." };
-  }
-  const anyTension = chars.some((c) => Object.values(c.tension || {}).some((v) => v > 0));
-  if (chars.length > 1 && !anyTension) {
-    return { id: "tension", title: "No Tension between anyone", href: "#/tension", label: "Set the Tension",
-      blurb: "Each Traveler starts with Tension 1 toward one or two of the others. It is the only reliable way Hope comes back." };
-  }
-  return null;
-}
-
-function nextStep(chars) {
-  const step = nextStepFor(chars, getJourney());
-  if (!step) return null;
-  return el("div", { class: "card", style: "border-left:3px solid var(--accent)" },
-    el("strong", {}, step.title),
-    el("p", { class: "faint" }, step.blurb),
-    el("a", { class: "btn btn-primary", href: step.href }, step.label));
-}
+/**
+ * The home screen used to name the next setup step and then fall silent the moment setup
+ * was done — which is the moment play begins. It now shows where the group is in a
+ * session, all the way through to ending the Journey. See src/play.js.
+ */
+const nextStep = () => whatNowCard();
 
 export function rulesScreen() {
   const wrap = el("div");

@@ -892,21 +892,21 @@ await test("combat orders the list by who actually acts next", () => {
 });
 
 await test("the home screen names the next step in the book's own creation order", async () => {
-  const screens = await import("../src/screens.js");
+  const play = await import("../src/play.js");
   store.resetAll();
   const a = store.saveCharacter({ name: "A", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
   const b = store.saveCharacter({ name: "B", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 } });
-  const nudge = () => screens.nextStepFor(store.listCharacters(), store.getJourney())?.id ?? null;
+  const nudge = () => play.currentStep()?.id ?? null;
 
-  assert.equal(nudge(), "journey", "no destination yet");
+  assert.equal(nudge(), "no-destination", "no destination yet");
   store.saveJourney({ destination: "The coast — to bury someone" });
-  assert.equal(nudge(), "vehicle", "destination but nothing to drive");
+  assert.equal(nudge(), "no-vehicle", "destination but nothing to drive");
   store.saveJourney({ destination: "The coast — to bury someone", vehicle: { name: "Van", hull: 6 } });
-  assert.equal(nudge(), "tension", "vehicle but nobody carries Tension");
+  assert.equal(nudge(), "no-tension", "vehicle but nobody carries Tension");
 
   store.saveCharacter({ ...store.getCharacter(a.id), tension: { [b.id]: 1 } });
-  assert.equal(nudge(), null, "once Tension is set the group is ready and the nudge goes away");
-  assert.equal(screens.nextStepFor([], null), null, "an empty roster gets the create prompt instead");
+  // The old nudge went silent here, which is exactly when a table needs telling what to do.
+  assert.equal(nudge(), "on-the-road", "setup done, so the advice becomes about playing");
   assert.ok(b.id, "two Travelers were needed for the Tension step");
 });
 
@@ -1207,6 +1207,70 @@ await test("the glossary is searchable by the word a player actually read", () =
   assert.equal(rules.glossary("nonsense"), null);
   assert.ok(rules.searchGlossary("bliss").length >= 2, "searching a word finds the entries that mention it");
   assert.equal(rules.searchGlossary("").length, library.GLOSSARY.length, "no query lists everything");
+});
+
+// -------------------------------------------------- where you are in a session
+
+const play = await import("../src/play.js");
+
+const atTable = (over = {}) => ({
+  chars: [{ id: "a", name: "A", tension: { b: 1 } }, { id: "b", name: "B", tension: {} }],
+  journey: { destination: "The coast", vehicle: { name: "Van" } },
+  stop: null, stops: [], combat: null, sessionLog: [], ...over
+});
+
+await test("the app names the next setup step until the group can actually play", () => {
+  assert.equal(play.whatNow({ chars: [], journey: null }).id, "no-traveler");
+  assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: null }).id, "no-destination");
+  assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: { destination: "x" } }).id, "no-vehicle");
+  assert.equal(play.whatNow({
+    chars: [{ id: "a", tension: {} }, { id: "b", tension: {} }],
+    journey: { destination: "x", vehicle: {} }
+  }).id, "no-tension");
+});
+
+await test("and keeps answering once play starts, which is where it used to fall silent", () => {
+  // On the road, no Stop yet.
+  assert.equal(play.whatNow(atTable()).id, "on-the-road");
+  assert.equal(play.whatNow(atTable()).phase, "open");
+
+  // Arrived: the Countdown has not started.
+  const stop = { blocker: "The road is out", countdown: ["a", "b", "c"], countdownProgress: 0, resolved: false };
+  assert.equal(play.whatNow(atTable({ stop })).id, "stop-opening");
+
+  // Running.
+  assert.equal(play.whatNow(atTable({ stop: { ...stop, countdownProgress: 1 } })).id, "stop-running");
+
+  // Spent — the crisis.
+  const crisis = play.whatNow(atTable({ stop: { ...stop, countdownProgress: 3 } }));
+  assert.equal(crisis.id, "stop-crisis");
+  assert.equal(crisis.phase, "crisis");
+
+  // Resolved: wind up, or drive on.
+  assert.equal(play.whatNow(atTable({ stop: { ...stop, resolved: true } })).id, "stop-resolved");
+
+  // A fight outranks everything else that is not setup.
+  assert.equal(play.whatNow(atTable({ stop, combat: { active: true, round: 2 } })).id, "in-combat");
+
+  // And a Journey can be over, which is a state the app never had.
+  assert.equal(play.whatNow(atTable({ journey: { destination: "x", vehicle: {}, ended: true } })).id, "journey-over");
+});
+
+await test("every step of the session offers somewhere to go", () => {
+  const stop = { blocker: "b", countdown: ["a", "b", "c"], countdownProgress: 0 };
+  const states = [
+    { chars: [] }, { chars: [{ id: "a" }], journey: null },
+    atTable(), atTable({ stop }), atTable({ stop: { ...stop, countdownProgress: 2 } }),
+    atTable({ stop: { ...stop, countdownProgress: 3 } }), atTable({ stop: { ...stop, resolved: true } }),
+    atTable({ combat: { active: true, round: 1 } }),
+    atTable({ journey: { destination: "x", vehicle: {}, ended: true } })
+  ];
+  for (const state of states) {
+    const step = play.whatNow(state);
+    assert.ok(step.title && step.blurb, `${step.id} says nothing`);
+    assert.ok(step.actions.length, `${step.id} offers nowhere to go`);
+    assert.ok(step.actions.some((a) => a.href.startsWith("#/")), `${step.id} has no real destination`);
+  }
 });
 
 const failed = results.filter((r) => r[0] === "FAIL");

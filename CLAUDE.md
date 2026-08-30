@@ -311,4 +311,17 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   count mentions beyond the declaration and the `export default` list; and an "is it ever
   revealed" check written as a bare `/hidden = false/` over the whole corpus matches some
   other element's reveal and can therefore never fire — tie it to the id.
+- **`src/play.js` answers "what do we do now", all session long.** Every other screen says what
+  a control does; this says what happens at the table. `whatNow(state)` is a pure function over
+  the saved game returning one of nine steps across six phases — setup → open → play → crisis →
+  close → done — and the home screen renders it as the only accent-edged card there. The old
+  `nextStepFor` named the next *setup* step and returned null the moment setup finished, which
+  is precisely when a table needs telling what to do; that silence was the gap.
+- `#/play` is the procedure itself, in three folds that open on the act you are in: getting
+  started, keeping it going, stopping well — plus the five ways a session stalls and what to do
+  about each. It is not a feature tour; `#/tutorial` is the feature tour.
+- **Ending is a first-class act.** A session ends with the debrief (that is where advancement
+  happens at all), a Stop ends resolved *or* driven out of, and the Journey ends with an
+  epilogue that closes the campaign as a record. All three were implemented and folded away
+  under "Bigger boundaries" on the Time screen, which is why nobody found them.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

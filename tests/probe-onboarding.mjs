@@ -14,7 +14,7 @@ import { serve, CHROMIUM, GAME_HELPERS, SEEDS, seedPage } from "./fixtures.js";
 const REPORT_ONLY = process.argv.includes("--report");
 
 const ROUTES = ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey",
-  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial"];
+  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play"];
 
 /**
  * Words the book uses that mean nothing to a new player. Each must be explained somewhere
@@ -110,6 +110,25 @@ const coldPath = await page.evaluate(() => {
 if (!coldPath.namesTheFirstStep) gaps.push("home (empty): does not name the first thing to do");
 if (!coldPath.offersTheTutorial) gaps.push("home (empty): does not offer the tutorial to someone who has never played");
 if (!coldPath.explainsWhatThisIs) gaps.push("home (empty): does not say what the app is");
+
+// The session guide must say how to start, how to keep going, and how to stop.
+await seedPage(page, base, SEEDS.mid, "play");
+const guide = await page.evaluate(() => {
+  document.querySelectorAll("#screen details").forEach((d) => d.setAttribute("open", ""));
+  const t = document.getElementById("screen").textContent;
+  return {
+    starting: /Getting started/.test(t),
+    sustaining: /Keeping it going/.test(t),
+    ending: /Stopping well/.test(t),
+    saysWhereYouAre: !!document.querySelector("#screen .whatnow"),
+    stuck: /going badly/i.test(t)
+  };
+});
+for (const [key, label] of [["starting", "how to start"], ["sustaining", "how to keep going"],
+                            ["ending", "how to stop"], ["saysWhereYouAre", "where the group is right now"],
+                            ["stuck", "what to do when a session stalls"]]) {
+  if (!guide[key]) gaps.push(`the session guide does not cover ${label}`);
+}
 
 // ---- 4. the first five minutes, with nothing read and nothing decided
 const firstMinutes = [];

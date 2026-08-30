@@ -14,6 +14,7 @@ import { lifecycleScreen } from "./lifecycle.js";
 import { neuroScreen } from "./neurocasting.js";
 import { combatScreen } from "./combat.js";
 import { tutorialScreen } from "./tutorial.js";
+import { playScreen } from "./play.js";
 import { hazardScreen, vehicleScreen } from "./hazards.js";
 
 const ROUTES = [
@@ -21,6 +22,7 @@ const ROUTES = [
   { path: "dice", tab: "dice", render: diceScreen },
   { path: "rules", tab: "rules", render: rulesScreen },
   { path: "tutorial", tab: "rules", render: tutorialScreen },
+  { path: "play", tab: "rules", render: playScreen },
   { path: "log", tab: "dice", render: rollLogScreen },
   { path: "time", tab: "home", render: lifecycleScreen },
   { path: "neuro", tab: "dice", render: neuroScreen },
@@ -46,6 +48,7 @@ const ROUTES = [
 const SUBNAV = {
   home: [
     ["#/home", "Travelers"],
+    ["#/play", "What now?"],
     ["#/journey", "Journey"],
     ["#/time", "Time"],
     ["#/tension", "Tension", () => listCharacters().length > 1]
@@ -59,7 +62,7 @@ const SUBNAV = {
     ["#/driving", "Driving"],
     ["#/log", "Log"]
   ],
-  rules: [["#/rules", "Rules"], ["#/tutorial", "Tutorial"]]
+  rules: [["#/play", "Running a session"], ["#/rules", "Rules"], ["#/tutorial", "The app"]]
 };
 
 function subnav(route) {
