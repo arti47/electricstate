@@ -324,4 +324,16 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   happens at all), a Stop ends resolved *or* driven out of, and the Journey ends with an
   epilogue that closes the campaign as a record. All three were implemented and folded away
   under "Bigger boundaries" on the Time screen, which is why nobody found them.
+- **`src/session.js` is the front door: the app runs the session.** `#/session` shows one beat —
+  what is happening, one line on what to do about it, two to four big buttons — and pressing one
+  produces the next beat. It composes the book's own generators into sentences rather than
+  handing over a table. **It is not a second game**: arriving creates a real Stop, the Countdown
+  it fires is the same one the GM screen fires, and what it narrates goes into the same session
+  log the debrief reads back, so you can drop out to the manual screens mid-session and the game
+  is where you left it.
+- Narration must never inline a table entry into a sentence — entries are fragments with no
+  consistent part of speech, which is how "a greenhouses" and "he wants trauma and will get it
+  power" happen. Use labels and colons; they survive any row of any table.
+- The three layers, and which question each answers: `#/session` runs it, `#/play` explains the
+  procedure, `#/tutorial` tours the app. The home screen leads with the first.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.

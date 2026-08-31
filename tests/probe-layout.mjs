@@ -17,7 +17,7 @@ const MIN_TARGET = 24;
 const WANT_TARGET = 44;
 
 const ROUTES = ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey",
-  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play"];
+  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play", "session"];
 
 const { base, close } = await serve();
 const browser = await chromium.launch({ executablePath: CHROMIUM });

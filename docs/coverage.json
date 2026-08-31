@@ -664,7 +664,7 @@
       "summary": "Advice on opening a session.",
       "marker": "src/play.js#playScreen",
       "status": "partial",
-      "note": "The book's prose is not reproduced, but the procedure it describes now is: src/play.js gives a three-act session guide and a live state machine that names where the group is. What is missing is the book's own worked examples."
+      "note": "The book's prose is not reproduced. The procedure it describes is: src/play.js gives the three-act guide and a live state machine, and src/session.js runs the session beat by beat for a table that has read nothing. Missing: the book's own worked examples."
     },
     {
       "id": "improvising",
@@ -678,9 +678,9 @@
       "id": "playing-scenes",
       "source": "docs/source/core-rulebook-transcript.md:10234 (Ch5 A PLAYING SCENES)",
       "summary": "Advice on framing and cutting scenes.",
-      "marker": "src/play.js#whatNow",
+      "marker": "src/session.js#beatFor",
       "status": "partial",
-      "note": "Scene framing and cutting are given as procedure in the session guide rather than as the book's prose; the state machine names the current phase so the table knows which kind of scene is due."
+      "note": "Scene framing and cutting are performed rather than described: the director frames each scene from the book's tables and says what to do about it. The book's prose on the subject is not reproduced."
     },
     {
       "id": "playing-in-neuroscapes",

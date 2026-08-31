@@ -1273,6 +1273,81 @@ await test("every step of the session offers somewhere to go", () => {
   }
 });
 
+// ------------------------------------------------------- the app runs a session
+
+const session = await import("../src/session.js");
+
+await test("the director walks a whole session without anyone knowing a rule", () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "the coast", start: "a motel", vehicle: { name: "Van" } });
+  session.resetDirector();
+
+  const beat = () => session.beatFor();
+  assert.equal(beat().id, "idle", "it starts ready, not mid-anything");
+
+  session.advance("open");
+  assert.equal(beat().id, "opening");
+  assert.ok(beat().now.includes("Driver"), "the opening names whoever is driving");
+
+  session.advance("road");
+  assert.equal(beat().id, "road");
+  assert.ok(beat().now.length > 20, "the road produces something concrete");
+
+  session.advance("arrive");
+  assert.equal(beat().id, "arrived");
+  assert.ok(stopsMod.activeStop(), "arriving actually creates a Stop in the shared record");
+
+  session.advance("scene");
+  assert.equal(beat().id, "scene");
+
+  // Three Countdown steps and the Stop is in crisis — the same Countdown the GM screen fires.
+  session.advance("pressure");
+  assert.equal(beat().id, "pressure");
+  session.advance("pressure");
+  session.advance("pressure");
+  assert.equal(beat().id, "crisis", "the third step is the crisis");
+  assert.equal(stopsMod.activeStop().countdownProgress, 3, "it advanced the real Stop, not a copy");
+
+  session.advance("resolve");
+  assert.equal(beat().id, "wrap");
+  assert.equal(stopsMod.activeStop().resolved, true, "resolving through the director resolves the Stop");
+});
+
+await test("every beat says what is happening and offers somewhere to press", () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "the coast", vehicle: { name: "Van" } });
+  session.resetDirector();
+  for (const act of ["open", "road", "arrive", "scene", "pressure", "pressure", "pressure", "resolve"]) {
+    const b = session.beatFor();
+    assert.ok(b.heading, `${b.id} has no heading`);
+    assert.ok(b.now, `${b.id} does not say what is happening`);
+    assert.ok(b.you, `${b.id} does not say what to do about it`);
+    assert.ok(b.choices.length >= 1, `${b.id} offers nothing to press`);
+    assert.ok(b.choices.some((c) => c.primary), `${b.id} does not say which choice is the obvious one`);
+    session.advance(act);
+  }
+});
+
+await test("with no Traveler the director sends you to make one rather than dead-ending", () => {
+  store.resetAll();
+  session.resetDirector();
+  const b = session.beatFor();
+  assert.equal(b.id, "no-one");
+  assert.equal(b.choices[0].href, "#/create");
+});
+
+await test("the director writes to the shared session record, not a private one", () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "the coast", vehicle: { name: "Van" } });
+  session.resetDirector();
+  session.advance("open");
+  assert.ok(store.getSessionLog().some((e) => e.kind === "scene"),
+    "what the director narrates is what the debrief will read back");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

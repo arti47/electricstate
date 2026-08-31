@@ -660,3 +660,44 @@ stopped calling it — which is the pair of specs working as intended, one pass 
 
 107 invariants, coverage clean (137 mapped), reachability clean, browser smoke clean, four
 probes clean, button audit clean.
+
+---
+
+# Twentieth pass — stop explaining, start running it
+
+The same report a second time: still don't know how to start, sustain or end a session.
+Which means the nineteenth pass answered the wrong question. It added a card that says
+*"Open the first scene — start driving, not arriving"* and a guide explaining the loop. That
+is still homework. What was asked for was to play straight from the app.
+
+| # | Finding | Fix |
+|---|---|---|
+| 122 | **Every screen was a reference you had to know how to use, including the one about how to play.** `#/play` describes the procedure; nothing performs it. A table that has read nothing still has to translate "frame a scene" into an actual sentence about an actual place. | `#/session` — the director. One screen, one thing happening, two to four big buttons. Press one, the next thing happens. |
+| 123 | The generators were all there — encounters, route features, Blockers, locations, NPC personality/emotion/motive/method, quirks, reactions, Tilts, Countdown steps, Traveler events — and every one of them sat behind a button you had to know to press, on a screen you had to know to open. | The director composes them into sentences: *"You reach somewhere with a truck stop and not much else. In the way: gunfire against the vehicle. What this place needs: a place to sleep."* |
+| 124 | **Naive table composition produces broken English.** "a greenhouses", "Tobias Ortega has old", "He wants trauma and will get it power". Table entries are fragments with no consistent part of speech. | Labels and colons rather than inlining: *"Personality: observer. Right now: joyful. What he wants: trauma. How he gets it: power."* Survives any entry in any table. |
+
+## What the director is not
+
+It is not a second game. Arriving creates a **real Stop** in the shared record; the Countdown
+it fires is the **same Countdown** the GM screen fires; what it narrates goes into the **same
+session log** the debrief reads back. Drop out to the manual screens at any point and the game
+is exactly where the director left it — that is asserted, not hoped.
+
+## The arc, verified end to end
+
+open → on the road → arrive → scenes → the Countdown bites, twice → the crisis → wrapped,
+with the Stop actually resolved. Every third scene turns on the Travelers themselves, which is
+what keeps a session about these people rather than about the obstacle.
+
+## Guards
+
+Four unit tests: the whole arc walks without a rule being known; every beat says what is
+happening, what to do about it, and offers a marked primary choice; no Traveler routes to
+creation rather than dead-ending; and what the director narrates reaches the shared session
+record. The onboarding probe presses Play four times and asserts each beat is different, says
+what is happening, and offers at least two things to press.
+
+## Result
+
+111 invariants, coverage clean (137 mapped), reachability clean, browser smoke clean, five
+probes clean, button audit clean.

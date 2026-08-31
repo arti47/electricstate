@@ -239,6 +239,18 @@ button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
   font-size: .6rem; letter-spacing: .08em;
 }
 
+/* One beat of a session: what is happening, big enough to read across a table. */
+.beat {
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: var(--r); background: var(--bg-raised);
+  padding: var(--gap) 14px; margin-bottom: var(--gap);
+}
+.beat-heading {
+  font: 600 .62rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 8px;
+}
+.beat-now { font-size: 1.05rem; line-height: 1.5; margin-bottom: .6rem; }
+
 /* The numbered procedure in the session guide: a list you read, not a list you press. */
 .playsteps { margin: 0 0 var(--gap); padding-left: 1.3em; }
 .playsteps li { padding: 6px 0; }

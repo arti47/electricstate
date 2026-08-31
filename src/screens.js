@@ -27,7 +27,14 @@ export function homeScreen() {
   const chars = listCharacters();
   wrap.append(el("h1", {}, "Travelers"));
   wrap.append(explain("Everyone you are playing lives here. Tap a Traveler to open that sheet — vitals, talents, gear and conditions. The Journey is shared by the whole group: one destination, one vehicle, three items between you."));
-  if (!chars.length) wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "First time? Start here"));
+  // The front door. Someone who has read nothing should be able to press one button and
+  // have the app start telling them what is happening.
+  if (chars.length) {
+    wrap.append(el("a", { class: "btn btn-primary btn-block", href: "#/session", style: "margin-bottom:12px" },
+      "Play — the app runs the session"));
+  } else {
+    wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "First time? Start here"));
+  }
 
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" },

@@ -15,6 +15,7 @@ import { neuroScreen } from "./neurocasting.js";
 import { combatScreen } from "./combat.js";
 import { tutorialScreen } from "./tutorial.js";
 import { playScreen } from "./play.js";
+import { sessionScreen } from "./session.js";
 import { hazardScreen, vehicleScreen } from "./hazards.js";
 
 const ROUTES = [
@@ -23,6 +24,7 @@ const ROUTES = [
   { path: "rules", tab: "rules", render: rulesScreen },
   { path: "tutorial", tab: "rules", render: tutorialScreen },
   { path: "play", tab: "rules", render: playScreen },
+  { path: "session", tab: "home", render: sessionScreen },
   { path: "log", tab: "dice", render: rollLogScreen },
   { path: "time", tab: "home", render: lifecycleScreen },
   { path: "neuro", tab: "dice", render: neuroScreen },
@@ -48,7 +50,7 @@ const ROUTES = [
 const SUBNAV = {
   home: [
     ["#/home", "Travelers"],
-    ["#/play", "What now?"],
+    ["#/session", "Play"],
     ["#/journey", "Journey"],
     ["#/time", "Time"],
     ["#/tension", "Tension", () => listCharacters().length > 1]

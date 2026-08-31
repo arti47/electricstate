@@ -14,7 +14,7 @@ import { serve, CHROMIUM, GAME_HELPERS, SEEDS, seedPage } from "./fixtures.js";
 const REPORT_ONLY = process.argv.includes("--report");
 
 const ROUTES = ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey",
-  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play"];
+  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play", "session"];
 
 /**
  * Words the book uses that mean nothing to a new player. Each must be explained somewhere
@@ -163,6 +163,34 @@ if (madeOne) {
     if (!/success|did not work|It works/.test(result)) firstMinutes.push("the roll result does not say what happened");
   }
 }
+// And the thing someone who has read nothing actually needs: press play, get told what
+// is happening, press again, get told the next thing. No rule known in advance.
+await seedPage(page, base, SEEDS.mid, "home");
+if (!(await page.$('#screen a[href="#/session"]'))) {
+  firstMinutes.push("the home screen does not offer to run the session for you");
+}
+await seedPage(page, base, SEEDS.mid, "session");
+const beats = [];
+for (let i = 0; i < 4; i++) {
+  const button = page.locator("#screen .btn-grid button").first();
+  if (!(await button.count())) { firstMinutes.push(`the director ran out of buttons after ${i} beats`); break; }
+  await button.click();
+  await page.waitForTimeout(200);
+  beats.push(await page.evaluate(() => ({
+    now: document.querySelector("#screen .beat-now")?.textContent.trim() || "",
+    you: [...document.querySelectorAll("#screen .beat p")].pop()?.textContent.trim() || "",
+    choices: document.querySelectorAll("#screen .btn-grid .btn").length
+  })));
+}
+for (const [i, b] of beats.entries()) {
+  if (!b.now || b.now.length < 15) firstMinutes.push(`beat ${i + 1} does not say what is happening`);
+  if (!b.you) firstMinutes.push(`beat ${i + 1} does not say what to do about it`);
+  if (b.choices < 2) firstMinutes.push(`beat ${i + 1} offers ${b.choices} things to press`);
+}
+if (new Set(beats.map((b) => b.now)).size !== beats.length) {
+  firstMinutes.push("pressing on gave the same beat twice — it is not advancing");
+}
+
 gaps.push(...firstMinutes.map((f) => `first five minutes: ${f}`));
 
 await browser.close();
