@@ -247,7 +247,7 @@ function build(rerender) {
     wrap.append(el("div", { class: "card" },
       el("h3", {}, "Never done this before?"),
       el("p", { class: "faint" }, "There is no GM and no script. You ask a question out loud, draw a card, and read the answer into the fiction — that is the entire game."),
-      el("ol", {},
+      el("ol", { class: "playsteps" },
         el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Set out: below, roll a destination and a vehicle. Do not plan the Stops.")),
         el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Arrive somewhere: Generate a Stop. It hands you a Blocker — the reason you cannot drive on.")),
         el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Play it out. Whenever you do not know what happens next, Draw a card. Whenever you want to know if something is good or bad, Tilt.")),

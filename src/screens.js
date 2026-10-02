@@ -11,7 +11,7 @@ import { whatNowCard } from "./play.js";
 import { resetRoller } from "./roller.js";
 import { resetNeuro } from "./neurocasting.js";
 import { resetWizard } from "./wizard.js";
-import { showToast, confirmModal, promptModal, explain } from "./ui.js";
+import { showToast, confirmModal, promptModal, explain, moreMenu, diceRow } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
 
 /**
@@ -46,7 +46,8 @@ export function homeScreen() {
       list.append(el("li", {}, el("a", { href: `#/sheet/${c.id}` },
         el("div", { class: "card-row" },
           el("strong", {}, c.name || "Unnamed"),
-          el("span", { class: "faint mono" }, `${c.state?.health ?? "–"}/${c.state?.hope ?? "–"}`)),
+          // Named, not a bare "4/3": which number is Health and which is Hope.
+          el("span", { class: "faint mono" }, `Health ${c.state?.health ?? "–"} · Hope ${c.state?.hope ?? "–"}`)),
         el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—"))));
     }
     wrap.append(el("div", { class: "card" }, list));
@@ -231,6 +232,14 @@ function distributionPanel(entries) {
   return panel;
 }
 
+/** A logged roll's dice as small faces: base and gear apart where the log knows which. */
+function logDice(r) {
+  const base = r.base || null, gear = r.gear || null;
+  const row = base ? diceRow({ base, gear: gear || [] }, { mini: true }) : diceRow({ base: r.dice || [] }, { mini: true });
+  row.setAttribute("aria-label", (r.dice || []).join(" "));
+  return row;
+}
+
 export function rollLogScreen() {
   const host = el("div");
   let filter = "all";
@@ -239,6 +248,21 @@ export function rollLogScreen() {
   const render = () => {
     const log = getRollLog();
     const wrap = el("div", {}, el("h1", {}, "Roll log"));
+    // Clearing is behind ⋯ and undoable from the toast, rather than a red button under
+    // a hundred rows and a dialog asking whether you meant it.
+    if (log.length) {
+      wrap.append(el("div", { class: "screen-tools" },
+        moreMenu([{
+          label: "Clear log", danger: true,
+          run: () => {
+            clearRollLog();
+            filter = "all";
+            visible = PAGE;
+            render();
+            showToast("Roll log cleared", "", { label: "Undo", run: () => { undoLast(); render(); } });
+          }
+        }], "Roll log actions")));
+    }
     wrap.append(explain("Every roll the app has made, newest first, and only the last hundred are kept. With more than one Traveler in play, filter by who rolled — rolls that belong to the table rather than a person sit under Table."));
 
     if (!log.length) {
@@ -289,7 +313,7 @@ export function rollLogScreen() {
       list.append(el("li", {}, el("div", { class: "row", style: "padding:10px 4px" },
         el("div", { class: "card-row" },
           el("strong", {}, r.label || "Roll"),
-          el("span", { class: "mono faint" }, (r.dice || []).join(" "))),
+          logDice(r)),
         el("div", { class: "card-row" },
           el("span", { class: "faint" }, r.outcome || ""),
           el("span", { class: "faint" }, [r.by || "Table", clockTime(r.ts)].filter(Boolean).join(" · "))))));
@@ -302,18 +326,6 @@ export function rollLogScreen() {
       }, `Show older (${all.length - shown.length} more)`));
     }
 
-    wrap.append(el("div", { class: "btn-row" },
-      el("button", {
-        class: "btn btn-danger",
-        onclick: async () => {
-          if (!(await confirmModal("Clear the roll log?", "Every recorded roll is discarded. Nothing else changes.", "Clear"))) return;
-          clearRollLog();
-          filter = "all";
-          visible = PAGE;
-          render();
-          showToast("Roll log cleared");
-        }
-      }, "Clear log")));
 
     host.replaceChildren(wrap);
   };
@@ -349,7 +361,7 @@ export function settingsScreen() {
   for (const t of TOGGLES) {
     const current = t.flag === "mentalTrauma" ? Settings.mentalTrauma() : !!getSetting(t.flag);
     // A label, so the whole row is the target — everywhere else in the app already is one.
-    toggles.append(el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:10px 0" },
+    toggles.append(el("label", { class: "card-row", style: "padding:10px 0" },
       el("span", {}, el("strong", {}, t.label), el("div", { class: "faint" }, t.blurb)),
       el("input", {
         type: "checkbox", checked: current, "aria-label": t.label,
@@ -421,7 +433,7 @@ function campaignCard() {
                 `${chars} Traveler${chars === 1 ? "" : "s"}, the Journey and every roll in it go with it. You can undo this once, from here.`, "Delete");
               if (!ok) return;
               deleteCampaign(c.id);
-              showToast(`${c.name} deleted — undo is on this screen.`);
+              showToast(`${c.name} deleted.`, "danger", { label: "Undo", run: () => { undoLast(); window.dispatchEvent(new CustomEvent("hashchange")); } });
               window.dispatchEvent(new CustomEvent("hashchange"));
             }
           }, "Delete") : null))));
@@ -526,7 +538,8 @@ function doImport() {
 async function doReset() {
   if (await confirmModal("Erase everything?", "Every Traveler, the Journey and the roll log on this device will be deleted. Export first if you want a copy.", "Erase")) {
     resetAll(); clearTransientScreens();
-    showToast("All local data erased."); location.hash = "#/home";
+    showToast("All local data erased.", "danger", { label: "Undo", run: () => { undoLast(); window.dispatchEvent(new CustomEvent("hashchange")); } });
+    location.hash = "#/home";
   }
 }
 

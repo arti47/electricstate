@@ -4,9 +4,20 @@ import { startRouter } from "./router.js";
 import { applyTheme } from "./screens.js";
 import { Settings, set as setSetting, applyTextScale, applyWakeLock } from "./settings.js";
 import { showToast } from "./ui.js";
+import { icon } from "./icons.js";
 
 applyTheme();
 applyTextScale();
+
+// The static chrome in index.html names its icons; draw them from the one icon set.
+document.querySelectorAll("[data-icon]").forEach((slot) => slot.replaceWith(icon(slot.dataset.icon, { size: 22 })));
+
+// Sticky things inside a screen (the sheet's section bar) sit under the top bar, whose
+// height changes with the vitals, the combat strip and the text scale.
+const topbar = document.querySelector(".topbar");
+if (topbar && "ResizeObserver" in window) {
+  new ResizeObserver(() => document.documentElement.style.setProperty("--topbar-h", `${topbar.offsetHeight}px`)).observe(topbar);
+}
 applyWakeLock();
 
 // The lock drops whenever the tab is hidden; take it back when the player returns.

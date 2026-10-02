@@ -101,7 +101,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Known book erratum: the Carbone pregen sheet prints Hope 4 where the formula gives 5. Rules
   outrank printed derived values; see `PREGEN_ERRATA` in data-pregens.js.
 - **Phase 0 complete.** Shell built: index.html, styles.css, src/{core,ui,settings,store,rules,derived,router,screens,main}.js, PWA (manifest + service worker + icon), firebase-config placeholder, database.rules.json with player/GM roles.
-- Theme: overcast slate and oxidised metal, dark-first, colour reserved for meaning (rust = damage/loss, teal = anything touching the network).
+- Theme: **dusk roadside** (since the twelfth pass) — slate sky over a sodium-amber horizon,
+  dark-first, colour reserved for meaning (amber = the thing you press and Hope, rust =
+  damage/loss, teal = anything touching the network). Light is a designed "overcast day".
 - Verification: `npm test` runs 14 data/rules invariants plus a headless browser smoke test
   (every route renders, zero console errors, zero horizontal overflow at 360 and 390px).
 - **Phase 1 complete.** Creation wizard (7 grouped screens over the book's 17 steps), Journey/vehicle
@@ -189,8 +191,8 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   status notes themselves. Combat sorts by who acts next and names them. Time separates nightly
   boundaries from once-a-campaign ones. Solo folds prep and wrap-up. Home names the next
   creation step until the group has a destination, a vehicle and Tension.
-- UI conventions added: `.subnav` (pill row, scrolls inside itself so the page never scrolls
-  sideways), `.actionbar` (fixed above the tab bar, needs an `.actionbar-spacer` at the end of
+- UI conventions added: `.subnav` (section row, scrolls inside itself so the page never scrolls
+  sideways — since the twelfth pass it is also the screen's title), `.actionbar` (fixed above the tab bar, needs an `.actionbar-spacer` at the end of
   the screen), `.phase-fold` (a card that collapses).
 - **Tenth pass — measured layout (8 findings).** A probe seeded a mid-session state and recorded,
   per route, where the primary action sits and how big every tap target is. Time, Neuroscape and
@@ -337,3 +339,40 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - The three layers, and which question each answers: `#/session` runs it, `#/play` explains the
   procedure, `#/tutorial` tours the app. The home screen leads with the first.
 - Phase 5 multiplayer remains the only unbuilt phase, gated behind the local-first decision.
+- **Twelfth pass — dusk roadside overhaul (UI only, no copy changed).** Audit and decisions in
+  `docs/app/UX-OVERHAUL.md`.
+  - **Four tabs: Play · Traveler · Dice · Reference.** Solo and GM are modes inside Play's section
+    nav (shown when switched on), not tabs. Settings is a header icon. The Traveler tab opens the
+    last sheet viewed (`electricState.v1.lastSheet`), or creation when nobody exists.
+  - **The section nav is the title.** The current item is set large; the H1 under it gets
+    `.sr-only` (it stays in the DOM — tests and probes read `#screen h1`). Applied by a
+    `MutationObserver` in `router.js` because screens re-render themselves in place.
+  - **`explain()` is an ⓘ on the title line** (`.explain.is-lead`), opening as a bottom sheet.
+    On a screen's first visit it opens in place once (`.is-intro`, `electricState.v1.seenIntro`).
+    Only the first explain on a screen is the lead; the rest stay inline folds.
+  - **Dice tray** (`#tray`, header dice icon, the sheet's Roll button via `rollFor(id)`): the
+    dice screen rendered as a bottom sheet over any screen, docked as a right pane at ≥1100px.
+    Navigating away closes it. It borrows the vitals bar and gives it back on close.
+  - **Combat strip** (`#strip`): round and who is up, on every screen but the tracker, from
+    `turnOrder()` in `combat.js`.
+  - **Vitals are gauges**: pips for Health/Hope, a Bliss bar on the Hope scale with a hatched
+    Permanent floor and a tick at current Hope. Tiles for the three tracks are buttons that
+    open a quick stepper (`vitalSteppers()` is shared with the sheet). Drops flash the tile and
+    vibrate; the bar pulses when Health or Hope is 0 or Bliss has caught Hope.
+  - **Dice are faces** (`ui.dieFace` / `ui.diceRow`): bone base dice, amber-rimmed gear dice,
+    sixes lit, ones rusted, a tumble on roll, and on a push the kept 1s and 6s stay put. The
+    roll log uses mini faces. `ui.haptic()` for ticks, rolls and losses.
+  - **Destructive actions sit behind ⋯** (`ui.moreMenu`): Delete Traveler, Clear log, End
+    combat. Where a store snapshot exists the action runs at once and the toast carries Undo
+    (`showToast(msg, kind, { label, run })`); End combat keeps its confirm (no snapshot).
+  - Every checkbox renders as a switch (still a real checkbox). Every dialog is a bottom sheet
+    at ≤640px, drag-down to dismiss. `label.card-row` needs no inline style any more.
+  - Fonts are self-hosted WOFF2 in `fonts/` (Barlow Condensed, IBM Plex Mono, OFL licences
+    alongside) and listed in the service-worker shell. Icons are one inline-SVG set,
+    `src/icons.js`; `index.html` names them with `data-icon` and `main.js` draws them.
+  - Never animate `transform` on `#screen` or an ancestor of `.actionbar`: it turns the fixed
+    bar into one positioned against the screen for the length of the animation, and the
+    above-the-fold tests catch it as a 400px drop.
+  - Tablet: the sheet flows into two columns (`.sheet-cols`), GM keeps the party in a side
+    column (`.gm-layout`). Every text token clears AA 4.5:1 in both themes.
+

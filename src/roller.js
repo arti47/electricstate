@@ -10,7 +10,7 @@ import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
 import { Settings } from "./settings.js";
-import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
+import { showToast, modal, promptModal, confirmModal, explain, diceRow, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn } from "./combat.js";
@@ -172,18 +172,16 @@ function build(rerender) {
   const ch = getCharacter(pending.charId) || chars[0];
   pending.charId = ch.id;
 
-  // who
-  wrap.append(el("div", { class: "field" }, el("label", {}, "Traveler"),
-    el("select", { onchange: (e) => { pending.charId = e.target.value; pending.result = null; rerender(); } },
-      ...chars.map((c) => el("option", { value: c.id, selected: c.id === ch.id }, c.name || "Unnamed")))));
+  // Who is rolling is the vitals bar's switcher above — one control for it, not two.
 
-  // attribute
+  // attribute: four equal cells, the value large, so none of them wraps onto its own line
   wrap.append(el("div", { class: "field" }, el("label", {}, "Attribute"),
-    el("div", { class: "btn-row" },
+    el("div", { class: "attr-pick", role: "group", "aria-label": "Attribute" },
       ...ATTRIBUTES.map((a) => el("button", {
         class: "btn" + (pending.attr === a.id ? " btn-primary" : ""),
-        onclick: () => { pending.attr = a.id; pending.talents = []; pending.result = null; rerender(); }
-      }, `${a.label} ${ch.attributes[a.id]}`)))));
+        "aria-pressed": pending.attr === a.id ? "true" : "false",
+        onclick: () => { haptic(); pending.attr = a.id; pending.talents = []; pending.result = null; rerender(); }
+      }, el("span", { class: "attr-name" }, a.label), " ", el("span", { class: "attr-val" }, ch.attributes[a.id]))))));
 
   // Talents that swap one attribute for another: Menacing threatens on Strength,
   // Techno babbler argues on Wits, both in place of Empathy.
@@ -212,7 +210,7 @@ function build(rerender) {
   const talents = applicableTalents(ch, pending.attr);
   if (talents.length) {
     wrap.append(el("div", { class: "card" }, el("h3", {}, "Talents"),
-      ...talents.map((t) => el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
+      ...talents.map((t) => el("label", { class: "card-row" },
         el("span", {}, el("strong", {}, t.name), el("div", { class: "faint" }, t.effect.when || "")),
         el("input", {
           type: "checkbox",
@@ -375,7 +373,7 @@ function build(rerender) {
 }
 
 function toggleRow(label, key, blurb, rerender) {
-  return el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:6px 0" },
+  return el("label", { class: "card-row", style: "padding:6px 0" },
     el("span", {}, el("strong", {}, label), el("div", { class: "faint" }, blurb)),
     el("input", {
       type: "checkbox",checked: !!pending[key],
@@ -385,17 +383,18 @@ function toggleRow(label, key, blurb, rerender) {
 }
 
 function numberRow(label, value, onChange, { min = null, max = null } = {}) {
+  const step = (v) => { haptic(); onChange(v); };
   return el("div", { class: "card-row", style: "padding:6px 0" },
     el("span", {}, label),
-    el("div", { class: "btn-row" },
+    el("div", { class: "stepper" },
       el("button", {
-        class: "btn", "aria-label": `Lower ${label}`,
-        disabled: min != null && value <= min, onclick: () => onChange(value - 1)
+        class: "stepper-btn", "aria-label": `Lower ${label}`,
+        disabled: min != null && value <= min, onclick: () => step(value - 1)
       }, "−"),
-      el("span", { class: "mono", style: "min-width:3ch;text-align:center" }, value > 0 ? `+${value}` : value),
+      el("span", { class: "stepper-value" }, value > 0 ? `+${value}` : value),
       el("button", {
-        class: "btn", "aria-label": `Raise ${label}`,
-        disabled: max != null && value >= max, onclick: () => onChange(value + 1)
+        class: "stepper-btn", "aria-label": `Raise ${label}`,
+        disabled: max != null && value >= max, onclick: () => step(value + 1)
       }, "+")));
 }
 
@@ -408,6 +407,9 @@ async function doRoll(ch, pool, rerender, manual, burst = 1) {
   pending.result = rollPool({ base: pool.base, gear: pool.gear }, supplied);
   pending.pool = pool;
   pending.burst = burst;
+  pending.fresh = true;      // the next draw tumbles the dice in
+  pending.kept = null;
+  haptic(countSixes([...pending.result.base, ...pending.result.gear]) ? "success" : "roll");
   writeLog(ch, pool, pending.result, false, burst);
   rerender();
 }
@@ -435,10 +437,13 @@ async function askDice(baseCount, gearCount, title) {
 function resultCard(ch, pool, legality, rerender) {
   const r = pending.result;
   const total = successes(r);
+  const rolling = !!pending.fresh;
+  pending.fresh = false;
   const card = el("div", { class: "card", "aria-live": "polite" },
-    el("div", { class: "card-row" },
-      el("h3", { style: "margin:0" }, total ? `${total} success${total > 1 ? "es" : ""}` : "Failure"),
-      el("span", { class: "mono faint" }, [...r.base, ...r.gear].join(" "))),
+    el("div", { class: "result-head" },
+      el("h3", { class: "result-word " + (total ? "is-success" : "is-failure") }, total ? `${total} success${total > 1 ? "es" : ""}` : "Failure"),
+      el("span", { class: "faint" }, `${r.base.length + r.gear.length} dice`)),
+    diceRow(r, { rolling, kept: r.pushed ? pending.kept : null }),
     el("div", { class: "faint" },
       `base ${r.base.join(" ") || "—"}${r.gear.length ? ` · gear ${r.gear.join(" ")}` : ""}`));
 
@@ -552,8 +557,13 @@ async function doPush(ch, pool, rerender) {
       if (!supplied) return;
     }
   }
+  // A push leaves 1s and 6s where they lie; only the rest tumble again.
+  const kept = (dice) => dice.map((d) => PUSH.rerollExcludes.includes(d));
+  pending.kept = { base: kept(pending.result.base), gear: kept(pending.result.gear) };
   const pushed = resolvePush(pending.result, supplied);
   pending.result = pushed;
+  pending.fresh = true;
+  haptic(pushed.hopeLost || pushed.gearDamage ? "loss" : "roll");
 
   const updated = applyRollCosts(ch, {
     hopeLost: pushed.hopeLost,
@@ -1142,6 +1152,12 @@ export async function repairDroneBody(ch, onDone) {
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
   onDone?.();
+}
+
+/** The sheet's Roll button: the tray opens with this Traveler's pool already on it. */
+export function rollFor(id) {
+  if (pending?.charId === id) return;
+  pending = { charId: id, attr: "strength", gear: 0, modifier: 0, talents: [], opposedId: null, result: null, weaponId: null };
 }
 
 /** Called from the combat tracker: pick a target, then send the player to the dice. */

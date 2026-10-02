@@ -1,6 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Electric State">
-  <rect width="192" height="192" fill="#15181b"/>
-  <circle cx="96" cy="84" r="34" fill="none" stroke="#8a6a52" stroke-width="8"/>
-  <path d="M96 118v34M70 152h52" stroke="#4e8e99" stroke-width="8" stroke-linecap="round"/>
-  <path d="M62 84h68" stroke="#4e8e99" stroke-width="6" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b0e13"/><stop offset=".6" stop-color="#131823"/><stop offset="1" stop-color="#2a2019"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy="1.05" r=".6">
+      <stop offset="0" stop-color="#d99654" stop-opacity=".45"/><stop offset="1" stop-color="#d99654" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="192" height="192" fill="url(#sky)"/>
+  <rect width="192" height="192" fill="url(#glow)"/>
+  <circle cx="96" cy="84" r="34" fill="none" stroke="#d99654" stroke-width="8"/>
+  <path d="M96 118v34M70 152h52" stroke="#6fc3ce" stroke-width="8" stroke-linecap="round"/>
+  <path d="M62 84h68" stroke="#6fc3ce" stroke-width="6" stroke-linecap="round"/>
 </svg>

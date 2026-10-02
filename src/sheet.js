@@ -7,7 +7,8 @@ import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./deriv
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
-import { showToast, confirmModal, modal, promptModal, explain, dismissModal } from "./ui.js";
+import { showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic } from "./ui.js";
+import { undoLast } from "./store.js";
 import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
 // ---------------------------------------------------------------- vitals header
@@ -19,29 +20,42 @@ import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
  * play runs two to four Travelers and every screen had its own select; this is the one
  * control that is always on screen.
  */
+let lastShown = null;      // what the bar showed last time, so a change can flash
+let lastOpts = {};
+
 export function renderVitals(ch, { onSwitch = null } = {}) {
   const host = $("#vitals");
   if (!host) return;
-  if (!ch) { host.hidden = true; host.replaceChildren(); return; }
+  if (!ch) { host.hidden = true; host.replaceChildren(); host.classList.remove("is-alarm"); lastShown = null; return; }
+  lastOpts = { onSwitch };
 
   const journey = getJourney();
   const hMax = maxHealth(ch), pMax = maxHope(ch);
+  const health = ch.state?.health ?? hMax;
+  const hope = ch.state?.hope ?? pMax;
   const bliss = ch.state?.bliss ?? 0;
   const perm = ch.state?.permanentBliss ?? 0;
-  const lost = tracksBliss(ch) && bliss >= (ch.state?.hope ?? pMax);
+  const lost = tracksBliss(ch) && bliss >= hope;
 
-  const tile = (label, value, cls = "") =>
-    el("div", { class: "vital" + (cls ? ` ${cls}` : "") },
+  // A tile is a reading and, for the three tracks, a way to change it where you stand:
+  // tapping one opens its stepper without leaving the screen.
+  const tile = (label, value, cls = "", gauge = null, kind = null) =>
+    el(kind ? "button" : "div", {
+      class: "vital" + (cls ? ` ${cls}` : ""), "data-kind": kind,
+      ...(kind ? { "aria-label": `${label} ${value} — change`, onclick: () => quickStep(ch.id, kind) } : {})
+    },
       el("span", { class: "vital-label" }, label),
-      el("span", { class: "vital-value" }, value));
+      el("span", { class: "vital-value" }, value),
+      gauge);
 
   const tiles = [
-    tile(isDronePilot(ch) ? "Hull" : "Health", `${ch.state?.health ?? hMax}/${hMax}`,
-      (ch.state?.health ?? hMax) === 0 ? "is-danger" : ""),
-    tile("Hope", `${ch.state?.hope ?? pMax}/${pMax}`, (ch.state?.hope ?? pMax) === 0 ? "is-danger" : "")
+    tile(isDronePilot(ch) ? "Hull" : "Health", `${health}/${hMax}`, health === 0 ? "is-danger" : "",
+      pips(health, hMax, "health", isDronePilot(ch) ? "Hull" : "Health"), "health"),
+    tile("Hope", `${hope}/${pMax}`, hope === 0 ? "is-danger" : "", pips(hope, pMax, "hope", "Hope"), "hope")
   ];
   if (tracksBliss(ch)) {
-    tiles.push(tile("Bliss", perm ? `${bliss} ⌊${perm}⌋` : String(bliss), lost ? "is-danger" : "is-neuro"));
+    tiles.push(tile("Bliss", perm ? `${bliss} ⌊${perm}⌋` : String(bliss), lost ? "is-danger" : "is-neuro",
+      blissBar(bliss, perm, hope, pMax), "bliss"));
   }
   if (usesCash(ch)) tiles.push(tile("Cash", `$${ch.inventory?.cash ?? 0}`));
   if (journey?.vehicle) tiles.push(tile("Fuel", `${journey.fuel ?? 0}g`, (journey.fuel ?? 0) <= 2 ? "is-danger" : ""));
@@ -49,9 +63,84 @@ export function renderVitals(ch, { onSwitch = null } = {}) {
   host.replaceChildren(...[switcher(ch, onSwitch), ...tiles].filter(Boolean));
   host.hidden = false;
 
-  if (lost) host.append(el("div", { class: "vital is-danger", style: "flex:1 0 100%" },
+  if (lost) host.append(el("div", { class: "vital is-danger is-wide" },
     el("span", { class: "vital-label" }, "Lost in the Electric State"),
     el("span", { class: "vital-value" }, "cannot disconnect")));
+
+  // Something just got worse: the tile flashes, and the phone says so.
+  if (lastShown?.id === ch.id) {
+    const flash = (kind) => host.querySelector(`[data-kind="${kind}"]`)?.classList.add("flash");
+    if (health < lastShown.health) flash("health");
+    if (hope < lastShown.hope) flash("hope");
+    if (bliss > lastShown.bliss) flash("bliss");
+    if (health < lastShown.health || hope < lastShown.hope || bliss > lastShown.bliss) haptic("loss");
+  }
+  lastShown = { id: ch.id, health, hope, bliss };
+  host.classList.toggle("is-alarm", health === 0 || hope === 0 || lost);
+}
+
+/** One segment per point: what is left, and how much there was. */
+function pips(value, max, kind, label) {
+  const row = el("span", { class: `pips gauge-${kind}`, role: "meter", "aria-label": label,
+    "aria-valuemin": "0", "aria-valuemax": String(max), "aria-valuenow": String(value) });
+  for (let i = 0; i < max; i++) row.append(el("span", { class: "pip" + (i < value ? " on" : "") }));
+  return row;
+}
+
+/** Bliss on the Hope scale: hatched floor for Permanent Bliss, a tick where Hope stands. */
+function blissBar(bliss, perm, hope, pMax) {
+  const scale = Math.max(pMax, bliss, 1);
+  const pct = (n) => `${Math.min(100, (n / scale) * 100)}%`;
+  return el("span", { class: "bliss-bar", role: "meter", "aria-label": `Bliss, against Hope ${hope}`,
+    "aria-valuemin": "0", "aria-valuemax": String(scale), "aria-valuenow": String(bliss) },
+    el("span", { class: "bliss-fill", style: `width:${pct(bliss)}` }),
+    perm ? el("span", { class: "bliss-floor", style: `width:${pct(perm)}` }) : null,
+    el("span", { class: "bliss-mark", style: `left:${pct(hope)}` }));
+}
+
+/** The stepper for one track, from the vitals bar, on whatever screen you are on. */
+async function quickStep(id, kind) {
+  const body = el("div");
+  const draw = () => {
+    const c = getCharacter(id);
+    if (!c) return;
+    const patch = (fn) => { const next = structuredClone(getCharacter(id)); fn(next); saveCharacter(next); haptic(); draw(); renderVitals(getCharacter(id), lastOpts); };
+    body.replaceChildren(...vitalSteppers(c, patch, kind === "bliss" ? ["bliss", "permanentBliss"] : [kind]));
+  };
+  draw();
+  const ch = getCharacter(id);
+  await modal({
+    title: kind === "health" ? (isDronePilot(ch) ? "Hull" : "Health") : kind === "hope" ? "Hope" : "Bliss",
+    body, actions: [{ label: "Done", value: true, class: "btn-primary" }]
+  });
+  // The sheet shows the same numbers in its own steppers; bring it up to date.
+  if (location.hash.startsWith("#/sheet/") && !document.body.classList.contains("tray-open")) {
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }
+}
+
+/** The vitals steppers, shared by the sheet and the quick stepper behind each tile. */
+function vitalSteppers(ch, patch, kinds = ["health", "hope", "bliss", "permanentBliss"]) {
+  const hMax = maxHealth(ch), pMax = maxHope(ch);
+  const rows = {
+    health: () => stepper(isDronePilot(ch) ? "Hull" : "Health", ch.state.health, hMax,
+      (v) => patch((c) => { c.state.health = clamp(v, 0, hMax); }), "health"),
+    hope: () => stepper("Hope", ch.state.hope, pMax,
+      (v) => patch((c) => { c.state.hope = clamp(v, 0, pMax); }), "hope"),
+    bliss: () => tracksBliss(ch)
+      ? stepper("Bliss", ch.state.bliss, null,
+          (v) => patch((c) => { c.state.bliss = Math.max(c.state.permanentBliss || 0, v); }), "bliss",
+          ch.state.permanentBliss || 0, blissBar(ch.state.bliss ?? 0, ch.state.permanentBliss ?? 0, ch.state.hope ?? pMax, pMax))   // permanent Bliss is the floor, by rule
+      : el("p", { class: "faint" }, "You are a drone: no Bliss, no hunger, no cash."),
+    permanentBliss: () => tracksBliss(ch)
+      ? stepper("Permanent Bliss", ch.state.permanentBliss, null,
+          (v) => patch((c) => {
+            c.state.permanentBliss = Math.max(0, v);
+            c.state.bliss = Math.max(c.state.bliss, c.state.permanentBliss);
+          }), "bliss")
+      : null
+  };
+  return kinds.map((k) => rows[k]()).filter(Boolean);
 }
 
 function switcher(ch, onSwitch) {
@@ -106,9 +195,18 @@ function build(ch, rerender) {
   const patch = (fn) => { const next = structuredClone(ch); fn(next); saveCharacter(next); rerender(); };
 
   const wrap = el("div", {},
-    el("div", { class: "card-row" },
-      el("h1", { style: "margin:0" }, ch.name || "Unnamed"),
-      el("a", { class: "btn", href: "#/home" }, "Back")),
+    // No Back button: the tab bar and the system's own back gesture already do that.
+    // Deleting lives behind ⋯, and is undoable from the toast rather than confirmed first.
+    el("div", { class: "titled" },
+      el("h1", {}, ch.name || "Unnamed"),
+      moreMenu([{
+        label: "Delete Traveler", danger: true,
+        run: () => {
+          const name = ch.name || "This Traveler";
+          deleteCharacter(ch.id); clearVitals(); location.hash = "#/home";
+          showToast(`${name} deleted.`, "danger", { label: "Undo", run: () => { undoLast(); location.hash = `#/sheet/${ch.id}`; } });
+        }
+      }], "Traveler actions")),
     el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
     // Its own row. Sharing a line with the archetype and a song title meant the switch
     // sat somewhere different on every sheet, and dropped to a second line on the long ones.
@@ -125,28 +223,17 @@ function build(ch, rerender) {
 
   // --- vitals steppers
   wrap.append(el("div", { class: "card" },
-    stepper(isDronePilot(ch) ? "Hull" : "Health", ch.state.health, hMax,
-      (v) => patch((c) => { c.state.health = clamp(v, 0, hMax); }), "health"),
-    stepper("Hope", ch.state.hope, pMax,
-      (v) => patch((c) => { c.state.hope = clamp(v, 0, pMax); }), "hope"),
-    tracksBliss(ch)
-      ? stepper("Bliss", ch.state.bliss, null,
-          (v) => patch((c) => { c.state.bliss = Math.max(c.state.permanentBliss || 0, v); }), "bliss",
-          ch.state.permanentBliss || 0)   // permanent Bliss is the floor, by rule
-      : el("p", { class: "faint" }, "You are a drone: no Bliss, no hunger, no cash."),
-    tracksBliss(ch)
-      ? stepper("Permanent Bliss", ch.state.permanentBliss, null,
-          (v) => patch((c) => {
-            c.state.permanentBliss = Math.max(0, v);
-            c.state.bliss = Math.max(c.state.bliss, c.state.permanentBliss);
-          }), "bliss")
-      : null,
+    ...vitalSteppers(ch, patch),
     statusNotes(ch, hMax, pMax, rerender)));
 
   // The things you reach for mid-scene, directly under the vitals rather than below
   // eight cards of reference. Rally and the death roll appear only when they apply.
   wrap.append(el("div", { class: "btn-grid" },
-    el("a", { class: "btn btn-primary", href: "#/dice" }, "Roll dice"),
+    // Rolling opens the dice tray over the sheet, already holding this Traveler's pool.
+    el("button", { class: "btn btn-primary", onclick: async () => {
+      const [{ rollFor }, { openTray }] = await Promise.all([import("./roller.js"), import("./router.js")]);
+      rollFor(ch.id); openTray();
+    } }, "Roll dice"),
     el("button", { class: "btn", onclick: async () => { const { damageDialog } = await import("./roller.js"); damageDialog(ch, rerender); } }, "Take damage"),
     el("button", { class: "btn", onclick: async () => { const { traumaticEventDialog } = await import("./roller.js"); await traumaticEventDialog(ch, rerender); } }, "Traumatic event"),
     ch.state.health === 0 || ch.state.hope === 0
@@ -158,11 +245,11 @@ function build(ch, rerender) {
 
   // The sheet is five screens with a few injuries and a full pack, and the thing you
   // want is rarely at the top. Jump straight to it.
-  wrap.append(el("nav", { class: "subnav", "aria-label": "Sheet sections" },
+  wrap.append(el("nav", { class: "jumpbar", "aria-label": "Sheet sections" },
     ...[["sec-attributes", "Attributes"], ["sec-talents", "Talents"], ["sec-conditions", "Conditions"],
         ["sec-caster", "Neurocaster"], ["sec-gear", "Gear"], ["sec-tension", "Tension"]]
       .map(([id, label]) => el("a", {
-        class: "subnav-item", href: `#/sheet/${ch.id}`,
+        href: `#/sheet/${ch.id}`, "data-sec": id,
         onclick: (e) => {
           e.preventDefault();
           document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -216,25 +303,42 @@ function build(ch, rerender) {
     el("summary", {}, "Notes"),
     el("textarea", { rows: 4, "aria-label": "Notes", onchange: (e) => patch((c) => { c.notes = e.target.value; }) }, ch.notes || "")));
 
-  wrap.append(el("button", {
-    class: "btn btn-danger btn-block",
-    onclick: async () => {
-      if (await confirmModal("Delete this Traveler?", `${ch.name || "This Traveler"} will be removed from this device. This cannot be undone.`, "Delete")) {
-        deleteCharacter(ch.id); clearVitals(); location.hash = "#/home";
-      }
-    }
-  }, "Delete Traveler"));
+  // Everything under the section bar flows into two columns on a tablet.
+  const bar = wrap.querySelector(".jumpbar");
+  const cols = el("div", { class: "sheet-cols" });
+  while (bar?.nextSibling) cols.append(bar.nextSibling);
+  if (bar) wrap.append(cols);
+  spySections(bar);
+
 
   return wrap;
 }
 
+/** The section bar marks whichever section is under it as you scroll. */
+function spySections(bar) {
+  if (!bar || !("IntersectionObserver" in window)) return;
+  requestAnimationFrame(() => {
+    const links = [...bar.querySelectorAll("a")];
+    const targets = links.map((a) => document.getElementById(a.dataset.sec)).filter(Boolean);
+    const io = new IntersectionObserver((entries) => {
+      if (!bar.isConnected) { io.disconnect(); return; }
+      const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (!top) return;
+      links.forEach((a) => a.classList.toggle("is-here", a.dataset.sec === top.target.id));
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    targets.forEach((t) => io.observe(t));
+  });
+}
+
 /** A clamped stepper. At its floor or ceiling the button that cannot move is disabled,
  *  because a control that looks pressable and does nothing reads as a broken app. */
-function stepper(label, value, max, onChange, kind, min = 0) {
+function stepper(label, value, max, onChange, kind, min = 0, gauge = null) {
   const v = value ?? 0;
   return el("div", { class: "card-row", style: "padding:6px 0" },
-    el("div", {}, el("strong", {}, label),
-      max != null ? el("span", { class: "faint" }, ` / ${max}`) : null),
+    el("div", { style: "flex:1;min-width:0" }, el("strong", {}, label),
+      max != null ? el("span", { class: "faint" }, ` / ${max}`) : null,
+      max != null ? el("div", { style: "margin-top:6px;max-width:160px" }, pips(v, max, kind, label)) : gauge
+        ? el("div", { style: "margin-top:8px;max-width:160px" }, gauge) : null),
     el("div", { class: "stepper" },
       el("button", {
         class: "stepper-btn", "aria-label": `Lower ${label}`,
@@ -386,7 +490,7 @@ function neurocasterCard(ch, patch, rerender) {
     card.append(stepper(key[0].toUpperCase() + key.slice(1), state[key], model[key],
       (v) => patch((c) => {
         c.state.caster = { ...state, [key]: clamp(v, 0, model[key]) };
-      }), "gear"));
+      }), "caster"));
   }
   const penalty = model.realWorldPenalty ?? -2;
   card.append(el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:8px 0" },

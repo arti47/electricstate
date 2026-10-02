@@ -5,7 +5,7 @@ import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
 import { maxHealth } from "./derived.js";
-import { showToast, modal, promptModal, confirmModal, explain } from "./ui.js";
+import { showToast, modal, promptModal, confirmModal, explain, moreMenu } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
@@ -118,6 +118,19 @@ export function rollInitiative() {
 }
 
 // ==================================================================== screen
+/**
+ * Turn order is the thing you are constantly re-deriving at the table: the side that acts
+ * first, then whoever has not gone, then the spent. The tracker lists it; the combat strip
+ * on every other screen names whoever is up.
+ */
+export function turnOrder(c = getCombat()) {
+  if (!c) return { ordered: [], upNext: null, waiting: 0 };
+  const rank = (x) => (x.side === c.startingSide ? 0 : 2) + (x.acted ? 1 : 0);
+  const ordered = [...c.combatants].sort((a, b) => rank(a) - rank(b));
+  const waiting = ordered.filter((x) => !x.acted);
+  return { ordered, upNext: waiting[0] || null, waiting: waiting.length };
+}
+
 export function combatScreen() {
   const host = el("div");
   const rerender = () => host.replaceChildren(build(rerender));
@@ -161,15 +174,25 @@ function build(rerender) {
 
   // Turn order is the thing you are constantly re-deriving at the table, so the list
   // states it: the side that acts first, then whoever has not gone, then the spent.
-  const rank = (x) => (x.side === c.startingSide ? 0 : 2) + (x.acted ? 1 : 0);
-  const ordered = [...c.combatants].sort((a, b) => rank(a) - rank(b));
-  const upNext = ordered.find((x) => !x.acted);
-  const waiting = ordered.filter((x) => !x.acted).length;
+  const { ordered, upNext, waiting } = turnOrder(c);
 
+  // Ending the fight is behind ⋯ — it discards every Threat's health, so it should not
+  // sit as a red block between "Next round" and the person whose turn it is.
+  const endFight = async () => {
+    const down = c.combatants.filter((x) => x.kind === "threat" && (x.health ?? 1) <= 0).length;
+    const ok = await confirmModal("End the fight?",
+      `Zones, rounds and every Threat's remaining health are discarded.${down ? ` ${down} of the Threats are already down.` : ""} Each Traveler keeps the Health on the sheet, and anyone Incapacitated still owes a serious injury roll.`,
+      "End it");
+    if (!ok) return;
+    endCombat();
+    rerender();
+  };
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },
       el("strong", {}, `Round ${c.round}`),
-      el("span", { class: "faint" }, c.startingSide === "travelers" ? "Travelers act first" : "Enemies act first")),
+      el("span", { style: "display:flex;align-items:center;gap:4px" },
+        el("span", { class: "faint" }, c.startingSide === "travelers" ? "Travelers act first" : "Enemies act first"),
+        moreMenu([{ label: "End combat", danger: true, run: endFight }], "Combat actions"))),
     el("div", { class: "card-row" },
       el("span", {}, upNext ? el("strong", {}, `${upNext.name} is up`) : el("strong", {}, "Everyone has gone")),
       el("span", { class: "faint" }, upNext ? `${waiting} still to act` : "End the round")),
@@ -178,19 +201,7 @@ function build(rerender) {
       el("button", {
         class: "btn" + (upNext ? "" : " btn-primary"), onclick: () => { nextRound(c); rerender(); }
       }, "Next round"),
-      el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"),
-      el("button", {
-        class: "btn btn-danger",
-        onclick: async () => {
-          const down = c.combatants.filter((x) => x.kind === "threat" && (x.health ?? 1) <= 0).length;
-          const ok = await confirmModal("End the fight?",
-            `Zones, rounds and every Threat's remaining health are discarded.${down ? ` ${down} of the Threats are already down.` : ""} Each Traveler keeps the Health on the sheet, and anyone Incapacitated still owes a serious injury roll.`,
-            "End it");
-          if (!ok) return;
-          endCombat();
-          rerender();
-        }
-      }, "End combat"))));
+      el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"))));
 
   for (const combatant of ordered) {
     wrap.append(combatantCard(combatant, c, rerender));
@@ -211,7 +222,7 @@ function combatantCard(combatant, c, rerender) {
   // Ten combatants is five screens of identical cards. Whoever has taken their turn
   // collapses to a line — you only need the ones who have not gone yet.
   if (combatant.acted) {
-    return el("div", { class: "card", style: "opacity:.55;padding:8px var(--gap)" },
+    return el("div", { class: "card is-spent" },
       el("div", { class: "card-row" },
         el("span", {}, el("strong", {}, combatant.name),
           el("span", { class: "faint" }, ` · zone ${combatant.zone}`)),
@@ -220,7 +231,9 @@ function combatantCard(combatant, c, rerender) {
           el("button", { class: "btn", onclick: () => update({ acted: false }) }, "Undo"))));
   }
 
-  const card = el("div", { class: "card" },
+  // Whoever is up is the one card that matters this second: amber edge, primary button.
+  const isUp = turnOrder(c).upNext?.id === combatant.id;
+  const card = el("div", { class: "card" + (isUp ? " is-up" : "") + (combatant.side !== "travelers" ? " is-enemy" : "") },
     el("div", { class: "card-row" },
       el("strong", {}, combatant.name),
       el("span", { class: "mono faint" }, health)));
@@ -267,7 +280,7 @@ function combatantCard(combatant, c, rerender) {
   }
 
   card.append(el("div", { class: "btn-grid", style: "margin-top:8px" },
-    el("button", { class: "btn btn-primary", onclick: () => update({ acted: true }) }, "Turn spent"),
+    el("button", { class: "btn" + (isUp ? " btn-primary" : ""), onclick: () => update({ acted: true }) }, "Turn spent"),
     el("button", {
       class: "btn", onclick: async () => {
         const { setTarget } = await import("./roller.js");

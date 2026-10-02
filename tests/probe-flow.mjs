@@ -75,7 +75,7 @@ const JOURNEYS = [
   {
     name: "draw the next solo card",
     budget: 2,
-    taps: ['.tabbar [data-tab="solo"]', '#screen button:has-text("Draw a card")'],
+    taps: ['#screen .subnav-item[href="#/solo"]', '#screen button:has-text("Draw a card")'],
     arrive: async (page) => !!(await page.$(".modal"))
   }
 ];

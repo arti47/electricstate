@@ -79,9 +79,8 @@ function build(rerender) {
   const ch = getCharacter(session.charId) || chars[0];
   session.charId = ch.id;
 
-  wrap.append(el("div", { class: "field" }, el("label", {}, "Traveler"),
-    el("select", { onchange: (e) => { session = { ...session, charId: e.target.value, progress: 0, rolls: [] }; rerender(); } },
-      ...chars.map((c) => el("option", { value: c.id, selected: c.id === ch.id }, c.name)))));
+  // Who is jacking in is the vitals bar's switcher — one control for it, not two.
+  renderVitals(ch, { onSwitch: (id) => { session = { ...session, charId: id, progress: 0, rolls: [] }; rerender(); } });
 
   const caster = casterState(ch);
   if (!caster) {
@@ -155,11 +154,11 @@ function build(rerender) {
   card.append(el("div", { class: "card-row", style: "padding:6px 0" },
     el("span", {}, "Helpers in here",
       el("div", { class: "faint" }, "+1 die each, up to three. A helper can do nothing else.")),
-    el("div", { class: "btn-row" },
-      el("button", { class: "btn", "aria-label": "Fewer helpers", disabled: (session.helpers || 0) <= 0,
+    el("div", { class: "stepper" },
+      el("button", { class: "stepper-btn", "aria-label": "Fewer helpers", disabled: (session.helpers || 0) <= 0,
         onclick: () => { session.helpers = Math.max(0, (session.helpers || 0) - 1); rerender(); } }, "−"),
-      el("span", { class: "mono", style: "min-width:3ch;text-align:center" }, String(session.helpers || 0)),
-      el("button", { class: "btn", "aria-label": "More helpers", disabled: (session.helpers || 0) >= 3,
+      el("span", { class: "stepper-value" }, String(session.helpers || 0)),
+      el("button", { class: "stepper-btn", "aria-label": "More helpers", disabled: (session.helpers || 0) >= 3,
         onclick: () => { session.helpers = Math.min(3, (session.helpers || 0) + 1); rerender(); } }, "+"))));
 
   card.append(el("div", { class: "card-row" },

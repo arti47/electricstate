@@ -456,7 +456,9 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.click('#screen button:has-text("Turn it on")');
   await page.waitForTimeout(120);
   check(/Roll up a Stop/.test(await page.textContent("#screen")), "enabling in place did not render the GM screen");
-  check(await page.evaluate(() => !document.querySelector('[data-tab="gm"]').hidden), "GM tab still hidden after enabling");
+  // Solo and the GM screen are modes of Play now, not tabs: enabling one adds it to the
+  // Play section's nav.
+  check(await page.evaluate(() => !!document.querySelector('#screen .subnav-item[href="#/gm"]')), "GM still missing from the Play section nav after enabling");
 
   // restore both gated tabs for the remaining checks
   await page.evaluate(() => {

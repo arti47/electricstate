@@ -12,7 +12,7 @@ import { extname, join, normalize } from "node:path";
 const ROOT = new URL("..", import.meta.url).pathname;
 const TYPES = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-  ".json": "application/json", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json"
+  ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".png": "image/png", ".webmanifest": "application/manifest+json"
 };
 
 export const CHROMIUM = "/opt/pw-browsers/chromium";

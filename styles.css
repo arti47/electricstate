@@ -1,69 +1,141 @@
-/* Electric State Player — theme: overcast slate, oxidised metal, colour only where it means something.
-   Dark is the design's home; light is a legible daytime fallback of the same palette. */
+/* Electric State Player — dusk roadside.
+   A slate sky going dark over a sodium-lit horizon; rust where something is lost, cold teal
+   wherever the network touches you. Colour still means something: amber is the thing you
+   press and the Hope you hold, rust is damage and loss, teal is Bliss and the neuroscape.
+   Dark is the design's home. Light is an overcast day on the same road, designed rather
+   than inverted, and every text token clears WCAG AA (4.5:1) on every surface it sits on. */
+
+/* ------------------------------------------------------------------ type */
+@font-face { font-family: "Barlow Condensed"; font-weight: 500; font-display: swap;
+  src: url("fonts/barlow-condensed-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 600; font-display: swap;
+  src: url("fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 700; font-display: swap;
+  src: url("fonts/barlow-condensed-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap;
+  src: url("fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 600; font-display: swap;
+  src: url("fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2"); }
 
 :root {
-  /* light (daytime fallback) */
-  --bg: #d8d5cf;
-  --bg-raised: #e6e3dd;
-  --bg-sunk: #cbc7c0;
-  --ink: #1b1e21;
-  --ink-dim: #55595e;
-  --ink-faint: #7d8288;
-  --line: #b3aea6;
-  --line-soft: #c6c1b9;
-  --accent: #6b5344;        /* oxidised iron — structure, not decoration */
-  --danger: #8c2f22;        /* rust red — damage, death, loss */
-  --warn: #8a6d1f;
-  --neuro: #3d6b73;         /* cold teal — anything touching the network */
-  --ok: #4a6146;
-  --focus: #2f6f7d;
+  /* overcast day (light) */
+  --bg: #e2ded6;
+  --bg-raised: #f1eee8;
+  --bg-sunk: #d8d3c9;
+  --bg-hover: #e7e3dc;
+  --card: rgba(243, 240, 234, .94);
+  --chrome: rgba(226, 222, 214, .86);
+  --ink: #191c20;
+  --ink-dim: #41454b;
+  --ink-faint: #575b61;
+  --line: #bab4a9;
+  --line-soft: #d3cdc3;
+  --line-strong: #9f998f;
+  --accent: #87471a;          /* sodium amber, deepened for daylight */
+  --accent-hi: #9a5520;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(135, 71, 26, .12);
+  --danger: #a12f1c;          /* rust — damage, death, loss */
+  --danger-soft: rgba(161, 47, 28, .10);
+  --warn: #6a4f0c;
+  --neuro: #22626c;           /* cold teal — anything touching the network */
+  --neuro-glow: rgba(34, 98, 108, .22);
+  --ok: #3b5f33;
+  --focus: #22626c;
+  --bone: #f6f2ea;            /* a die's face */
+  --bone-ink: #1a1c1f;
+  --sky-top: #c9cdd0;
+  --sky-mid: #dcdad4;
+  --sky-low: #e9dfcf;
+  --horizon: rgba(196, 128, 66, .20);
+  --grain: .035;
+  --shadow: 0 1px 2px rgba(40, 30, 20, .10), 0 6px 18px -10px rgba(40, 30, 20, .25);
+  --hi: inset 0 1px 0 rgba(255, 255, 255, .7);
 
-  --font: ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
-  --font-head: "Oswald", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-head: "Barlow Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font);
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --r: 2px;                 /* almost no rounding — stamped metal, not glass */
+  /* scales: 4/8/12/16/24/32 spacing, ~1.25 type ratio */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --r: 4px;
+  --r-lg: 14px;
   --gap: 12px;
   --tap: 44px;
-  --nav-h: 56px;
-  --shadow: 0 1px 0 rgba(0,0,0,.18);
+  --nav-h: 60px;
+  --ease: cubic-bezier(.2, .8, .3, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #15181b;
-    --bg-raised: #1d2126;
-    --bg-sunk: #101315;
-    --ink: #ccc7bd;
-    --ink-dim: #8e8981;
-    --ink-faint: #63605a;
-    --line: #2c3238;
-    --line-soft: #23282d;
-    --accent: #8a6a52;
-    --danger: #b04434;
-    --warn: #b08a33;
-    --neuro: #4e8e99;
-    --ok: #6b8a63;
-    --focus: #5fa9b8;
-    --shadow: 0 1px 0 rgba(0,0,0,.5);
+    --bg: #111418;
+    --bg-raised: #1a1e23;
+    --bg-sunk: #0c0f12;
+    --bg-hover: #222830;
+    --card: rgba(26, 30, 35, .93);
+    --chrome: rgba(13, 16, 20, .82);
+    --ink: #ebe5d9;
+    --ink-dim: #b9b2a6;
+    --ink-faint: #9b958b;
+    --line: #2c333b;
+    --line-soft: #222830;
+    --line-strong: #414a54;
+    --accent: #d99654;
+    --accent-hi: #ebae6f;
+    --on-accent: #17120c;
+    --accent-soft: rgba(217, 150, 84, .14);
+    --danger: #ea7a64;
+    --danger-soft: rgba(234, 122, 100, .12);
+    --warn: #dcb557;
+    --neuro: #6fc3ce;
+    --neuro-glow: rgba(111, 195, 206, .35);
+    --ok: #96bb85;
+    --focus: #7fcbd6;
+    --bone: #e9e2d4;
+    --bone-ink: #15181b;
+    --sky-top: #0b0e13;
+    --sky-mid: #131823;
+    --sky-low: #1c1c1e;
+    --horizon: rgba(217, 140, 70, .20);
+    --grain: .06;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 10px 24px -14px rgba(0, 0, 0, .8);
+    --hi: inset 0 1px 0 rgba(255, 255, 255, .045);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #15181b;
-  --bg-raised: #1d2126;
-  --bg-sunk: #101315;
-  --ink: #ccc7bd;
-  --ink-dim: #8e8981;
-  --ink-faint: #63605a;
-  --line: #2c3238;
-  --line-soft: #23282d;
-  --accent: #8a6a52;
-  --danger: #b04434;
-  --warn: #b08a33;
-  --neuro: #4e8e99;
-  --ok: #6b8a63;
-  --focus: #5fa9b8;
-  --shadow: 0 1px 0 rgba(0,0,0,.5);
+  --bg: #111418;
+  --bg-raised: #1a1e23;
+  --bg-sunk: #0c0f12;
+  --bg-hover: #222830;
+  --card: rgba(26, 30, 35, .93);
+  --chrome: rgba(13, 16, 20, .82);
+  --ink: #ebe5d9;
+  --ink-dim: #b9b2a6;
+  --ink-faint: #9b958b;
+  --line: #2c333b;
+  --line-soft: #222830;
+  --line-strong: #414a54;
+  --accent: #d99654;
+  --accent-hi: #ebae6f;
+  --on-accent: #17120c;
+  --accent-soft: rgba(217, 150, 84, .14);
+  --danger: #ea7a64;
+  --danger-soft: rgba(234, 122, 100, .12);
+  --warn: #dcb557;
+  --neuro: #6fc3ce;
+  --neuro-glow: rgba(111, 195, 206, .35);
+  --ok: #96bb85;
+  --focus: #7fcbd6;
+  --bone: #e9e2d4;
+  --bone-ink: #15181b;
+  --sky-top: #0b0e13;
+  --sky-mid: #131823;
+  --sky-low: #1c1c1e;
+  --horizon: rgba(217, 140, 70, .20);
+  --grain: .06;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 10px 24px -14px rgba(0, 0, 0, .8);
+  --hi: inset 0 1px 0 rgba(255, 255, 255, .045);
 }
 
 * { box-sizing: border-box; }
@@ -71,7 +143,8 @@ html, body { margin: 0; padding: 0; }
 
 /* Zoom is off: this is a play aid held in one hand mid-session, and a stray pinch or
    double-tap during a roll is only ever a nuisance. touch-action kills the double-tap
-   zoom that user-scalable=no no longer prevents on iOS. */
+   zoom that user-scalable=no no longer prevents on iOS. Text scale in Settings sets the
+   root size, so everything below is in rem and actually follows it. */
 html {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
@@ -80,71 +153,166 @@ html {
 body {
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.5 var(--font);
-  -webkit-text-size-adjust: 100%;
+  font: 400 .9375rem/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
   /* clear the fixed tab bar plus a gap, so the last control is never half-hidden */
   padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
-h1, h2, h3, .brand-text, .tabbar a {
+/* ------------------------------------------------------------- atmosphere */
+/* The sky behind everything: dark overhead, a sodium glow on the horizon, film grain.
+   Fixed and behind the content, so it costs one composited layer and never reflows. */
+.sky {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(140% 55% at 50% 108%, var(--horizon), transparent 62%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 48%, var(--sky-low) 100%);
+}
+.sky::after {
+  content: ""; position: absolute; inset: 0; opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------- typography */
+h1, h2, h3, .brand-text, .tabbar a, .btn, .chip, .seg-item, .subnav-item, label,
+.vital-label, .def-key, .tag, th, details > summary, .whatnow-phase, .beat-heading {
   font-family: var(--font-head);
-  font-weight: 600;
-  letter-spacing: .04em;
   text-transform: uppercase;
 }
-h1 { font-size: 1.25rem; margin: 0 0 var(--gap); }
-h2 { font-size: 1rem; margin: 1.5rem 0 .5rem; color: var(--ink-dim); }
-h3 { font-size: .85rem; margin: 1rem 0 .35rem; }
-p { margin: 0 0 .75rem; }
+h1 { font-size: 2rem; font-weight: 700; line-height: 1.05; letter-spacing: .02em; margin: 0 0 var(--s3); }
+h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: .05em; margin: var(--s5) 0 var(--s2); color: var(--ink-dim); }
+h3 { font-size: 1.05rem; font-weight: 600; letter-spacing: .07em; margin: var(--s4) 0 var(--s2); }
+.card > h3:first-child, .card > h2:first-child { margin-top: 0; }
+p { margin: 0 0 var(--s3); }
 a { color: inherit; }
+strong { font-weight: 600; }
 
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 8px; top: 8px; background: var(--bg-raised); padding: 8px; z-index: 60; }
 
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* ---------------------------------------------------------------- header */
+.icon { display: inline-flex; line-height: 0; }
+
+/* ---------------------------------------------------------------- top bar */
+/* Header, vitals and the combat strip stick as one block, so nothing needs to know
+   how tall the block above it is (the old vitals bar was pinned at a hard 53px). */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--chrome);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
-  gap: var(--gap);
-  padding: 10px 14px calc(10px) ;
-  padding-top: calc(10px + env(safe-area-inset-top));
-  background: var(--bg-sunk);
-  border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; z-index: 20;
+  gap: var(--s3);
+  padding: 8px 10px 8px 14px;
+  padding-top: calc(8px + env(safe-area-inset-top));
 }
-.brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; }
 .brand-mark {
-  width: 14px; height: 14px; flex: none;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 2px var(--bg-sunk);
+  position: relative; width: 16px; height: 16px; flex: none;
+  border: 2px solid var(--accent); border-radius: 50%;
+  box-shadow: 0 0 10px var(--accent-soft);
 }
-.brand-text { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-mark::after {      /* the antenna under the helmet, as on the icon */
+  content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 5px;
+  margin-left: -1px; background: var(--neuro);
+}
+.brand-text { font-size: 1.15rem; font-weight: 700; letter-spacing: .1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.header-actions { display: flex; gap: 2px; }
 .icon-btn {
-  min-width: var(--tap); min-height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--tap); height: 40px;
   background: transparent; color: var(--ink-dim);
-  border: 1px solid var(--line); border-radius: var(--r);
-  font-size: 1rem; cursor: pointer;
+  border: 0; border-radius: var(--r);
+  cursor: pointer; text-decoration: none;
 }
-.icon-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+.icon-btn:hover { color: var(--ink); background: var(--bg-hover); }
+.icon-btn[aria-current="page"], .icon-btn.is-on { color: var(--accent); }
 
 /* ---------------------------------------------------------------- vitals */
 .vitals {
   /* Flex, not grid: auto-fit leaves an empty cell whenever the tile count is not a
      multiple of the column count, and a blank slab in the header reads as a bug. */
   display: flex; flex-wrap: wrap;
-  gap: 1px; background: var(--line-soft);
-  border-bottom: 1px solid var(--line);
-  position: sticky; top: 53px; z-index: 15;
+  border-top: 1px solid var(--line-soft);
 }
-.vital { flex: 1 1 60px; background: var(--bg-sunk); padding: 6px 8px; text-align: center; }
-.vital-label { display: block; font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
-.vital-value { font: 600 1.05rem/1.2 var(--mono); }
+.vital {
+  flex: 1 1 58px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 4px 7px; text-align: center;
+  background: transparent; color: inherit; border: 0; font: inherit;
+}
+.vital + .vital { border-left: 1px solid var(--line-soft); }
+button.vital { cursor: pointer; }
+button.vital:hover { background: var(--bg-hover); }
+.vital-label { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .14em; color: var(--ink-faint); }
+.vital-value { font: 600 1.05rem/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.vital-value small { font-size: .72em; color: var(--ink-faint); }
 .vital.is-danger .vital-value { color: var(--danger); }
-.vital.is-neuro .vital-value { color: var(--neuro); }
+.vital.is-neuro .vital-value { color: var(--neuro); text-shadow: 0 0 10px var(--neuro-glow); }
+.vital.is-wide { flex: 1 0 100%; border-left: 0; border-top: 1px solid var(--line-soft); background: var(--danger-soft); }
+.vital.flash { animation: flash .6s var(--ease); }
+.vital.flash.is-neuro { animation-name: flash-neuro; }
+
+/* Pip gauge: one segment per point. Health is ink, Hope is amber light. */
+.pips { display: flex; gap: 2px; justify-content: center; height: 4px; }
+.pip { width: 7px; height: 4px; border-radius: 1px; background: var(--line-strong); opacity: .55; }
+.pip.on { opacity: 1; background: var(--ink); }
+.gauge-hope .pip.on { background: var(--accent); box-shadow: 0 0 6px var(--accent-soft); }
+.vital.is-danger .pip { background: var(--danger); opacity: .35; }
+
+/* Bliss: a bar on the Hope scale. The hatched floor is Permanent Bliss; the tick is
+   current Hope, so "Bliss reaches Hope" is something you can see coming. */
+.bliss-bar {
+  position: relative; width: 100%; max-width: 64px; height: 4px; margin: 0 auto;
+  border-radius: 2px; background: color-mix(in srgb, var(--line-strong) 55%, transparent);
+}
+.bliss-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px;
+  background: var(--neuro); box-shadow: 0 0 8px var(--neuro-glow); }
+.bliss-floor { position: absolute; left: 0; top: 0; bottom: 0;
+  background: repeating-linear-gradient(135deg, var(--neuro) 0 2px, transparent 2px 4px); opacity: .9; }
+.bliss-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--accent); }
+.vital.is-danger .bliss-fill { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+/* The name of whoever the vitals bar is currently about, and a way to change it. */
+.vital-switch {
+  flex: 1 0 100%; background: transparent;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 34px; padding: 4px 10px; width: 100%;
+  border: 0; border-bottom: 1px solid var(--line-soft);
+  color: var(--ink); font: 600 .95rem/1 var(--font-head); letter-spacing: .08em; text-transform: uppercase;
+  cursor: pointer;
+}
+button.vital-switch::after { content: "▾"; color: var(--accent); }
+.vital-switch.is-static { cursor: default; color: var(--ink-dim); }
+.vital-switch + .vital { border-left: 0; }
+
+/* ---------------------------------------------------------- combat strip */
+.strip {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 40px; padding: 6px 14px;
+  border-top: 1px solid var(--line-soft);
+  background: linear-gradient(90deg, var(--danger-soft), transparent 70%);
+  text-decoration: none; color: var(--ink);
+  font-size: .9rem;
+}
+.strip[hidden] { display: none; }
+.strip-round {
+  font: 600 .8rem/1 var(--mono); color: var(--on-accent); background: var(--danger);
+  padding: 4px 7px; border-radius: 3px;
+}
+.strip-who { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip .icon { color: var(--ink-faint); }
 
 /* Hidden GM content: blurred until tapped. Still selectable by a screen reader — the
    point is a glance across the table, not secrecy from the person holding the phone. */
@@ -153,235 +321,340 @@ a { color: inherit; }
   background: var(--bg-sunk); border-radius: 4px;
 }
 
-/* The name of whoever the vitals bar is currently about, and a way to change it. */
-.vital-switch {
-  flex: 1 0 100%; background: var(--bg-sunk);
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 34px; padding: 6px 10px; width: 100%;
-  border: 0; border-bottom: 1px solid var(--line-soft);
-  color: var(--ink); font: 600 .82rem/1 var(--font-head); letter-spacing: .04em;
-  cursor: pointer;
-}
-button.vital-switch::after { content: "▾"; color: var(--ink-faint); }
-.vital-switch.is-static { cursor: default; color: var(--ink-dim); }
+/* ---------------------------------------------------------------- screen */
+.screen { position: relative; padding: var(--s4) 16px var(--s6); max-width: 720px; margin: 0 auto; }
+.screen:focus { outline: none; }
 
-/* Who this Traveler is, on a row of its own. It used to share a line with the archetype
-   and the favourite song, which put the switch in a different place on every sheet and
-   dropped it onto a second line whenever the song title was long. */
-.identity {
-  display: flex; align-items: center; gap: 10px;
-  margin: 0 0 var(--gap);
+/* Room on the title line for the ⓘ that sits at its right-hand end. */
+.screen > .subnav { margin-right: 44px; }
+.screen h1:first-child, .screen > div > h1:first-child,
+.screen > div > div > h1:first-child { padding-right: 48px; }
+
+/* ------------------------------------------------------- section nav = title */
+/* Siblings within a tab, and the title of the screen at the same time: the one you are
+   on is set large, the rest sit beside it small. Scrolls inside itself so the page never
+   scrolls sideways. A separate H1 under it repeated the same word, so that H1 is kept
+   for screen readers only. */
+.subnav {
+  display: flex; align-items: baseline; gap: 2px; margin: 0 0 var(--s3);
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
-.identity-pronouns {
-  flex: 0 1 auto; min-width: 0;
-  font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.subnav::-webkit-scrollbar { display: none; }
+.subnav-item {
+  flex: 0 0 auto; display: inline-flex; align-items: center;
+  min-height: var(--tap); padding: 0 8px;
+  color: var(--ink-faint); text-decoration: none;
+  font-size: .95rem; font-weight: 600; letter-spacing: .08em; white-space: nowrap;
+}
+.subnav-item:first-child { padding-left: 0; }
+.subnav-item:hover { color: var(--ink-dim); }
+.subnav-item.is-here {
+  order: -1; padding-left: 0; padding-right: 12px;
+  color: var(--ink); font-size: 2rem; font-weight: 700; letter-spacing: .02em;
+}
+.subnav-item.is-live { color: var(--ink); }
+.subnav-badge {
+  margin-left: 6px; padding: 2px 6px; border-radius: 3px;
+  background: var(--danger); color: var(--on-accent);
+  font: 600 .7rem/1 var(--mono); letter-spacing: 0;
+}
+.subnav-item.is-here .subnav-badge { font-size: .8rem; vertical-align: middle; }
+
+/* Sheet sections: a sticky jump bar, separate from the title nav. */
+.jumpbar {
+  position: sticky; top: var(--topbar-h, 0px); z-index: 5;
+  display: flex; gap: 4px; margin: 0 -16px var(--s3); padding: 6px 16px;
+  overflow-x: auto; scrollbar-width: none;
+  background: var(--chrome);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line-soft);
+}
+.jumpbar::-webkit-scrollbar { display: none; }
+.jumpbar a {
+  flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px;
+  border-radius: 999px; color: var(--ink-dim); text-decoration: none;
+  font: 600 .85rem/1 var(--font-head); letter-spacing: .08em; text-transform: uppercase;
+}
+.jumpbar a.is-here { background: var(--accent-soft); color: var(--accent); }
+
+/* ---------------------------------------------------------------- explain */
+/* The collapsed "what this does" note. The screen's own note lives as an ⓘ at the right
+   of the title line, and opens as a sheet from the bottom. On a first visit it starts
+   open in place, once. Further notes on a screen stay as quiet inline folds. */
+.explain { margin: 4px 0 12px; border-left: 2px solid var(--line); padding-left: 10px; }
+.explain > summary { color: var(--ink-faint); min-height: 36px; font-size: .85rem; letter-spacing: .1em; }
+.explain > summary:hover { color: var(--ink-dim); }
+.explain p { margin: 4px 0 8px; color: var(--ink-dim); font-size: .92rem; }
+.explain-body > :last-child { margin-bottom: 0; }
+.explain-head, .explain-close, .explain-scrim { display: none; }
+
+.explain.is-lead { margin: 0; padding: 0; border: 0; }
+.explain.is-lead > summary {
+  position: absolute; top: calc(var(--s4) + 2px); right: 10px; z-index: 2;
+  width: var(--tap); height: var(--tap); min-height: 0; padding: 0; justify-content: center;
+  border-radius: 50%; color: var(--ink-faint);
+}
+.explain.is-lead > summary::before { content: none; }
+.explain.is-lead > summary .explain-label { display: none; }
+.explain.is-lead > summary:hover { color: var(--accent); background: var(--bg-hover); }
+.explain.is-lead[open] > summary { color: var(--accent); }
+
+.explain.is-lead[open]:not(.is-intro) > .explain-scrim {
+  display: block; position: fixed; inset: 0; z-index: 44; background: rgba(0, 0, 0, .5);
+  animation: fade .18s ease-out;
+}
+.explain.is-lead[open]:not(.is-intro) > .explain-body {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+  max-height: 70dvh; overflow: auto;
+  margin: 0 auto; width: min(640px, 100%);
+  padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
+  background: var(--bg-raised); border: 1px solid var(--line); border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .5);
+  animation: sheet-up .24s var(--ease);
+}
+.explain.is-lead[open]:not(.is-intro) > .explain-body::before {
+  content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px;
+  border-radius: 2px; background: var(--line-strong);
+}
+.explain.is-lead[open]:not(.is-intro) .explain-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;
+  font: 600 1.05rem/1.2 var(--font-head); letter-spacing: .08em; text-transform: uppercase; color: var(--accent);
+}
+.explain.is-lead .explain-close { display: inline-flex; }
+.explain.is-lead[open]:not(.is-intro) p { font-size: 1rem; color: var(--ink); }
+
+/* first visit: open where it stands, as a card under the title, nothing covering the page */
+.explain.is-lead.is-intro[open] > .explain-body {
+  margin: 0 0 var(--s4); padding: 12px 14px;
+  background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: var(--r);
+  position: relative;
+}
+.explain.is-lead.is-intro[open] .explain-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font: 600 .85rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+}
+.explain.is-lead.is-intro[open] p { color: var(--ink); }
+
+/* ------------------------------------------------------------------ cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: var(--s4);
+  margin-bottom: var(--s3);
+  box-shadow: var(--hi), var(--shadow);
+}
+.card-row { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
+/* Option rows wrapped in a label are rows, not form captions. */
+label.card-row {
+  text-transform: none; letter-spacing: 0; color: inherit; font: inherit; font-size: inherit;
+  cursor: pointer; margin-bottom: 0; min-height: var(--tap);
+}
+label.card-row strong { font-weight: 600; }
+
+/* Label above, value below. A card-row centres a wrapping value against its label, so a
+   two-line sentence straddles it — fine for "Hope 3/5", unreadable for a Stop's setting. */
+.def { padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.def:first-of-type { border-top: 0; }
+.def-key {
+  display: block; margin-bottom: 2px;
+  font-size: .8rem; font-weight: 600; letter-spacing: .1em; color: var(--ink-faint);
+}
+.def-value { display: block; }
+.muted { color: var(--ink-dim); }
+.faint { color: var(--ink-faint); font-size: .88rem; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Roll-log distribution: a bar per d6 face, so a table can check the dice. */
+.bar { height: 8px; background: var(--accent); border-radius: 2px; min-width: 2px; flex: 0 0 auto; }
+
+/* Where you are in a session. The one card on the home screen that changes every time
+   something happens, so it gets the accent edge and nothing else does. */
+.whatnow {
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(100deg, var(--accent-soft), transparent 55%), var(--card);
+}
+.whatnow-phase {
+  font-size: .78rem; font-weight: 600; letter-spacing: .16em;
+  color: var(--accent); margin-bottom: 6px;
 }
 
-/* A two-option switch: one control, not two buttons. Deliberately quiet — accent is
-   reserved for the thing you press, and a setting is not that. */
-.seg {
-  flex: 0 0 auto;
-  display: inline-flex; border: 1px solid var(--line); border-radius: 999px;
-  overflow: hidden; background: var(--bg-sunk);
+/* "you are here" on the act you are in. */
+.phase-fold > summary .count {
+  margin-left: 8px; padding: 3px 7px; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: .72rem; letter-spacing: .08em;
 }
-.seg-item {
-  min-height: 32px; padding: 0 13px;
-  background: transparent; color: var(--ink-faint);
-  border: 0; cursor: pointer;
-  font: 600 .68rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
-}
-.seg-item.is-on { background: var(--bg-raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.seg-item:not(.is-on):hover { color: var(--ink-dim); }
 
-/* A stepper is one control. Three loose boxes with gaps between them are not. */
-.stepper {
-  display: inline-flex; align-items: stretch; flex: 0 0 auto;
-  border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
-  background: var(--bg-sunk);
+/* One beat of a session: what is happening, big enough to read across a table. */
+.beat {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: var(--r);
+  background: radial-gradient(120% 140% at 0% 100%, var(--accent-soft), transparent 60%), var(--card);
+  padding: var(--s4) 16px; margin-bottom: var(--s3);
+  box-shadow: var(--hi), var(--shadow);
 }
-.stepper-btn {
-  width: 46px; min-height: 40px;
-  background: transparent; color: var(--ink); border: 0; cursor: pointer;
-  font: 400 1.25rem/1 var(--font); 
+.beat-heading {
+  font-size: .8rem; font-weight: 600; letter-spacing: .16em;
+  color: var(--accent); margin-bottom: 10px;
 }
-.stepper-btn:disabled { color: var(--ink-faint); opacity: .45; cursor: default; }
-.stepper-btn:not(:disabled):hover { background: var(--bg-raised); }
-.stepper-value {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 3.2ch; padding: 0 2px;
-  border-left: 1px solid var(--line); border-right: 1px solid var(--line);
-  font: 600 1.15rem/1 var(--mono);
+.beat-now { font-size: 1.2rem; line-height: 1.45; margin-bottom: .7rem; }
+
+/* The numbered procedure in the session guide: a list you read, not a list you press. */
+.playsteps { margin: 0 0 var(--gap); padding-left: 1.4em; }
+.playsteps li { padding: 8px 0; }
+.playsteps li::marker { font: 600 1rem var(--font-head); color: var(--accent); }
+.playsteps li + li { border-top: 1px solid var(--line-soft); }
+
+/* A phase card that folds away: same skin as a card, summary as its heading. */
+.phase-fold > summary {
+  list-style: none; cursor: pointer;
+  font: 600 1rem/1.3 var(--font-head); letter-spacing: .08em;
+  color: var(--ink);
 }
+.phase-fold > summary::-webkit-details-marker { display: none; }
+.phase-fold > summary::after { content: "+"; margin-left: auto; color: var(--accent); font-size: 1.2rem; }
+.phase-fold[open] > summary::after { content: "–"; }
+.phase-fold > summary::before { content: none; }
+
+/* ---------------------------------------------------------------- controls */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: var(--tap); padding: 0 18px;
+  background: linear-gradient(180deg, var(--bg-raised), var(--bg-sunk));
+  color: var(--ink);
+  border: 1px solid var(--line-strong); border-radius: var(--r);
+  font-size: .98rem; font-weight: 600; line-height: 1.05; letter-spacing: .07em; text-align: center;
+  box-shadow: var(--hi);
+  cursor: pointer; text-decoration: none;
+  transition: border-color .12s, background .12s, transform .08s, box-shadow .12s;
+}
+.btn:hover { border-color: var(--ink-faint); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent));
+  border-color: var(--accent); color: var(--on-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 0 0 0 var(--accent-soft), 0 6px 18px -8px var(--accent);
+}
+.btn-primary:hover { border-color: var(--accent-hi); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 4px var(--accent-soft), 0 6px 18px -8px var(--accent); }
+.btn-danger { background: transparent; color: var(--danger); border-color: color-mix(in srgb, var(--danger) 60%, transparent); box-shadow: none; }
+.btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); }
+.btn-block { width: 100%; }
+/* A stepper at its floor, an archetype already taken: still there, visibly not pressable.
+   A disabled primary drops its fill entirely rather than fading into a brown smudge. */
+.btn:disabled, button:disabled { opacity: .4; cursor: default; }
+.btn:disabled:hover { border-color: var(--line-strong); }
+.btn-primary:disabled {
+  opacity: 1; background: transparent; color: var(--ink-faint);
+  border: 1px dashed var(--line-strong); box-shadow: none;
+}
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Actions of equal standing, in equal cells — a wrapped btn-row leaves an orphan. */
 .btn-grid {
-  display: grid; gap: 8px; margin-bottom: var(--gap);
+  display: grid; gap: 8px; margin-bottom: var(--s3);
   grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
 }
 .btn-grid > .btn { width: 100%; }
 /* An odd last action would sit alone in half a row and wrap its label; give it the row. */
 .btn-grid > .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
-/* Where you are in a session. The one card on the home screen that changes every time
-   something happens, so it gets the accent edge and nothing else does. */
-.whatnow { border-left: 3px solid var(--accent); }
-.whatnow-phase {
-  font: 600 .62rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 6px;
+/* A two-option switch: one control, not two buttons. Deliberately quiet — accent is
+   reserved for the thing you press, and a setting is not that. */
+.seg {
+  flex: 0 0 auto;
+  display: inline-flex; border: 1px solid var(--line); border-radius: 999px;
+  overflow: hidden; background: var(--bg-sunk); padding: 2px;
+}
+.seg-item {
+  min-height: 34px; padding: 0 14px; border-radius: 999px;
+  background: transparent; color: var(--ink-faint);
+  border: 0; cursor: pointer;
+  font-size: .85rem; font-weight: 600; line-height: 1; letter-spacing: .08em;
+}
+.seg-item.is-on { background: var(--bg-raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.seg-item:not(.is-on):hover { color: var(--ink-dim); }
+
+/* A stepper is one control. Three loose boxes with gaps between them are not. */
+.stepper {
+  display: inline-flex; align-items: stretch; flex: 0 0 auto;
+  border: 1px solid var(--line-strong); border-radius: var(--r); overflow: hidden;
+  background: var(--bg-sunk); box-shadow: var(--hi);
+}
+.stepper-btn {
+  width: 46px; min-height: var(--tap);
+  background: transparent; color: var(--ink); border: 0; cursor: pointer;
+  font: 400 1.35rem/1 var(--font);
+}
+.stepper-btn:disabled { color: var(--ink-faint); opacity: .4; cursor: default; }
+.stepper-btn:not(:disabled):hover { background: var(--bg-hover); }
+.stepper-btn:not(:disabled):active { background: var(--accent-soft); }
+.stepper-value {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 3.4ch; padding: 0 4px;
+  border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+  font: 600 1.15rem/1 var(--mono); font-variant-numeric: tabular-nums;
 }
 
-/* "you are here" on the act you are in. A bare span ran straight into the heading, so it
-   reads as one phrase; this makes it a badge. */
-.phase-fold > summary .count {
-  margin-left: 8px; padding: 2px 7px; border-radius: 999px;
-  background: var(--accent); color: #10120f;
-  font-size: .6rem; letter-spacing: .08em;
-}
+/* The attribute you are rolling: four equal cells, value large, never a wrapped orphan. */
+.attr-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.attr-pick .btn { flex-direction: column; gap: 2px; min-height: 60px; padding: 6px 4px; }
+.attr-pick .attr-name { font-size: .78rem; letter-spacing: .1em; }
+.attr-pick .attr-val { font: 600 1.4rem/1 var(--mono); }
 
-/* One beat of a session: what is happening, big enough to read across a table. */
-.beat {
-  border: 1px solid var(--line); border-left: 3px solid var(--accent);
-  border-radius: var(--r); background: var(--bg-raised);
-  padding: var(--gap) 14px; margin-bottom: var(--gap);
-}
-.beat-heading {
-  font: 600 .62rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 8px;
-}
-.beat-now { font-size: 1.05rem; line-height: 1.5; margin-bottom: .6rem; }
-
-/* The numbered procedure in the session guide: a list you read, not a list you press. */
-.playsteps { margin: 0 0 var(--gap); padding-left: 1.3em; }
-.playsteps li { padding: 6px 0; }
-.playsteps li + li { border-top: 1px solid var(--line-soft); }
-
-/* A phase card that folds away: same skin as a card, summary as its heading. */
-.phase-fold > summary {
-  list-style: none; cursor: pointer;
-  font: 600 .78rem/1.3 var(--font-head); letter-spacing: .08em; text-transform: uppercase;
-  color: var(--ink);
-}
-.phase-fold > summary::-webkit-details-marker { display: none; }
-.phase-fold > summary::after { content: " +"; color: var(--ink-faint); }
-.phase-fold[open] > summary::after { content: " –"; }
-
-/* --------------------------------------------------------------- subnav */
-/* Siblings within a tab. Scrolls inside itself so the page never scrolls sideways. */
-.subnav {
-  display: flex; gap: 4px; margin: -4px 0 var(--gap);
-  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-}
-.subnav::-webkit-scrollbar { display: none; }
-/* The row scrolls inside itself; fade the right edge so a clipped pill reads as more. */
-.subnav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
-          mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
-.subnav-item {
-  flex: 0 0 auto; padding: 7px 12px;
-  border: 1px solid var(--line); border-radius: 999px;
-  background: var(--bg-sunk); color: var(--ink-dim); text-decoration: none;
-  font: 600 .7rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
-  white-space: nowrap;
-}
-.subnav-item.is-here { background: var(--accent); border-color: var(--accent); color: #10120f; }
-.subnav-item.is-live { border-color: var(--danger); color: var(--ink); }
-.subnav-badge {
-  margin-left: 6px; padding: 1px 5px; border-radius: 999px;
-  background: var(--danger); color: #10120f; font-family: var(--mono); font-size: .62rem;
-}
-
-/* ------------------------------------------------------------- action bar */
-/* The one control you press constantly, pinned above the tab bar. */
-.actionbar {
-  position: fixed; left: 0; right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom));
-  z-index: 18;
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px;
-  background: var(--bg-sunk); border-top: 1px solid var(--line);
-}
-.actionbar-inner {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; max-width: 720px; margin: 0 auto;
-}
-.actionbar .pool { font: 600 1.05rem/1 var(--mono); color: var(--ink); white-space: nowrap; }
-.actionbar .pool small { display: block; font: 400 .68rem/1.3 var(--font-body); color: var(--ink-faint); }
-.actionbar .btn { flex: 1; }
-.actionbar-spacer { height: 76px; }
-
-/* ---------------------------------------------------------------- screen */
-.screen { padding: var(--gap) 14px 28px; max-width: 720px; margin: 0 auto; }
-.screen:focus { outline: none; }
-
-.card {
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: var(--gap);
-  margin-bottom: var(--gap);
-  box-shadow: var(--shadow);
-}
-.card-row { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
-
-/* Label above, value below. A card-row centres a wrapping value against its label, so a
-   two-line sentence straddles it — fine for "Hope 3/5", unreadable for a Stop's setting. */
-.def { padding: 6px 0; border-top: 1px solid var(--line-soft); }
-.def:first-of-type { border-top: 0; }
-.def-key {
-  display: block; margin-bottom: 1px;
-  font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint);
-}
-.def-value { display: block; }
-.muted { color: var(--ink-dim); }
-.faint { color: var(--ink-faint); font-size: .82rem; }
-.mono { font-family: var(--mono); }
-
-/* Roll-log distribution: a bar per d6 face, so a table can check the dice. */
-.bar { height: 8px; background: var(--accent); border-radius: 2px; min-width: 2px; flex: 0 0 auto; }
-
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: var(--tap); padding: 0 16px;
-  background: var(--bg-sunk); color: var(--ink);
-  border: 1px solid var(--line); border-radius: var(--r);
-  font: 600 .8rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
-  cursor: pointer; text-decoration: none;
-}
-.btn:hover { border-color: var(--ink-faint); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #10120f; }
-.btn-danger { color: var(--danger); border-color: var(--danger); }
-.btn-block { width: 100%; }
-/* A stepper at its floor, an archetype already taken: still there, visibly not pressable. */
-.btn:disabled, button:disabled { opacity: .38; cursor: default; }
-.btn:disabled:hover { border-color: var(--line); }
-.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--gap); }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--s3); }
 .chip {
-  min-height: 34px; padding: 0 12px;
+  min-height: 36px; padding: 0 14px;
   background: var(--bg-sunk); color: var(--ink-dim);
   border: 1px solid var(--line); border-radius: 999px;
-  font: 600 .72rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+  font-size: .88rem; font-weight: 600; line-height: 1; letter-spacing: .07em;
   cursor: pointer;
 }
-.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #10120f; }
-.chip .count { opacity: .7; margin-left: 6px; font-family: var(--mono); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip .count { opacity: .75; margin-left: 6px; font-family: var(--mono); font-size: .8em; }
 
 input, select, textarea {
   width: 100%; min-height: var(--tap);
   /* 16px minimum: anything smaller makes iOS zoom the viewport on focus. */
-  font-size: 16px;
+  font-size: max(16px, 1rem);
   background: var(--bg-sunk); color: var(--ink);
-  border: 1px solid var(--line); border-radius: var(--r);
-  padding: 8px 10px; font-family: inherit;
+  border: 1px solid var(--line-strong); border-radius: var(--r);
+  padding: 8px 12px; font-family: inherit;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .18);
 }
-label { display: block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
-/* Option rows are whole-row labels, but a 13px box is hard to read and harder to aim at. */
+input:focus, select:focus, textarea:focus { border-color: var(--focus); outline: none; box-shadow: 0 0 0 3px var(--neuro-glow); }
+select {
+  appearance: none; -webkit-appearance: none; padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-faint) 50%), linear-gradient(135deg, var(--ink-faint) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+  background-size: 5px 5px; background-repeat: no-repeat;
+}
+label { display: block; font-size: .85rem; font-weight: 600; letter-spacing: .1em; color: var(--ink-faint); margin-bottom: 6px; }
+
+/* Every checkbox in this app switches a state on or off, so it is drawn as a switch.
+   Still a real checkbox underneath: keyboard, form semantics and tests are unchanged. */
 input[type="checkbox"] {
-  width: 22px; height: 22px; min-height: 22px; flex: 0 0 auto;
-  accent-color: var(--accent); cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  position: relative; flex: 0 0 auto;
+  width: 46px; height: 28px; min-height: 28px; padding: 0; margin: 0;
+  border-radius: 14px; border: 1px solid var(--line-strong);
+  background: var(--bg-sunk); cursor: pointer;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3);
+  transition: background .15s, border-color .15s;
 }
-.field { margin-bottom: var(--gap); }
+input[type="checkbox"]::before {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--ink-faint);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  transition: transform .18s var(--ease), background .15s;
+}
+input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+input[type="checkbox"]:checked::before { transform: translateX(18px); background: var(--on-accent); }
+input[type="checkbox"]:disabled { opacity: .4; }
+.field { margin-bottom: var(--s4); }
 
 .list { list-style: none; margin: 0; padding: 0; }
 .list li + li { border-top: 1px solid var(--line-soft); }
@@ -390,96 +663,328 @@ input[type="checkbox"] {
   padding: 12px 4px; min-height: var(--tap);
   background: none; border: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: none;
 }
-
+.list a:hover, .list button.row:hover { background: var(--bg-hover); }
 .list button.row.is-here { color: var(--accent); }
 
-.empty { text-align: center; color: var(--ink-dim); padding: 32px 16px; }
-.empty p { max-width: 34ch; margin: 0 auto .75rem; }
+.empty { text-align: center; color: var(--ink-dim); padding: 36px 16px; }
+.empty::before {           /* the helmet and antenna from the brand mark, as a quiet emblem */
+  content: ""; display: block; width: 34px; height: 34px; margin: 0 auto 18px;
+  border: 2px solid var(--accent); border-radius: 50%; opacity: .7;
+  box-shadow: 0 14px 0 -15px var(--neuro), 0 0 24px var(--accent-soft);
+}
+.empty p { max-width: 34ch; margin: 0 auto .9rem; }
 
 .tag {
-  display: inline-block; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--ink-faint); border: 1px solid var(--line); border-radius: var(--r);
+  display: inline-block; font-size: .78rem; font-weight: 600; letter-spacing: .08em;
+  color: var(--ink-faint); border: 1px solid var(--line); border-radius: 3px;
   padding: 1px 6px; margin-right: 4px;
 }
-.tag-neuro { color: var(--neuro); border-color: var(--neuro); }
+.tag-neuro { color: var(--neuro); border-color: var(--neuro); box-shadow: 0 0 8px var(--neuro-glow); }
 
 /* scroll containers never push the page sideways */
 .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
-th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line-soft); }
-th { color: var(--ink-faint); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line-soft); }
+th { color: var(--ink-faint); font-weight: 600; font-size: .82rem; letter-spacing: .08em; }
+
+/* ------------------------------------------------------------------ dice */
+/* Dice look like dice. Base dice are bone, gear dice are dark with an amber rim. A six
+   is lit; a one is rusted. Pips, not numerals — the label carries the number. */
+.dice { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 var(--s3); }
+.dice-sep { width: 1px; align-self: stretch; margin: 2px 4px; background: var(--line); }
+.die {
+  --size: 42px;
+  position: relative; display: grid; flex: 0 0 auto;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  width: var(--size); height: var(--size); padding: calc(var(--size) * .16);
+  border-radius: calc(var(--size) * .2);
+  background: linear-gradient(160deg, #fff8 0%, transparent 45%), var(--bone);
+  color: var(--bone-ink);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18), 0 2px 4px rgba(0, 0, 0, .35);
+}
+.die i { width: 100%; height: 100%; display: grid; place-items: center; }
+.die i.on::after { content: ""; width: 72%; height: 72%; border-radius: 50%; background: currentColor; }
+.die.is-gear {
+  background: linear-gradient(160deg, rgba(255,255,255,.06), transparent 50%), var(--bg-sunk);
+  color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), 0 2px 4px rgba(0, 0, 0, .35);
+}
+.die.is-six {
+  background: linear-gradient(160deg, rgba(255,255,255,.4), transparent 50%), var(--accent-hi);
+  color: var(--on-accent);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 2px var(--accent-soft), 0 0 18px var(--accent);
+}
+.die.is-gear.is-six { box-shadow: inset 0 0 0 2px var(--on-accent), 0 0 18px var(--accent); }
+.die.is-one { background: var(--danger); color: var(--on-accent); box-shadow: inset 0 -2px 0 rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.35); }
+.die.is-gear.is-one { background: var(--bg-sunk); color: var(--danger); box-shadow: inset 0 0 0 2px var(--danger); }
+.die.is-kept { outline: 2px solid var(--line-strong); outline-offset: 2px; }
+.die.is-mini { --size: 18px; padding: 3px; border-radius: 4px; box-shadow: none; }
+.die.is-mini.is-six { box-shadow: 0 0 6px var(--accent); }
+.dice.is-mini { gap: 3px; margin: 0; justify-content: flex-end; }
+.die.is-face { --size: 42px; }
+.die-num {           /* values above 6 (D66, D100): a plain chip, not a d6 */
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 4px; background: var(--bg-sunk); font: 600 .72rem/1 var(--mono);
+}
+.result-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.result-word { font: 700 1.9rem/1 var(--font-head); text-transform: uppercase; letter-spacing: .03em; margin: 0; }
+.result-word.is-success { color: var(--accent); text-shadow: 0 0 18px var(--accent-soft); }
+.result-word.is-failure { color: var(--ink-dim); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .die.is-rolling { animation: tumble .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 35ms); }
+  .die.is-six.is-rolling { animation-name: tumble, glow; animation-duration: .5s, 1.2s; animation-delay: calc(var(--i, 0) * 35ms), calc(.45s + var(--i, 0) * 35ms); }
+}
+@keyframes tumble {
+  0% { transform: translateY(-14px) rotate(-200deg) scale(.6); opacity: 0; }
+  60% { transform: translateY(2px) rotate(12deg) scale(1.05); opacity: 1; }
+  100% { transform: none; }
+}
+@keyframes glow { 0%, 100% { filter: none; } 40% { filter: brightness(1.25); } }
 
 /* ------------------------------------------------------- accordions & notes */
 details { border-radius: var(--r); }
 details > summary {
   cursor: pointer; list-style: none;
-  min-height: var(--tap); display: flex; align-items: center; gap: 8px;
-  font-family: var(--font-head); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase;
+  min-height: var(--tap); display: flex; align-items: center; gap: 10px;
+  font-size: .98rem; font-weight: 600; letter-spacing: .07em;
 }
 details > summary::-webkit-details-marker { display: none; }
 details > summary::before {
-  content: "▸"; color: var(--ink-faint); font-size: .8rem; transition: transform .12s ease;
+  content: ""; flex: none; width: 7px; height: 7px; margin: 0 2px;
+  border-right: 2px solid var(--ink-faint); border-bottom: 2px solid var(--ink-faint);
+  transform: rotate(-45deg); transition: transform .15s var(--ease);
 }
-details[open] > summary::before { transform: rotate(90deg); }
-
-/* the collapsed "what this does" note */
-.explain { margin: 4px 0 12px; border-left: 2px solid var(--line); padding-left: 10px; }
-.explain > summary { color: var(--ink-faint); min-height: 32px; }
-.explain > summary:hover { color: var(--ink-dim); }
-.explain p { margin: 4px 0 8px; color: var(--ink-dim); font-size: .85rem; }
+details[open] > summary::before { transform: rotate(45deg); }
 
 /* rules-library accordion */
-.rule-group { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 8px; }
-.rule-group > summary { padding: 12px; color: var(--ink); }
-.rule-group > summary .count { margin-left: auto; color: var(--ink-faint); font-size: .7rem; }
-.rule-entry { border-top: 1px solid var(--line-soft); padding: 0 12px; }
-.rule-entry > summary { color: var(--ink-dim); }
-.rule-entry[open] > summary { color: var(--ink); }
-.rule-entry p { margin: 0 0 10px; color: var(--ink-dim); font-size: .9rem; }
+.rule-group { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 8px; box-shadow: var(--hi); }
+.rule-group > summary { padding: 6px 14px; color: var(--ink); min-height: 52px; }
+.rule-group[open] > summary { border-bottom: 1px solid var(--line-soft); }
+.rule-group > summary .count { margin-left: auto; color: var(--ink-faint); font: 500 .8rem var(--mono); }
+.rule-entry { border-top: 1px solid var(--line-soft); padding: 0 14px; }
+.rule-group > .rule-entry:first-of-type { border-top: 0; }
+.rule-entry > summary { color: var(--ink-dim); font-size: .92rem; }
+.rule-entry[open] > summary { color: var(--accent); }
+.rule-entry p { margin: 0 0 12px; color: var(--ink); font-size: .95rem; }
 
 /* tutorial */
 .step { counter-increment: step; }
 .step > summary::after {
-  content: counter(step); margin-left: auto;
-  color: var(--ink-faint); font-family: var(--mono); font-size: .75rem;
+  content: counter(step, decimal-leading-zero); margin-left: auto;
+  color: var(--accent); font-family: var(--mono); font-size: .85rem;
 }
 .tutorial { counter-reset: step; }
+
+/* ----------------------------------------------------------- action bar */
+/* The one control you press constantly, pinned above the tab bar. */
+.actionbar {
+  position: fixed; left: 0; right: 0;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  z-index: 18;
+  padding: 10px 16px;
+  background: var(--chrome);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+}
+.actionbar-inner {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; max-width: 720px; margin: 0 auto;
+}
+.actionbar .pool { font: 600 1.3rem/1 var(--mono); color: var(--ink); white-space: nowrap; }
+.actionbar .pool small { display: block; margin-top: 3px; font: 600 .78rem/1.2 var(--font-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+.actionbar .btn { flex: 1; min-width: 0; min-height: 48px; padding: 0 10px; }
+.actionbar-spacer { height: 84px; }
 
 /* ---------------------------------------------------------------- tabbar */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  display: flex; background: var(--bg-sunk);
+  display: flex; justify-content: center;
+  background: var(--chrome);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }
 .tabbar a {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  min-height: 56px; padding: 6px 2px;
-  font-size: .6rem; color: var(--ink-faint); text-decoration: none;
+  position: relative;
+  flex: 1; max-width: 160px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: var(--nav-h); padding: 6px 2px;
+  font-size: .78rem; font-weight: 600; letter-spacing: .1em; color: var(--ink-faint); text-decoration: none;
 }
-.tabbar a span { font-size: 1.1rem; line-height: 1; }
-.tabbar a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 2px 0 var(--accent); }
+.tabbar a .icon { transition: transform .15s var(--ease); }
+.tabbar a[aria-current="page"] { color: var(--ink); }
+.tabbar a[aria-current="page"] .icon { color: var(--accent); filter: drop-shadow(0 0 6px var(--accent-soft)); transform: translateY(-1px); }
+.tabbar a[aria-current="page"]::before {
+  content: ""; position: absolute; top: -1px; left: 30%; right: 30%; height: 2px;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent);
+}
+
+/* ------------------------------------------------------------- dice tray */
+/* The dice screen, summoned over whatever you are looking at. A bottom sheet on a
+   phone; on a wide screen it docks as a second pane beside the screen. */
+.tray[hidden] { display: none; }
+.tray {
+  position: fixed; left: 0; right: 0; z-index: 30;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  max-height: calc(100dvh - var(--nav-h) - 72px);
+  overflow: auto; overscroll-behavior: contain;
+  margin: 0 auto; width: min(720px, 100%);
+  background: var(--bg-raised);
+  border: 1px solid var(--line); border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, .55);
+  animation: sheet-up .26s var(--ease);
+}
+.tray-scrim { position: fixed; inset: 0; z-index: 29; background: rgba(0, 0, 0, .45); animation: fade .2s; }
+.tray-head {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 14px 10px 6px 16px;
+  background: var(--bg-raised);
+}
+.tray-head::before {
+  content: ""; position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px;
+  border-radius: 2px; background: var(--line-strong);
+}
+.tray-title { font: 700 1.4rem/1 var(--font-head); letter-spacing: .04em; text-transform: uppercase; }
+.tray-body { padding: 0 16px; }
+.tray-body h1, .tray-body .explain { display: none; }
+.tray .actionbar { position: sticky; bottom: 0; left: auto; right: auto; margin: 0 -16px; }
+.tray .actionbar-spacer { display: none; }
+body.tray-open { overflow: hidden; }
 
 /* ---------------------------------------------------------------- modals */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 50;
-  background: rgba(0,0,0,.6);
+  background: rgba(0, 0, 0, .55);
   display: flex; align-items: center; justify-content: center; padding: 16px;
+  animation: fade .18s ease-out;
 }
 .modal {
-  background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--r);
-  width: min(520px, 100%); max-height: 85vh; max-height: 85dvh; overflow: auto; padding: 16px;
+  position: relative;
+  background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--r-lg);
+  width: min(520px, 100%); max-height: 85vh; max-height: 85dvh; overflow: auto; padding: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
 }
-.modal h2 { margin-top: 0; color: var(--ink); }
+.modal h2 { margin-top: 0; color: var(--ink); font-size: 1.4rem; }
+.modal .btn-row .btn { flex: 1 1 auto; }
 
-.toasts { position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 40; display: grid; gap: 6px; padding: 0 14px; pointer-events: none; }
-.toast {
-  background: var(--bg-raised); border: 1px solid var(--line); border-left: 3px solid var(--accent);
-  border-radius: var(--r); padding: 10px 12px; font-size: .85rem; box-shadow: var(--shadow);
+/* On a phone every dialog is a sheet from the bottom, inside a thumb's reach, and can be
+   dragged down to dismiss. */
+@media (max-width: 640px) {
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal {
+    width: 100%; max-height: 88dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0; border-bottom: 0;
+    padding: 26px 18px calc(18px + env(safe-area-inset-bottom));
+    animation: sheet-up .24s var(--ease);
+  }
+  .modal::before {
+    content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px;
+    border-radius: 2px; background: var(--line-strong);
+  }
+  .modal.is-dragging { transition: none; animation: none; }
 }
+
+/* overflow (⋯) menu: a list of actions, the destructive ones last and in rust */
+.menu-list { list-style: none; margin: 0; padding: 0; }
+.menu-list li + li { border-top: 1px solid var(--line-soft); }
+.menu-list button {
+  display: flex; align-items: center; width: 100%; min-height: 52px; padding: 0 6px;
+  background: none; border: 0; color: var(--ink); text-align: left; cursor: pointer;
+  font: 600 1.05rem/1.2 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+}
+.menu-list button:hover { background: var(--bg-hover); }
+.menu-list button.is-danger { color: var(--danger); }
+.more-btn { flex: 0 0 auto; }
+.titled { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.titled > h1, .titled > h3, .titled > strong { margin: 0; }
+
+/* ----------------------------------------------------------------- toasts */
+.toasts {
+  position: fixed; left: 0; right: 0;
+  bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom)); z-index: 60;
+  display: grid; justify-items: center; gap: 6px; padding: 0 14px; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 12px;
+  width: min(520px, 100%);
+  background: var(--bg-raised); color: var(--ink);
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: var(--r); padding: 10px 12px; font-size: .92rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+}
+.toast > span { flex: 1; }
 .toast.is-danger { border-left-color: var(--danger); }
+.toast-action {
+  pointer-events: auto; flex: 0 0 auto; min-height: 36px; padding: 0 12px;
+  background: none; border: 1px solid var(--accent); border-radius: var(--r); color: var(--accent);
+  font: 600 .9rem/1 var(--font-head); letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+}
+
+/* ----------------------------------------------------------------- motion */
+@keyframes fade { from { opacity: 0; } }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes flash { 0% { background: var(--danger-soft); } 100% { background: transparent; } }
+@keyframes flash-neuro { 0% { background: var(--neuro-glow); } 100% { background: transparent; } }
+@keyframes enter { from { opacity: 0; } }   /* opacity only: a transform here would make the fixed action bar position against the screen while it runs */
+@keyframes pulse { 0%, 100% { box-shadow: inset 0 0 0 0 transparent; } 50% { box-shadow: inset 0 0 0 2px var(--danger); } }
 
 @media (prefers-reduced-motion: no-preference) {
-  .toast { animation: rise .18s ease-out; }
-  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .toast { animation: rise .2s var(--ease); }
+  .screen.is-entering { animation: enter .2s var(--ease); }
+  /* Health or Hope at zero, or Bliss caught up with Hope: the bar itself says so. */
+  .vitals.is-alarm { animation: pulse 1.6s ease-in-out infinite; }
 }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ------------------------------------------------------------ wide screens */
+/* A tablet gets two panes: the sheet's cards flow into two columns, the GM screen keeps
+   the party in a column of its own, and the dice tray docks beside the screen. */
+@media (min-width: 768px) {
+  .screen { max-width: 980px; padding-left: 24px; padding-right: 24px; }
+  .sheet-cols { columns: 2; column-gap: var(--s4); }
+  .sheet-cols > * { break-inside: avoid; }
+  .gm-layout { display: grid; grid-template-columns: minmax(260px, 320px) 1fr; gap: var(--s4); align-items: start; }
+  .gm-layout > .gm-side { position: sticky; top: 80px; }
+  .vital { flex-basis: 90px; }
+  .pip { width: 10px; }
+  .bliss-bar { max-width: 96px; }
+  .actionbar-inner { max-width: 932px; }
+}
+@media (min-width: 1100px) {
+  body.tray-open { overflow: auto; padding-right: 420px; }
+  body.tray-open .actionbar { right: 420px; }
+  .tray {
+    left: auto; right: 0; top: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    width: 420px; max-height: none; margin: 0;
+    border-radius: 0; border: 0; border-left: 1px solid var(--line);
+    box-shadow: -16px 0 48px rgba(0, 0, 0, .35);
+    animation: none;
+  }
+  .tray-scrim { display: none; }
+}
+.explain:not(.is-lead) > summary .icon { display: none; }
+.gauge-caster .pip.on { background: var(--neuro); box-shadow: 0 0 6px var(--neuro-glow); }
+.gauge-gear .pip.on { background: var(--accent); }
+
+/* combat tracker: whoever is up glows amber, the other side carries a rust edge, the
+   spent collapse to a dim line */
+.card.is-up { border-color: var(--accent); box-shadow: var(--hi), 0 0 0 1px var(--accent), 0 8px 28px -12px var(--accent); }
+.card.is-enemy { border-left: 3px solid var(--danger); }
+.card.is-spent { opacity: .6; padding: 8px var(--s3); box-shadow: none; }
+
+/* Screen-level tools (a ⋯ menu) sit on the title line, left of the ⓘ. */
+.screen-tools { position: absolute; top: calc(var(--s4) + 2px); right: 56px; z-index: 2; display: flex; }
+.screen:has(.screen-tools) > .subnav { margin-right: 96px; }
+a.chip { display: inline-flex; align-items: center; min-height: var(--tap); text-decoration: none; color: var(--ink-dim); }
+[id^="sec-"] { scroll-margin-top: calc(var(--topbar-h, 0px) + 64px); }
+.screen .titled:first-child { padding-right: 44px; }
+.screen .titled > h1 { padding-right: 0 !important; min-width: 0; overflow-wrap: anywhere; }
+.card-row .pips { justify-content: flex-start; }
+.card-row .bliss-bar { margin: 0; }
+.tray { max-height: calc(100dvh - var(--nav-h) - var(--topbar-h, 72px) - env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .jumpbar { margin: 0 -24px var(--s3); padding: 6px 24px; } }

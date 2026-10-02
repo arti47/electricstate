@@ -1,14 +1,32 @@
 // Themed modal, toast, confirm and prompt. No native alert/confirm/prompt anywhere.
 import { $, el } from "./core.js";
 import { Settings } from "./settings.js";
+import { icon } from "./icons.js";
 
 let openModals = 0;
 
-export function showToast(message, kind = "") {
-  const t = el("div", { class: "toast" + (kind ? ` is-${kind}` : ""), role: "status" }, message);
+export function showToast(message, kind = "", action = null) {
+  const t = el("div", { class: "toast" + (kind ? ` is-${kind}` : ""), role: "status" }, el("span", {}, message));
+  // A destructive action that can be undone says so where it happened, instead of asking
+  // "are you sure?" first. The toast stays longer when there is something to press.
+  if (action) {
+    t.append(el("button", {
+      class: "toast-action",
+      onclick: () => { t.remove(); action.run(); }
+    }, action.label));
+  }
   $("#toasts").append(t);
-  setTimeout(() => t.remove(), 4000);
+  setTimeout(() => t.remove(), action ? 7000 : 4000);
   return t;
+}
+
+/**
+ * A short vibration where the device has one. A tick for a stepper, a roll's rattle, a
+ * heavy buzz for something lost. Silent everywhere else, and never an error.
+ */
+const BUZZ = { tick: 8, roll: [12, 40, 12, 40, 18], loss: [60, 50, 90], success: [18, 30, 30] };
+export function haptic(kind = "tick") {
+  try { navigator.vibrate?.(BUZZ[kind] ?? kind); } catch { /* unsupported */ }
 }
 
 export function modal({ title, body, actions = [], dismissible = true }) {
@@ -44,6 +62,7 @@ export function modal({ title, body, actions = [], dismissible = true }) {
     }
 
     backdrop.append(box);
+    if (dismissible) dragToDismiss(box, () => close(undefined));
     backdrop.addEventListener("mousedown", (e) => { if (dismissible && e.target === backdrop) close(undefined); });
     box.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && dismissible) { e.stopPropagation(); close(undefined); }
@@ -59,6 +78,32 @@ export function modal({ title, body, actions = [], dismissible = true }) {
     openModals++;
     document.body.style.overflow = "hidden";
     (box.querySelector("input, button") || box).focus();
+  });
+}
+
+/**
+ * On a phone a dialog is a sheet from the bottom; pull it down from its top edge to let
+ * it go. Only a drag that starts while the sheet is scrolled to the top counts, so
+ * scrolling a long list inside it never closes it by accident.
+ */
+function dragToDismiss(box, done) {
+  let startY = null, dy = 0;
+  box.addEventListener("touchstart", (e) => {
+    if (box.scrollTop > 0 || e.touches.length !== 1) return;
+    if (e.target.closest("input, select, textarea")) return;
+    startY = e.touches[0].clientY; dy = 0;
+  }, { passive: true });
+  box.addEventListener("touchmove", (e) => {
+    if (startY == null) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    if (dy > 4) { box.classList.add("is-dragging"); box.style.transform = `translateY(${dy}px)`; }
+  }, { passive: true });
+  box.addEventListener("touchend", () => {
+    if (startY == null) return;
+    box.classList.remove("is-dragging");
+    box.style.removeProperty("transform");
+    startY = null;
+    if (dy > 90) done();
   });
 }
 
@@ -88,9 +133,67 @@ export function releaseScrollLock() {
  * find out what a surface is for without leaving it.
  */
 export function explain(text, label = "What this does") {
-  return el("details", { class: "explain" },
-    el("summary", {}, label),
-    typeof text === "string" ? el("p", {}, text) : text);
+  const box = el("details", { class: "explain" });
+  const shut = () => { box.open = false; box.classList.remove("is-intro"); };
+  box.append(
+    el("summary", { "aria-label": label, title: label },
+      icon("info", { size: 22 }), el("span", { class: "explain-label" }, label)),
+    // Only shown when this is the screen's own note, opened as a sheet: tap outside to close.
+    el("div", { class: "explain-scrim", onclick: shut }),
+    el("div", { class: "explain-body" },
+      el("div", { class: "explain-head" }, label,
+        el("button", { class: "icon-btn explain-close", "aria-label": "Close", onclick: shut }, icon("close"))),
+      typeof text === "string" ? el("p", {}, text) : text));
+  // Closing a first-visit note turns it back into the ⓘ.
+  box.addEventListener("toggle", () => { if (!box.open) box.classList.remove("is-intro"); });
+  return box;
+}
+
+/**
+ * A ⋯ button that opens a short list of actions as a sheet. Destructive actions live
+ * here instead of as full-width red blocks in the middle of a screen. Each item is
+ * `{ label, run, danger }`; `run` is called after the sheet has closed.
+ */
+export function moreMenu(items, label = "More actions") {
+  return el("button", {
+    class: "icon-btn more-btn", "aria-label": label, title: label,
+    onclick: async () => {
+      const list = el("ul", { class: "menu-list" });
+      items.filter(Boolean).forEach((item, i) => list.append(el("li", {},
+        el("button", { class: item.danger ? "is-danger" : "", onclick: () => dismissModal(i) }, item.label))));
+      const picked = await modal({ title: label, body: list });
+      if (typeof picked === "number") await items.filter(Boolean)[picked].run();
+    }
+  }, icon("more", { size: 22 }));
+}
+
+// ------------------------------------------------------------------- dice
+const PIPS = { 1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+
+/**
+ * One die face. `gear` draws it as a gear die, `rolling` tumbles it in (index staggers
+ * the tumble), `kept` marks a die a push left on the table. Anything that is not 1–6 is
+ * some other die (D66, D100) and renders as a plain number chip.
+ */
+export function dieFace(value, { gear = false, rolling = false, index = 0, kept = false, mini = false } = {}) {
+  if (!PIPS[value]) return el("span", { class: "die-num" }, String(value));
+  const cls = ["die", gear && "is-gear", value === 6 && "is-six", value === 1 && "is-one",
+    rolling && "is-rolling", kept && "is-kept", mini && "is-mini"].filter(Boolean).join(" ");
+  const node = el("span", { class: cls, role: "img",
+    "aria-label": `${gear ? "gear " : ""}${value}${value === 6 ? ", success" : ""}`, style: `--i:${index}` });
+  for (let i = 0; i < 9; i++) node.append(el("i", { class: PIPS[value].includes(i) ? "on" : "" }));
+  return node;
+}
+
+/** A row of dice: base dice, a divider, gear dice. */
+export function diceRow({ base = [], gear = [] }, { rolling = false, kept = null, mini = false } = {}) {
+  const row = el("div", { class: "dice" + (mini ? " is-mini" : "") });
+  let i = 0;
+  const keptBase = kept?.base || [], keptGear = kept?.gear || [];
+  base.forEach((d, k) => row.append(dieFace(d, { rolling: rolling && !keptBase[k], index: i++, kept: keptBase[k], mini })));
+  if (gear.length && base.length) row.append(el("span", { class: "dice-sep", "aria-hidden": "true" }));
+  gear.forEach((d, k) => row.append(dieFace(d, { gear: true, rolling: rolling && !keptGear[k], index: i++, kept: keptGear[k], mini })));
+  return row;
 }
 
 /**

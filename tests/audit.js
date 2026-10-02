@@ -33,6 +33,8 @@ const snapshot = (page) => page.evaluate(() => ({
   text: document.getElementById("screen").textContent.slice(0, 4000),
   hash: location.hash,
   modal: !!document.querySelector(".modal-backdrop"),
+  // The dice tray opens over the screen rather than in it.
+  tray: !document.getElementById("tray")?.hidden,
   toast: document.querySelectorAll(".toast").length,
   store: localStorage.getItem("electricState.v1") || "",
   settings: localStorage.getItem("electricState.v1.settings") || ""
@@ -67,7 +69,7 @@ for (const route of ROUTES) {
     // Poll rather than trusting one fixed wait: a handler that opens a modal can lose a
     // race with a slow machine and read as a no-op that reproduces nowhere.
     const differs = (a, b) => a.screen !== b.screen || a.text !== b.text || a.hash !== b.hash ||
-      b.modal || b.toast > a.toast || a.store !== b.store || a.settings !== b.settings;
+      b.modal || b.tray !== a.tray || b.toast > a.toast || a.store !== b.store || a.settings !== b.settings;
     let after = await snapshot(page);
     for (let waited = 0; waited < 1500 && !differs(before, after); waited += 150) {
       await page.waitForTimeout(150);
@@ -85,7 +87,7 @@ for (const route of ROUTES) {
     }
 
     // close any modal so the next iteration starts clean
-    if (after.modal) await page.keyboard.press("Escape").catch(() => {});
+    if (after.modal || after.tray) await page.keyboard.press("Escape").catch(() => {});
   }
 }
 

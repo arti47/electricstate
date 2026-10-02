@@ -32,15 +32,15 @@ function build(rerender) {
 
   // A GM runs Threats through the tracker and calls for rolls constantly; both were
   // three taps away through another tab.
-  wrap.append(el("div", { class: "btn-row", style: "margin-bottom:var(--gap)" },
-    el("a", { class: "btn", href: "#/combat" }, "Combat"),
-    el("a", { class: "btn", href: "#/dice" }, "Dice"),
-    el("a", { class: "btn", href: "#/time" }, "Time")));
+  wrap.append(el("div", { class: "chip-row" },
+    el("a", { class: "chip", href: "#/combat" }, "Combat"),
+    el("a", { class: "chip", href: "#/dice" }, "Dice"),
+    el("a", { class: "chip", href: "#/time" }, "Time")));
 
-  wrap.append(partyCard());
-  wrap.append(stopBuilder(rerender));
-  wrap.append(threatCard());
-  wrap.append(tablesCard());
+  // Two panes on a tablet: the party stays in view while the work happens beside it.
+  wrap.append(el("div", { class: "gm-layout" },
+    el("div", { class: "gm-side" }, partyCard()),
+    el("div", {}, stopBuilder(rerender), threatCard(), tablesCard())));
   return wrap;
 }
 
