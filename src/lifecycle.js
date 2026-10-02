@@ -2,11 +2,12 @@
 // The app owns the boundaries: each one fires a bundle, shows what it did, and can be undone once.
 import { el, d6, uid, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
-         ARCHETYPES, TALENTS, TENSION } from "../data.js";
+         ARCHETYPES, TALENTS, TENSION, FUEL } from "../data.js";
 import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent,
          getSessionLog, clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
+import { shiftDial, fuelDial } from "./graphics.js";
 import { subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
@@ -243,14 +244,19 @@ function build(rerender) {
   wrap.append(el("p", { class: "faint" },
     TIME_UNITS.map((u) => `${u.label} ${u.duration}`).join(" · ") + ` · ${SHIFTS_PER_DAY} Shifts a day`));
 
-  wrap.append(el("div", { class: "card" },
-    el("div", { class: "card-row" },
-      el("strong", {}, j.shift || SHIFT_NAMES[0]),
-      el("span", { class: "faint" }, `Day ${j.day || 1}`)),
-    j.vehicle ? el("div", { class: "faint" }, `Fuel ${j.fuel ?? 0} gallons`) : null));
+  // The clock as a clock: four Shifts round a dial, sun or moon at the middle, and the
+  // fuel gauge beside it when there is a tank to read.
+  wrap.append(el("div", { class: "card dial-row" },
+    shiftDial(SHIFT_NAMES, j.shift || SHIFT_NAMES[0], j.day || 1),
+    el("div", {},
+      el("div", { class: "card-row" },
+        el("strong", { class: "clock-shift" }, j.shift || SHIFT_NAMES[0]),
+        el("span", { class: "faint" }, `Day ${j.day || 1}`)),
+      j.vehicle ? el("div", { class: "card-row" },
+        el("span", { class: "faint" }, `Fuel ${j.fuel ?? 0} gallons`), fuelDial(j.fuel ?? 0, FUEL.tankGallons)) : null)));
 
   const opts = { resting: true, slept: false, fed: true, travelled: false, nurse: false, neurocastToday: false };
-  const optionRow = (label, key, blurb) => el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;padding:6px 0" },
+  const optionRow = (label, key, blurb) => el("label", { class: "card-row", style: "padding:6px 0" },
     el("span", {}, el("strong", {}, label), blurb ? el("div", { class: "faint" }, blurb) : null),
     el("input", {
       type: "checkbox", checked: opts[key],

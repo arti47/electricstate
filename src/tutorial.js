@@ -14,7 +14,7 @@ const faint = (text) => el("p", { class: "faint" }, text);
 const go = (href, label) => el("a", { class: "btn", href }, label);
 
 export function tutorialScreen() {
-  const host = el("div");
+  const host = el("div", { class: "manual" });
   const rerender = () => host.replaceChildren(build(rerender));
   host.append(build(rerender));
   return host;

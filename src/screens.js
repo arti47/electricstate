@@ -10,7 +10,15 @@ import { searchLibrary, searchGlossary } from "./rules.js";
 import { whatNowCard } from "./play.js";
 import { resetRoller } from "./roller.js";
 import { resetNeuro } from "./neurocasting.js";
-import { resetWizard } from "./wizard.js";
+import { resetWizard, routeCard } from "./wizard.js";
+import { archetypeGlyph } from "./graphics.js";
+import { icon } from "./icons.js";
+
+// A mark for each rules subject, so a long accordion has something to find by eye.
+const GROUP_ICON = { "Words this game uses": "book", "Rolling dice": "dice", "Health, Hope and Bliss": "heart",
+  Combat: "fight", Hazards: "hazard", Neurocasting: "helmet", Vehicles: "car", Gear: "pack", Tension: "link",
+  Time: "clock", Advancement: "star", "The Journey": "road", "Everything else": "info" };
+const groupMark = (title) => el("span", { class: "group-mark" }, icon(GROUP_ICON[title] || "info", { size: 20 }));
 import { showToast, confirmModal, promptModal, explain, moreMenu, diceRow } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
 
@@ -43,14 +51,19 @@ export function homeScreen() {
   } else {
     const list = el("ul", { class: "list" });
     for (const c of chars) {
-      list.append(el("li", {}, el("a", { href: `#/sheet/${c.id}` },
+      list.append(el("li", {}, el("a", { href: `#/sheet/${c.id}`, class: "roster-row" },
+        el("span", { class: "glyph-tile" }, archetypeGlyph(c.archetype)),
+        el("div", { class: "roster-body" },
         el("div", { class: "card-row" },
           el("strong", {}, c.name || "Unnamed"),
           // Named, not a bare "4/3": which number is Health and which is Hope.
           el("span", { class: "faint mono" }, `Health ${c.state?.health ?? "–"} · Hope ${c.state?.hope ?? "–"}`)),
-        el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—"))));
+        el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—")))));
     }
     wrap.append(el("div", { class: "card" }, list));
+    // Where the group has got to on the road, once there is a road.
+    const j = getJourney();
+    if (j?.destination || j?.start) wrap.append(el("a", { class: "card route-link", href: "#/journey", "aria-label": "The Journey" }, routeCard(j)));
     add(wrap, nextStep(chars));
     // Journey, Time and Tension are one tap away in the section nav above.
     wrap.append(el("div", { class: "btn-row" },
@@ -92,7 +105,7 @@ export function homeScreen() {
 const nextStep = () => whatNowCard();
 
 export function rulesScreen() {
-  const wrap = el("div");
+  const wrap = el("div", { class: "manual" });
   wrap.append(el("h1", {}, "Rules"));
   wrap.append(explain("Every rule the app automates, in the app's own words, grouped by subject — and above the groups, one plain sentence for every word this game uses. Panels stay closed until you open one. Searching opens whatever matches, so you can type \"push\" or \"tilt\" instead of hunting."));
 
@@ -160,7 +173,7 @@ export function rulesScreen() {
 
 function glossaryGroup(entries, searching) {
   const group = el("details", { class: "rule-group", open: searching },
-    el("summary", {}, "Words this game uses", el("span", { class: "count" }, `${entries.length}`)));
+    el("summary", {}, groupMark("Words this game uses"), "Words this game uses", el("span", { class: "count" }, `${entries.length}`)));
   const list = el("div", { style: "padding:0 12px 10px" });
   for (const g of entries) {
     list.append(el("div", { class: "def" },
@@ -179,7 +192,7 @@ function glossaryGroup(entries, searching) {
 
 function ruleGroup(title, entries, searching, focus) {
   const group = el("details", { class: "rule-group", open: searching || entries.some((e) => e.id === focus) },
-    el("summary", {}, title, el("span", { class: "count" }, `${entries.length}`)));
+    el("summary", {}, groupMark(title), title, el("span", { class: "count" }, `${entries.length}`)));
   for (const entry of entries) {
     group.append(el("details", { class: "rule-entry", id: `rule-${entry.id}`, open: searching },
       el("summary", {}, entry.title),

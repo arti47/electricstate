@@ -13,7 +13,17 @@ const PATHS = {
   more: '<circle cx="5.5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   fight: '<path d="M5 19L17 7M17 7V4h3v3h-3"/><path d="M19 19L7 7M7 7V4H4v3h3"/>',
-  chevron: '<path d="M9 6l6 6-6 6"/>'
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  // rules subjects
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
+  hazard: '<path d="M12 4 21 19H3Z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".8" fill="currentColor"/>',
+  helmet: '<path d="M5 15a7 7 0 0 1 14 0v2H5Z"/><path d="M6.5 13h11"/><path d="M12 17v3"/>',
+  car: '<path d="M4 15l1.6-4.4A2 2 0 0 1 7.5 9h9a2 2 0 0 1 1.9 1.6L20 15v3H4Z"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/>',
+  pack: '<path d="M7 8a5 5 0 0 1 10 0v11H7Z"/><path d="M9 13h6M10 5V3h4v2"/>',
+  link: '<path d="M5 8h10l-3-3M19 16H9l3 3"/>',
+  clock: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',
+  star: '<path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6Z"/>',
+  road: '<path d="M9 4 5 20M15 4l4 16M12 6v2M12 11v2M12 16v2"/>'
 };
 
 /** An inline SVG icon. Decorative by default; pass a label when it is the only content. */

@@ -14,6 +14,8 @@ import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attach
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
 import { showToast, modal, explain, actionBar, dismissModal } from "./ui.js";
 import { subj, obj, poss, Subj, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
+import { playingCard, deckStack } from "./graphics.js";
+import { sound } from "./sound.js";
 
 const SUIT_GLYPH = { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" };
 
@@ -241,6 +243,14 @@ function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "Solo"));
   wrap.append(explain("Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing."));
 
+  // The deck on the table: how much is left, and the last card turned over with what it
+  // said. Running the deck down is the pacing, so it leads the screen.
+  const last = (s.history || [])[0];
+  wrap.append(el("div", { class: "card deck-panel" },
+    deckStack(s.deck.length),
+    el("div", { class: "deck-count" }, el("span", { class: "mono" }, String(s.deck.length)), el("small", {}, "cards left")),
+    last ? el("div", { class: "deck-last" }, playingCard(last, { flip: false }), el("span", { class: "faint" }, last.note)) : null));
+
   // Someone who has never played solo does not need more tables; they need to be told what
   // the loop is. It stays until the first card is drawn, then never appears again.
   if (!(s.events || []).length) {
@@ -439,7 +449,7 @@ function build(rerender) {
         logEvent("Conversation", `${subject} — ${read.label}`, card); rerender();
         const go = await modal({
           title: "Conversation",
-          body: el("div", {}, el("p", {}, `Subject: ${subject}`),
+          body: el("div", {}, el("div", { class: "card-reveal" }, playingCard(card)), el("p", {}, `Subject: ${subject}`),
             el("p", { class: "faint" }, `How it goes: ${read.label}`),
             listCharacters().length > 1
               ? el("p", { class: "faint" }, read.good
@@ -558,6 +568,7 @@ async function fireCountdown(stop, rerender) {
 }
 
 async function encounter(rerender) {
+  sound("card");
   const { card, deck } = drawFrom(state().deck);
   if (!card) { showToast("The deck is spent — reshuffle."); return; }
   const text = MINOR_ENCOUNTERS[card.rank];
@@ -566,12 +577,13 @@ async function encounter(rerender) {
   rerender();
   await modal({
     title: `${card.rank}${SUIT_GLYPH[card.suit]} — encounter`,
-    body: el("div", {}, el("p", {}, text), el("p", { class: "faint" }, "Unlike a Stop, you can drive past this one.")),
+    body: el("div", {}, el("div", { class: "card-reveal" }, playingCard(card)), el("p", {}, text), el("p", { class: "faint" }, "Unlike a Stop, you can drive past this one.")),
     actions: [{ label: "Good", value: true, class: "btn-primary" }]
   });
 }
 
 async function draw(rerender) {
+  sound("card");
   const s = state();
   const { card, deck, exhausted } = drawFrom(s.deck);
   if (!card) { showToast("The deck is spent — reshuffle."); return; }
@@ -596,6 +608,7 @@ async function draw(rerender) {
   await modal({
     title: `${card.rank}${SUIT_GLYPH[card.suit]}`,
     body: el("div", {},
+      el("div", { class: "card-reveal" }, playingCard(card)),
       el("p", {}, note),
       extra ? el("p", { class: "faint" }, extra) : null,
       !event ? el("p", { class: "faint" }, "No event — read it as a Tilt if you need one.") : null,
@@ -606,6 +619,7 @@ async function draw(rerender) {
 }
 
 async function tilt(rerender) {
+  sound("card");
   const s = state();
   const { card, deck } = drawFrom(s.deck);
   if (!card) { showToast("The deck is spent — reshuffle."); return; }
@@ -614,13 +628,14 @@ async function tilt(rerender) {
   logEvent("Tilt", read.label, card);
   await modal({
     title: `Tilt — ${card.rank}${SUIT_GLYPH[card.suit]}`,
-    body: el("p", {}, read.label),
+    body: el("div", {}, el("div", { class: "card-reveal" }, playingCard(card)), el("p", {}, read.label)),
     actions: [{ label: "Good", value: true, class: "btn-primary" }]
   });
   rerender();
 }
 
 async function npc(rerender) {
+  sound("card");
   let s = state();
   const cards = [];
   let deck = s.deck;
@@ -637,6 +652,7 @@ async function npc(rerender) {
   await modal({
     title: person.name,
     body: el("div", {},
+      el("div", { class: "card-reveal card-fan" }, ...cards.map((c) => playingCard(c, { flip: false }))),
       el("p", { class: "faint" }, genderLabel(person)),
       el("p", {}, el("strong", {}, `${person.personality}, currently ${person.emotion.toLowerCase()}`)),
       el("p", { class: "faint" }, `Wants: ${person.motive.toLowerCase()} · Method: ${person.method.toLowerCase()}`),

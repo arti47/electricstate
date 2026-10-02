@@ -9,6 +9,7 @@ import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
 import { showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic } from "./ui.js";
 import { undoLast } from "./store.js";
+import { helmetGraphic, archetypeGlyph, ringDial } from "./graphics.js";
 import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
 // ---------------------------------------------------------------- vitals header
@@ -194,7 +195,10 @@ function build(ch, rerender) {
   const arch = ARCHETYPES.find((a) => a.id === ch.archetype);
   const patch = (fn) => { const next = structuredClone(ch); fn(next); saveCharacter(next); rerender(); };
 
-  const wrap = el("div", {},
+  // The hero band: who this is, at a glance. The archetype's mark sits large behind the
+  // name, the favourite song is a cassette label, the three description words are stamped.
+  const hero = el("div", { class: "hero" },
+    el("span", { class: "hero-mark" }, archetypeGlyph(ch.archetype, 132)),
     // No Back button: the tab bar and the system's own back gesture already do that.
     // Deleting lives behind ⋯, and is undoable from the toast rather than confirmed first.
     el("div", { class: "titled" },
@@ -207,7 +211,7 @@ function build(ch, rerender) {
           showToast(`${name} deleted.`, "danger", { label: "Undo", run: () => { undoLast(); location.hash = `#/sheet/${ch.id}`; } });
         }
       }], "Traveler actions")),
-    el("p", { class: "faint" }, [arch?.name, ch.song].filter(Boolean).join(" · ")),
+    arch?.name ? el("p", { class: "hero-arch" }, arch.name) : null,
     // Its own row. Sharing a line with the archetype and a song title meant the switch
     // sat somewhere different on every sheet, and dropped to a second line on the long ones.
     el("div", { class: "identity" },
@@ -218,8 +222,15 @@ function build(ch, rerender) {
           onclick: () => patch((c) => { c.gender = g.id; })
         }, g.label))),
       el("span", { class: "identity-pronouns" }, `${subj(ch)} · ${obj(ch)} · ${poss(ch)}`)),
-    explain("Everything about this Traveler, and everything that happens. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply dice penalties to rolls automatically, and gear degrades as you push rolls with it."),
-    ch.descriptorWords?.length ? el("p", { class: "faint" }, ch.descriptorWords.join(" · ")) : null);
+    ch.song ? el("div", { class: "cassette" },
+      el("span", { class: "cassette-reels", "aria-hidden": "true" }, el("i"), el("i")),
+      el("span", { class: "cassette-label" }, ch.song)) : null,
+    ch.descriptorWords?.length
+      ? el("div", { class: "stamps" }, ...ch.descriptorWords.map((w) => el("span", { class: "stamp" }, w)))
+      : null);
+
+  const wrap = el("div", {}, hero,
+    explain("Everything about this Traveler, and everything that happens. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply dice penalties to rolls automatically, and gear degrades as you push rolls with it."));
 
   // --- vitals steppers
   wrap.append(el("div", { class: "card" },
@@ -443,9 +454,12 @@ function conditionsCard(ch, patch) {
   const card = el("div", { class: "card", id: "sec-conditions" }, el("h3", {}, "Injuries & trauma"));
   if (!ch.conditions?.length) card.append(el("p", { class: "faint" }, "None. It won't last."));
   for (const cond of ch.conditions || []) {
+    // A healing clock as a ring of days still to go; traumas and the untimed get none.
+    const clock = cond.heal ? ringDial(cond.heal, Math.max(cond.heal, cond.healTotal || cond.heal),
+      { tone: "danger", size: 40, center: String(cond.heal), label: `${cond.heal} days to heal` }) : null;
     card.append(el("div", { style: "padding:8px 0; border-top:1px solid var(--line-soft)" },
       el("div", { class: "card-row" },
-        el("strong", {}, cond.name),
+        el("span", { class: "dial-row", style: "gap:10px" }, clock, el("strong", {}, cond.name)),
         el("button", {
           class: "btn", onclick: () => patch((c) => { c.conditions = c.conditions.filter((x) => x.id !== cond.id); })
         }, "Heal")),
@@ -483,9 +497,14 @@ function neurocasterCard(ch, patch, rerender) {
   }
   const state = ch.state.caster || { processor: model.processor, network: model.network, graphics: model.graphics };
   const busted = ["processor", "network", "graphics"].some((k) => state[k] <= 0);
-  card.append(el("div", { class: "card-row" },
-    el("strong", {}, model.name),
-    busted ? el("span", { class: "faint", style: "color:var(--danger)" }, "Busted") : null));
+  const hope = ch.state.hope ?? 0, bliss = ch.state.bliss ?? 0;
+  card.append(el("div", { class: "art-row" },
+    helmetGraphic({ ...state, max: model }, {
+      worn: !!ch.state.wearingCaster, near: tracksBliss(ch) && bliss === hope - 1, lost: tracksBliss(ch) && bliss >= hope
+    }),
+    el("div", { class: "card-row" },
+      el("strong", {}, model.name),
+      busted ? el("span", { class: "faint", style: "color:var(--danger)" }, "Busted") : null)));
   for (const key of ["processor", "network", "graphics"]) {
     card.append(stepper(key[0].toUpperCase() + key.slice(1), state[key], model[key],
       (v) => patch((c) => {
@@ -641,9 +660,11 @@ export function injuryScreen(id) {
     const add = (entry, kind) => {
       if (!entry || entry.name === "None") { showToast("No lasting harm this time."); return; }
       const next = structuredClone(ch);
+      const heal = entry.heal ? rollNotationSafe(entry.heal) : null;
       next.conditions = [...(next.conditions || []), {
         id: uid(), kind, name: entry.name, effects: entry.effects || [],
-        heal: entry.heal ? rollNotationSafe(entry.heal) : null, surgery: !!entry.surgery
+        // healTotal is kept so the sheet can draw the clock as days gone of days needed.
+        heal, healTotal: heal, surgery: !!entry.surgery
       }];
       saveCharacter(next);
       showToast(`${entry.name} applied.`);

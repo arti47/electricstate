@@ -23,7 +23,7 @@
   --bg-raised: #f1eee8;
   --bg-sunk: #d8d3c9;
   --bg-hover: #e7e3dc;
-  --card: rgba(243, 240, 234, .94);
+  --card: rgba(243, 240, 234, .985);
   --chrome: rgba(226, 222, 214, .86);
   --ink: #191c20;
   --ink-dim: #41454b;
@@ -73,7 +73,7 @@
     --bg-raised: #1a1e23;
     --bg-sunk: #0c0f12;
     --bg-hover: #222830;
-    --card: rgba(26, 30, 35, .93);
+    --card: rgba(26, 30, 35, .985);
     --chrome: rgba(13, 16, 20, .82);
     --ink: #ebe5d9;
     --ink-dim: #b9b2a6;
@@ -108,7 +108,7 @@
   --bg-raised: #1a1e23;
   --bg-sunk: #0c0f12;
   --bg-hover: #222830;
-  --card: rgba(26, 30, 35, .93);
+  --card: rgba(26, 30, 35, .985);
   --chrome: rgba(13, 16, 20, .82);
   --ink: #ebe5d9;
   --ink-dim: #b9b2a6;
@@ -988,3 +988,442 @@ a.chip { display: inline-flex; align-items: center; min-height: var(--tap); text
 .card-row .bliss-bar { margin: 0; }
 .tray { max-height: calc(100dvh - var(--nav-h) - var(--topbar-h, 72px) - env(safe-area-inset-bottom)); }
 @media (min-width: 768px) { .jumpbar { margin: 0 -24px var(--s3); padding: 6px 24px; } }
+
+/* ================================================================ landscape */
+/* The road, the pylons and the giant on the ridge (src/scene.js). Each Shift has its own
+   sky; the active one fades in over the last. Silhouettes are flat token fills, so the
+   same drawing serves both themes. */
+:root {
+  --sky-morning: linear-gradient(180deg, #c8ccd2 0%, #dcd9d0 55%, #ecdcc2 100%);
+  --sky-day: linear-gradient(180deg, #cfd2d4 0%, #dfddd8 60%, #e6e3dc 100%);
+  --sky-evening: linear-gradient(180deg, #bfc3cc 0%, #d6cfc6 55%, #e8cdb0 100%);
+  --sky-night: linear-gradient(180deg, #9aa1ad 0%, #b3b8c1 60%, #c7c9cd 100%);
+  --sun-morning: rgba(225, 165, 95, .30); --sun-day: rgba(255, 255, 255, .25);
+  --sun-evening: rgba(205, 125, 70, .32); --sun-night: rgba(120, 140, 170, .22);
+  --ls-far: rgba(110, 118, 130, .34); --ls-mid: rgba(64, 70, 82, .42); --ls-ground: rgba(96, 100, 106, .22);
+  --ls-road: rgba(70, 74, 80, .30); --ls-dash: rgba(135, 71, 26, .4); --ls-light: #b8402c;
+  --ls-hulk: rgba(84, 90, 102, .42); --ls-eye: rgba(135, 71, 26, .6); --ls-fog: rgba(255, 255, 255, .35);
+  --ls-star: rgba(255, 255, 255, .7);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sky-morning: linear-gradient(180deg, #141a24 0%, #26303d 55%, #4a4038 100%);
+    --sky-day: linear-gradient(180deg, #1a1f26 0%, #252b33 60%, #31343a 100%);
+    --sky-evening: linear-gradient(180deg, #0b0e13 0%, #131823 50%, #2a1f19 100%);
+    --sky-night: linear-gradient(180deg, #04060a 0%, #090d14 60%, #10141c 100%);
+    --sun-morning: rgba(236, 184, 120, .30); --sun-day: rgba(200, 196, 186, .10);
+    --sun-evening: rgba(217, 140, 70, .30); --sun-night: rgba(90, 130, 170, .14);
+    --ls-far: #1a2029; --ls-mid: #0f1318; --ls-ground: #0a0c10;
+    --ls-road: #13161b; --ls-dash: rgba(217, 150, 84, .35); --ls-light: #ef5d44;
+    --ls-hulk: #151a22; --ls-eye: #d99654; --ls-fog: rgba(160, 170, 185, .07);
+    --ls-star: rgba(235, 229, 217, .8);
+  }
+}
+:root[data-theme="dark"] {
+  --sky-morning: linear-gradient(180deg, #141a24 0%, #26303d 55%, #4a4038 100%);
+  --sky-day: linear-gradient(180deg, #1a1f26 0%, #252b33 60%, #31343a 100%);
+  --sky-evening: linear-gradient(180deg, #0b0e13 0%, #131823 50%, #2a1f19 100%);
+  --sky-night: linear-gradient(180deg, #04060a 0%, #090d14 60%, #10141c 100%);
+  --sun-morning: rgba(236, 184, 120, .30); --sun-day: rgba(200, 196, 186, .10);
+  --sun-evening: rgba(217, 140, 70, .30); --sun-night: rgba(90, 130, 170, .14);
+  --ls-far: #1a2029; --ls-mid: #0f1318; --ls-ground: #0a0c10;
+  --ls-road: #13161b; --ls-dash: rgba(217, 150, 84, .35); --ls-light: #ef5d44;
+  --ls-hulk: #151a22; --ls-eye: #d99654; --ls-fog: rgba(160, 170, 185, .07);
+  --ls-star: rgba(235, 229, 217, .8);
+}
+
+.sky { overflow: hidden; }
+.sky::after { z-index: 3; }   /* grain over everything */
+.sky-shift { position: absolute; inset: 0; opacity: 0; transition: opacity 1.6s ease; }
+.sky-shift[data-s="morning"] { background: var(--sky-morning); }
+.sky-shift[data-s="day"] { background: var(--sky-day); }
+.sky-shift[data-s="evening"] { background: var(--sky-evening); }
+.sky-shift[data-s="night"] { background: var(--sky-night); }
+:root:not([data-shift]) .sky-shift[data-s="evening"],
+:root[data-shift="morning"] .sky-shift[data-s="morning"],
+:root[data-shift="day"] .sky-shift[data-s="day"],
+:root[data-shift="evening"] .sky-shift[data-s="evening"],
+:root[data-shift="night"] .sky-shift[data-s="night"] { opacity: 1; }
+
+/* the glow on the horizon: where the sun is, or the city */
+.sky-sun {
+  position: absolute; left: -20%; right: -20%; bottom: 8vh; height: 46vh;
+  background: radial-gradient(50% 60% at var(--sun-x, 50%) 100%, var(--sun, var(--sun-evening)), transparent 70%);
+  transition: background 1.6s ease;
+}
+:root[data-shift="morning"] { --sun: var(--sun-morning); --sun-x: 30%; }
+:root[data-shift="day"] { --sun: var(--sun-day); --sun-x: 50%; }
+:root[data-shift="evening"] { --sun: var(--sun-evening); --sun-x: 66%; }
+:root[data-shift="night"] { --sun: var(--sun-night); --sun-x: 50%; }
+
+.ls-layer { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: var(--ls-h); will-change: transform; }
+:root { --ls-h: clamp(200px, 30vh, 360px); }
+.ls-stars { height: calc(var(--ls-h) * 1.9); opacity: 0; transition: opacity 1.6s ease; }
+:root[data-shift="night"] .ls-stars { opacity: 1; }
+.ls-stars .ls-moon { fill: var(--ls-star); opacity: .55; }
+.ls-star { fill: var(--ls-star); opacity: .6; }
+
+.ls-far, .ls-hulk path:first-child { fill: var(--ls-far); }
+.ls-hulk path { fill: none; stroke: var(--ls-hulk); stroke-width: 2.4; stroke-linecap: round; }
+.ls-hulk path:first-child { stroke: none; fill: var(--ls-hulk); }
+.ls-eye { fill: var(--ls-eye); }
+.ls-pylon { fill: none; stroke: var(--ls-mid); stroke-width: 1.4; stroke-linejoin: round; }
+.ls-strut { fill: none; stroke: var(--ls-mid); }
+.ls-wire { fill: none; stroke: var(--ls-mid); stroke-width: .5; opacity: .9; }
+.ls-light { fill: var(--ls-light); opacity: 0; }
+:root[data-shift="night"] .ls-light, :root[data-shift="evening"] .ls-light { opacity: .9; }
+.ls-ground { fill: var(--ls-ground); }
+.ls-road { fill: var(--ls-road); }
+.ls-dash { stroke: var(--ls-dash); stroke-width: 1.2; fill: none; }
+.ls-post { stroke: var(--ls-mid); stroke-width: 1; fill: none; }
+.ls-near-obj path { fill: var(--ls-mid); stroke: var(--ls-mid); }
+.ls-smoke { fill: var(--ls-far); opacity: .8; }
+.ls-drone path { stroke: var(--ls-mid); stroke-width: 1.4; fill: none; }
+.ls-drone circle { fill: var(--ls-light); }
+
+.ls-fog {
+  position: absolute; left: -50%; width: 200%; height: 9vh; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--ls-fog) 20%, transparent 40%, var(--ls-fog) 65%, transparent 85%);
+  filter: blur(6px);
+}
+.ls-fog-far { bottom: calc(var(--ls-h) * .26); }
+.ls-fog-near { bottom: calc(var(--ls-h) * .06); height: 6vh; opacity: .8; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ls-fog-far { animation: drift 70s linear infinite; }
+  .ls-fog-near { animation: drift 48s linear infinite reverse; }
+  :root[data-shift="night"] .ls-light { animation: blink 2.4s steps(1) infinite; }
+  .ls-light:nth-of-type(2n) { animation-delay: 1.2s; }
+}
+@keyframes drift { to { transform: translateX(25%); } }
+@keyframes blink { 50% { opacity: .15; } }
+
+/* ------------------------------------------------------- session scene band */
+.scene-band {
+  position: relative; height: 150px; margin: calc(var(--s4) * -1) -16px var(--s4);
+  border-bottom: 1px solid var(--line); overflow: hidden;
+  background: var(--band-sky, var(--sky-evening));
+}
+.scene-band svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.scene-band::after {    /* the glow behind the ridge */
+  content: ""; position: absolute; inset: 30% -10% 0;
+  background: radial-gradient(50% 70% at 60% 100%, var(--band-glow, var(--sun-evening)), transparent 70%);
+}
+.scene-band svg { z-index: 1; }
+.scene-open { --band-sky: var(--sky-morning); --band-glow: var(--sun-morning); }
+.scene-road { --band-sky: var(--sky-day); --band-glow: var(--sun-day); }
+.scene-stop { --band-sky: var(--sky-evening); --band-glow: var(--sun-evening); }
+.scene-crisis { --band-sky: linear-gradient(180deg, #120a0a, #2b1410 60%, #4a1f14); --band-glow: rgba(234, 122, 100, .45); }
+.scene-close { --band-sky: var(--sky-night); --band-glow: var(--sun-night); }
+.scene-band .ls-light { opacity: .9; }
+.scene-crisis .ls-smoke { fill: #2a1a16; }
+@media (prefers-reduced-motion: no-preference) {
+  .scene-crisis .ls-drone { animation: hover 3s ease-in-out infinite; }
+  .scene-crisis::after { animation: flicker 4s steps(1) infinite; }
+}
+@keyframes hover { 50% { transform: translate(6px, -3px); } }
+@keyframes flicker { 0%, 100% { opacity: 1; } 92% { opacity: .6; } 94% { opacity: 1; } 96% { opacity: .7; } }
+
+/* ------------------------------------------------------------------ splash */
+.splash {
+  position: fixed; inset: 0; z-index: 100; pointer-events: none;
+  display: grid; place-items: center; align-content: center; gap: 18px;
+  background: var(--bg); transition: opacity .45s ease;
+}
+.splash.is-out { opacity: 0; }
+.splash svg { fill: none; stroke-linecap: round; }
+.splash-ring { stroke: var(--accent); stroke-width: 5; stroke-dasharray: 151; stroke-dashoffset: 151; animation: draw .55s var(--ease) forwards; filter: drop-shadow(0 0 10px var(--accent)); }
+.splash-ant, .splash-visor { stroke: var(--neuro); stroke-width: 5; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .4s .25s var(--ease) forwards; }
+.splash-horizon { width: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: widen .6s .2s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes widen { to { width: min(320px, 70vw); } }
+
+/* ================================================================ graphics */
+/* dials */
+.dial { display: inline-grid; flex: 0 0 auto; }
+.dial svg { overflow: visible; }
+.dial-seg { fill: none; stroke: var(--line-strong); stroke-width: 6; stroke-linecap: round; opacity: .55; }
+.dial-seg.on { opacity: 1; stroke: var(--accent); filter: drop-shadow(0 0 4px var(--accent-soft)); }
+.dial-seg.past { stroke: var(--ink-faint); opacity: .5; }
+.tone-danger .dial-seg.on { stroke: var(--danger); filter: drop-shadow(0 0 4px var(--danger-soft)); }
+.tone-neuro .dial-seg.on { stroke: var(--neuro); filter: drop-shadow(0 0 5px var(--neuro-glow)); }
+.dial text { font: 600 13px var(--mono); fill: var(--ink); }
+.dial-sun { fill: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
+.dial-moon { fill: var(--ink-dim); }
+.dial-row { display: flex; align-items: center; gap: var(--s4); }
+.dial-row > :last-child { flex: 1; min-width: 0; }
+
+/* tension graph */
+.tgraph { display: block; max-width: 340px; margin: 0 auto var(--s3); }
+.tgraph svg { width: 100%; height: auto; overflow: visible; }
+.t-edge { fill: none; stroke-linecap: round; }
+.t-edge.t-0 { stroke: var(--line-strong); stroke-width: 1.4; stroke-dasharray: 3 5; }
+.t-edge.t-1 { stroke: var(--accent); stroke-width: 2.6; }
+.t-edge.t-2 { stroke: var(--danger); stroke-width: 5; filter: drop-shadow(0 0 5px var(--danger-soft)); }
+.t-head.t-0 path { fill: var(--line-strong); } .t-head.t-1 path { fill: var(--accent); } .t-head.t-2 path { fill: var(--danger); }
+.t-badge circle { fill: var(--bg-raised); stroke: var(--line-strong); }
+.t-badge.t-1 circle { stroke: var(--accent); } .t-badge.t-2 circle { stroke: var(--danger); }
+.t-badge text { font: 600 10px var(--mono); fill: var(--ink); }
+.t-node circle { fill: var(--bg-sunk); stroke: var(--ink-dim); stroke-width: 1.5; }
+.t-node text { font: 700 15px var(--font-head); fill: var(--ink); letter-spacing: .04em; }
+.t-node .t-name { font: 600 11px var(--font-head); fill: var(--ink-dim); text-transform: uppercase; letter-spacing: .1em; }
+.t-hit { fill: none; stroke: transparent; stroke-width: 18; cursor: pointer; }
+.t-hit:hover + .t-hit, .t-hit:focus-visible { stroke: var(--accent-soft); outline: none; }
+
+/* journey route */
+.route { display: block; margin: 4px 0 var(--s2); }
+.route svg { width: 100%; height: auto; }
+.r-road { stroke: var(--line-strong); stroke-width: 6; stroke-linecap: round; }
+.r-dash { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 6; opacity: .7; }
+.r-start { fill: var(--ink-dim); }
+.r-stop { stroke-width: 2; }
+.r-done { fill: var(--accent); stroke: var(--accent); }
+.r-here { fill: var(--bg-raised); stroke: var(--accent); stroke-width: 3; filter: drop-shadow(0 0 6px var(--accent)); }
+.r-todo { fill: var(--bg-raised); stroke: var(--line-strong); }
+.r-flag path { stroke: var(--ink-dim); stroke-width: 1.6; fill: none; }
+.r-flag .r-cloth { fill: var(--danger); stroke: none; }
+.r-car path, .r-car rect { fill: var(--ink); }
+.r-car circle { fill: var(--bg-sunk); stroke: var(--ink); stroke-width: 1.4; }
+.route-ends { display: flex; justify-content: space-between; gap: 12px; font-size: .82rem; color: var(--ink-faint); }
+.route-ends > span { max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-ends > span:last-child { text-align: right; }
+
+/* fuel */
+.fuel { display: inline-block; flex: 0 0 auto; }
+.f-arc { fill: none; stroke: var(--line-strong); stroke-width: 4; }
+.f-red { fill: none; stroke: var(--danger); stroke-width: 4; }
+.f-tick { stroke: var(--ink-faint); stroke-width: 1.2; }
+.fuel text { font: 600 9px var(--font-head); fill: var(--ink-faint); }
+.f-needle { stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--accent)); }
+.fuel.is-low .f-needle { stroke: var(--danger); }
+.f-hub { fill: var(--ink); }
+
+/* playing cards and the deck */
+.pcard { display: inline-block; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .45)); }
+.pc-paper { fill: var(--bone); stroke: rgba(0, 0, 0, .25); }
+.pcard text { font: 700 11px var(--font-head); fill: var(--bone-ink); }
+.pcard path, .pcard rect:not(.pc-paper) { fill: var(--bone-ink); }
+.pcard.is-red text, .pcard.is-red path, .pcard.is-red rect:not(.pc-paper) { fill: #a12f1c; }
+.pc-face > path, .pc-face > rect { fill: var(--accent-hi) !important; }
+.card-reveal { display: flex; justify-content: center; margin: 4px 0 14px; perspective: 600px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pcard.is-flipping { animation: card-flip .55s var(--ease) both; transform-origin: 50% 50%; }
+}
+@keyframes card-flip { 0% { transform: rotateY(90deg) translateY(-10px); opacity: .2; } 100% { transform: none; opacity: 1; } }
+.deckstack { display: inline-block; flex: 0 0 auto; }
+.ds-card { fill: var(--accent); stroke: var(--bg-sunk); stroke-width: 1.2; }
+.ds-mark { fill: none; stroke: var(--on-accent); stroke-width: 2; opacity: .7; }
+.ds-empty { fill: none; stroke: var(--line-strong); stroke-dasharray: 4 4; }
+
+/* archetype glyphs */
+.glyph { display: inline-flex; color: var(--accent); flex: 0 0 auto; }
+.glyph-tile {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto;
+  border-radius: 10px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* neurocaster helmet */
+.helmet { display: inline-block; flex: 0 0 auto; }
+.h-shell { fill: var(--bg-sunk); stroke: var(--ink-dim); stroke-width: 1.4; }
+.h-visor { fill: color-mix(in srgb, var(--neuro) 30%, transparent); stroke: var(--neuro); stroke-width: 1.2; }
+.helmet.is-worn .h-visor { fill: var(--neuro); filter: drop-shadow(0 0 6px var(--neuro-glow)); }
+.h-cable { fill: none; stroke: var(--ink-faint); stroke-width: 2; }
+.h-led { fill: var(--line-strong); }
+.helmet.is-worn .h-led { fill: var(--neuro); }
+.h-track { fill: var(--line-strong); opacity: .5; }
+.h-bar { fill: var(--neuro); }
+.helmet.is-lost .h-visor, .helmet.is-lost .h-bar { fill: var(--danger); stroke: var(--danger); }
+@media (prefers-reduced-motion: no-preference) {
+  .helmet.is-near svg { animation: glitch 2.8s steps(1) infinite; }
+}
+@keyframes glitch {
+  0%, 100% { transform: none; filter: none; }
+  90% { transform: translateX(2px); filter: hue-rotate(40deg); }
+  92% { transform: translateX(-2px) skewX(6deg); }
+  94% { transform: none; filter: drop-shadow(-2px 0 0 var(--danger)) drop-shadow(2px 0 0 var(--neuro)); }
+}
+
+/* vehicles */
+.vehicle { display: inline-block; flex: 0 0 auto; }
+.v-body path, .v-body rect { fill: var(--ink-dim); }
+.v-body circle { fill: var(--bg-sunk); stroke: var(--ink-dim); stroke-width: 2.5; }
+.v-track { fill: var(--line-strong); opacity: .5; }
+.v-bar { fill: var(--ok); }
+.v-bar.is-low { fill: var(--danger); }
+.art-row { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s3); }
+.art-row > :last-child { flex: 1; min-width: 0; }
+
+/* die icons inside table-roll buttons */
+.die-icon { display: inline-flex; color: currentColor; }
+.btn .die-icon + * { margin-left: 2px; }
+
+/* the roll's moment */
+.seal { display: inline-flex; }
+.seal-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 3 3; }
+.seal-inner { fill: var(--accent); }
+.seal circle:not(.seal-ring):not(.seal-inner) { fill: var(--on-accent); }
+.static { display: block; height: 20px; margin: 2px 0 6px; }
+.static path { fill: none; stroke: var(--ink-faint); stroke-width: 1.2; opacity: .6; }
+@media (prefers-reduced-motion: no-preference) {
+  .seal { animation: stamp .45s .35s cubic-bezier(.3, 1.6, .5, 1) both; }
+  .static path { animation: hiss .3s steps(2) 4; }
+}
+@keyframes stamp { from { transform: scale(2.2) rotate(-20deg); opacity: 0; } }
+@keyframes hiss { 50% { transform: translateY(2px) scaleY(1.5); } }
+.result-head .seal { margin-left: auto; }
+
+/* archetype tiles */
+.arch-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: var(--s3); }
+.arch-grid li + li { border-top: 0; }
+.list button.row.arch-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; height: 100%;
+  padding: 14px; border: 1px solid var(--line); border-radius: var(--r-lg);
+  background: var(--card); box-shadow: var(--hi), var(--shadow);
+}
+.list button.row.arch-tile strong { font: 700 1.15rem/1 var(--font-head); text-transform: uppercase; letter-spacing: .05em; }
+.list button.row.arch-tile.is-chosen { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 10px 26px -12px var(--accent); }
+.list button.row.arch-tile:disabled { opacity: .4; }
+@media (min-width: 768px) { .arch-grid { grid-template-columns: repeat(5, 1fr); } }
+.route-card { margin: -4px 0 var(--s4); padding-bottom: var(--s3); border-bottom: 1px solid var(--line-soft); }
+.art-row .fuel { margin-left: auto; }
+.clock-shift { font: 700 1.6rem/1 var(--font-head); text-transform: uppercase; letter-spacing: .04em; }
+
+/* combat zone map */
+.zonecard { padding: 10px; }
+.zonemap { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.zone {
+  position: relative; flex: 1 0 64px; min-height: 96px;
+  display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 6px;
+  padding: 24px 6px 8px; border-radius: 8px;
+  background: repeating-linear-gradient(180deg, transparent 0 10px, color-mix(in srgb, var(--line) 35%, transparent) 10px 11px), var(--bg-sunk);
+  border: 1px solid var(--line); color: inherit; font: inherit; cursor: default;
+}
+.zone.is-target { cursor: pointer; border: 1px dashed var(--accent); background: var(--accent-soft); }
+.zone-n { position: absolute; top: 5px; left: 0; right: 0; text-align: center; font: 600 .78rem var(--mono); color: var(--ink-faint); }
+.token {
+  min-width: 38px; height: 38px; padding: 0 4px !important; border-radius: 50%; padding: 0; cursor: pointer;
+  display: grid; place-items: center; font: 700 .85rem/1 var(--font-head); letter-spacing: .04em;
+  border: 2px solid; background: var(--bg-raised); color: var(--ink);
+}
+span.token { cursor: default; }
+.token.is-ally { border-color: var(--accent); }
+.token.is-foe { border-color: var(--danger); }
+.token.is-machine { border-color: var(--neuro); border-radius: 8px; }
+.token.is-spent { opacity: .45; }
+.token.is-up { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 14px var(--accent); }
+.token.is-picked { background: var(--accent); color: var(--on-accent); transform: translateY(-2px); }
+
+/* solo deck panel */
+.deck-panel { display: flex; align-items: center; gap: var(--s4); }
+.deck-count { display: flex; flex-direction: column; }
+.deck-count .mono { font: 600 2.2rem/1 var(--mono); }
+.deck-count small { font: 600 .78rem var(--font-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.deck-last { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 55%; }
+.deck-last .pcard svg { width: 46px; height: 65px; }
+.deck-last .faint { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.card-fan { gap: 0; }
+.card-fan .pcard { margin: 0 -14px; }
+.card-fan .pcard svg { width: 62px; height: 88px; }
+.card-fan .pcard:nth-child(1) { transform: rotate(-12deg) translateY(8px); }
+.card-fan .pcard:nth-child(2) { transform: rotate(-6deg) translateY(2px); }
+.card-fan .pcard:nth-child(4) { transform: rotate(6deg) translateY(2px); }
+.card-fan .pcard:nth-child(5) { transform: rotate(12deg) translateY(8px); }
+.card-fan { padding: 0 14px; }
+
+/* home roster */
+.list a.roster-row { display: flex; align-items: center; gap: 12px; }
+.roster-body { flex: 1; min-width: 0; }
+a.route-link { display: block; text-decoration: none; color: inherit; }
+a.route-link .route-card { margin: 0; padding: 0; border: 0; }
+/* empty states: a small scene where the bare emblem was */
+.empty.has-scene::before { content: none; }
+.empty .scene-band { height: 110px; margin: -36px -16px 18px; border-radius: var(--r) var(--r) 0 0; }
+
+/* sheet hero band */
+.hero {
+  position: relative; overflow: hidden;
+  margin: calc(var(--s4) * -1) -16px var(--s3); padding: var(--s4) 16px var(--s4);
+  background:
+    radial-gradient(120% 90% at 100% 0%, var(--accent-soft), transparent 60%),
+    linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-sunk) 60%, transparent));
+  border-bottom: 1px solid var(--line);
+}
+.hero > * { position: relative; }
+.hero .titled { padding-right: 44px; }
+.hero h1 { font-size: 2.4rem; text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
+.hero-mark { position: absolute !important; right: -10px; bottom: -34px; opacity: .09; pointer-events: none; }
+.hero-mark .glyph { color: var(--ink); }
+.hero-arch { margin: 2px 0 12px; font: 600 .95rem/1 var(--font-head); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.hero .identity { margin-bottom: 10px; }
+.cassette {
+  display: inline-flex; align-items: center; gap: 10px; max-width: 100%;
+  padding: 6px 12px 6px 8px; margin-bottom: 10px;
+  border-radius: 6px; background: var(--bone); color: var(--bone-ink);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent) 60%, var(--bone)), 0 4px 10px rgba(0,0,0,.3);
+  transform: rotate(-1deg);
+}
+.cassette-reels { display: inline-flex; gap: 4px; padding: 3px 5px; border-radius: 10px; background: var(--bone-ink); }
+.cassette-reels i { width: 10px; height: 10px; border-radius: 50%; border: 2px dotted var(--bone); }
+@media (prefers-reduced-motion: no-preference) { .cassette-reels i { animation: spin 3s linear infinite; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cassette-label { font: 600 .9rem/1.2 var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stamps { display: flex; flex-wrap: wrap; gap: 6px; }
+.stamp {
+  padding: 3px 8px; border: 1.5px solid var(--danger); border-radius: 3px; color: var(--danger);
+  font: 700 .82rem/1.2 var(--font-head); letter-spacing: .14em; text-transform: uppercase;
+  transform: rotate(-1.5deg); opacity: .9;
+}
+.stamp:nth-child(2) { transform: rotate(1deg); }
+.stamp:nth-child(3) { transform: rotate(-.5deg); }
+@media (min-width: 768px) { .hero { margin-left: -24px; margin-right: -24px; padding-left: 24px; padding-right: 24px; } }
+.subnav-more { background: none; border: 0; cursor: pointer; color: var(--accent); }
+
+/* ============================================================ field manual */
+/* Rules, the tutorial and the session guide are reading, not controls: they sit on
+   paper, like a field manual's dog-eared pages, against the metal of everything else.
+   The tokens are redefined inside, so every component reads correctly on paper. */
+.manual .rule-group, .manual .card, .manual details.step {
+  --ink: #23201b; --ink-dim: #4a443b; --ink-faint: #5c554a;
+  --line: #c6bba5; --line-soft: #d8cfbd; --line-strong: #a89c86;
+  --bg-sunk: #ddd3c0; --bg-raised: #eee7d8; --bg-hover: #e4dbc9; --card: #ece5d5;
+  --accent: #87471a; --accent-hi: #9a5520; --accent-soft: rgba(135, 71, 26, .12); --on-accent: #fff;
+  --danger: #a12f1c; --neuro: #22626c; --hi: inset 0 1px 0 rgba(255, 255, 255, .6);
+  color: var(--ink);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .28 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, #f0e9da, #e6dcc8);
+  border-color: #c6bba5;
+  box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 10px 24px -14px rgba(0, 0, 0, .7);
+}
+.manual details.step { border-radius: var(--r); padding: 0 14px; margin-bottom: 8px; border: 1px solid #c6bba5; }
+.manual .rule-group { border-left: 4px solid var(--accent); }
+.manual .explain:not(.is-lead) { border-left-color: var(--line-strong); }
+.group-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; flex: 0 0 auto;
+  background: var(--accent-soft); color: var(--accent); }
+.rule-group > summary::before { content: none; }
+
+/* ======================================================== button hierarchy */
+/* Two weights. The one thing to press is amber, condensed, uppercase. Everything else is
+   a quiet ghost in sentence case — the label as written, not shouted. */
+.btn:not(.btn-primary):not(.btn-danger) {
+  background: transparent; box-shadow: none;
+  border-color: var(--line-strong);
+  font-family: var(--font); font-weight: 600; font-size: .92rem; letter-spacing: 0; text-transform: none;
+}
+.btn:not(.btn-primary):not(.btn-danger):hover { background: var(--bg-hover); border-color: var(--ink-faint); }
+.btn-danger { font-family: var(--font); font-weight: 600; font-size: .92rem; letter-spacing: 0; text-transform: none; }
+/* the attribute picker keeps its display face: it is a value, not a sentence */
+.attr-pick .btn:not(.btn-primary) { font-family: var(--font-head); text-transform: uppercase; letter-spacing: .07em; background: var(--bg-sunk); }
+
+/* ================================================================ live tabs */
+.tabbar a.is-live .icon { color: var(--danger); filter: drop-shadow(0 0 6px var(--danger)); }
+.tabbar a.has-dot::after {
+  content: ""; position: absolute; top: 10px; left: calc(50% + 8px);
+  width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg);
+}
+@media (prefers-reduced-motion: no-preference) { .tabbar a.is-live .icon { animation: blink 1.6s ease-in-out infinite; } }
+@media (max-width: 640px) {
+  .scene-band { height: 96px; }
+  .zone { min-height: 72px; padding-top: 22px; }
+  .token { min-width: 32px; height: 32px; font-size: .78rem; }
+}

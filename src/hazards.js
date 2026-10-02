@@ -9,6 +9,7 @@ import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJ
 import { showToast, modal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { forfeitNextTurn } from "./combat.js";
+import { vehicleArt } from "./graphics.js";
 
 // ------------------------------------------------------------------- hazards
 /** Blast Power, Fire Intensity and disease Virulence all roll dice the target cannot push. */
@@ -221,8 +222,9 @@ function buildVehicle(rerender) {
   }
 
   wrap.append(el("div", { class: "card" },
-    el("div", { class: "card-row" }, el("strong", {}, v.label || v.name),
-      el("span", { class: "mono faint" }, `Hull ${j.hull ?? v.hull}/${v.hull}`)),
+    el("div", { class: "art-row" }, vehicleArt(v, { hull: j.hull ?? v.hull, max: v.hull }),
+      el("div", { class: "card-row" }, el("strong", {}, v.label || v.name),
+        el("span", { class: "mono faint" }, `Hull ${j.hull ?? v.hull}/${v.hull}`))),
     el("div", { class: "faint" }, `Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability} · Speed ${v.speed} · Armor ${v.armor}`),
     (j.hull ?? v.hull) <= 0 ? el("p", { style: "color:var(--danger)" }, "Wrecked — it needs repairs and a spare part before it moves again.") : null));
 

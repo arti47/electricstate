@@ -24,6 +24,7 @@ export const Settings = {
   manualDice: () => isOn("manualDice"),
   keepAwake: () => isOn("keepAwake"),
   hideGmContent: () => isOn("hideGmContent"),
+  sound: () => isOn("sound"),
   theme: () => get("theme") || "system",
   textScale: () => Number(get("textScale")) || 1
 };
@@ -34,6 +35,7 @@ export const TOGGLES = [
   { flag: "manualDice", label: "Manual dice entry", blurb: "Type in results from physical dice instead of rolling on screen." },
   { flag: "mentalTrauma", label: "Mental trauma rules", blurb: "The book asks groups to agree before using these. Turn off to skip trauma entirely." },
   { flag: "keepAwake", label: "Keep the screen on", blurb: "Stops the phone sleeping mid-session. It is your battery." },
+  { flag: "sound", label: "Sound", blurb: "Dice rattle, card flips and network static, made on the device. Off by default." },
   { flag: "hideGmContent", label: "Hide GM content", blurb: "Blurs prepared Stops and unfired Countdown steps until tapped, for a device that gets passed around." }
 ];
 

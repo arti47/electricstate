@@ -3,9 +3,13 @@ import { $, $$, el } from "./core.js";
 import { Settings, set as setSetting } from "./settings.js";
 import { listCharacters } from "./store.js";
 import { getCombat, turnOrder } from "./combat.js";
-import { releaseScrollLock } from "./ui.js";
+import { releaseScrollLock, modal, dismissModal } from "./ui.js";
 import { icon } from "./icons.js";
 import { STORAGE_KEY } from "./core.js";
+import { syncSky, sceneBand } from "./scene.js";
+import { dieIcon } from "./graphics.js";
+import { tracksBliss } from "./derived.js";
+import { getJourney } from "./store.js";
 import { homeScreen, rulesScreen, settingsScreen, rollLogScreen } from "./screens.js";
 import { soloScreen } from "./solo.js";
 import { gmScreen } from "./gm.js";
@@ -74,10 +78,25 @@ const SUBNAV = {
   rules: [["#/play", "Running a session"], ["#/rules", "Rules"], ["#/tutorial", "The app"]]
 };
 
+/**
+ * A section with more siblings than fit beside a large title keeps the busiest ones in
+ * the row and folds the rest under "More". The order here is how often a table reaches
+ * for them, not how they are listed.
+ */
+const SHOWN = 4;
+const PRIORITY = ["#/session", "#/time", "#/solo", "#/gm", "#/home", "#/journey", "#/tension"];
+
 function subnav(route) {
-  const items = (SUBNAV[route.tab] || []).filter(([, , when]) => !when || when());
+  let items = (SUBNAV[route.tab] || []).filter(([, , when]) => !when || when());
   if (items.length < 2) return null;
   const here = `#/${route.path}`;
+  let folded = [];
+  if (items.length > SHOWN + 2) {
+    const rank = (h) => (h === here ? -1 : PRIORITY.indexOf(h) === -1 ? 99 : PRIORITY.indexOf(h));
+    const keep = new Set([...items].sort((a, b) => rank(a[0]) - rank(b[0])).slice(0, SHOWN + 1).map((i) => i[0]));
+    folded = items.filter((i) => !keep.has(i[0]));
+    items = items.filter((i) => keep.has(i[0]));
+  }
   const nav = el("nav", { class: "subnav", "aria-label": "Section" });
   for (const [href, label, , badge] of items) {
     const mark = badge ? badge() : null;
@@ -85,6 +104,16 @@ function subnav(route) {
       href, class: "subnav-item" + (href === here ? " is-here" : "") + (mark ? " is-live" : ""),
       ...(href === here ? { "aria-current": "page" } : {})
     }, label, mark ? el("span", { class: "subnav-badge" }, mark) : null));
+  }
+  if (folded.length) {
+    nav.append(el("button", {
+      class: "subnav-item subnav-more", "aria-label": "More sections",
+      onclick: async () => {
+        const list = el("ul", { class: "menu-list" }, ...folded.map(([href, label]) => el("li", {},
+          el("button", { onclick: () => { dismissModal(); location.hash = href; } }, label))));
+        await modal({ title: "More", body: list });
+      }
+    }, "More ▾"));
   }
   return nav;
 }
@@ -129,7 +158,15 @@ function travelerHref() {
 
 export function syncTabs() {
   const t = document.querySelector('[data-tab="traveler"]');
-  if (t) t.setAttribute("href", travelerHref());
+  if (t) {
+    t.setAttribute("href", travelerHref());
+    // A Traveler down, broken, or lost in the Electric State puts a dot on the tab.
+    const trouble = listCharacters().some((c) => c.state && (c.state.health === 0 || c.state.hope === 0 ||
+      (tracksBliss(c) && (c.state.bliss ?? 0) >= (c.state.hope ?? 0))));
+    t.classList.toggle("has-dot", trouble);
+  }
+  // A running fight lights the Dice tab, wherever you are.
+  document.querySelector('[data-tab="dice"]')?.classList.toggle("is-live", !!getCombat()?.active);
 }
 
 /**
@@ -163,7 +200,21 @@ function syncStrip(path) {
 const SEEN = STORAGE_KEY + ".seenIntro";
 function seenIntros() { try { return JSON.parse(localStorage.getItem(SEEN) || "[]"); } catch { return []; } }
 
+// Which picture an empty screen gets.
+const EMPTY_SCENE = { combat: "crisis", tension: "close", log: "road", dice: "road", neuro: "close", home: "open" };
+
 function decorate(screenEl, path) {
+  // Table rolls read as dice: "D6", "D66", "D100", "Roll D66" get a die beside the label.
+  for (const b of screenEl.querySelectorAll("button.btn:not([data-die])")) {
+    const m = /^(?:Roll )?D(6|66|100)$/.exec(b.textContent.trim());
+    b.dataset.die = m ? m[1] : "";
+    if (m) b.prepend(dieIcon(m[1]));
+  }
+  // An empty state gets a small scene of the road instead of a bare emblem.
+  for (const e of screenEl.querySelectorAll(".empty:not(.has-scene)")) {
+    e.classList.add("has-scene");
+    e.prepend(sceneBand(EMPTY_SCENE[path] || "road"));
+  }
   const nav = screenEl.querySelector(":scope > .subnav .subnav-item.is-here");
   const h1 = screenEl.querySelector("h1");
   if (h1) h1.classList.toggle("sr-only", !!nav);
@@ -241,6 +292,7 @@ export function render() {
   markTabs(route);
   syncTabs();
   syncStrip(route.path);
+  syncSky(getJourney()?.shift);
   const trayBtn = $("#trayBtn");
   if (trayBtn) trayBtn.hidden = route.path === "dice";
   $("#settingsBtn")?.toggleAttribute("aria-current", route.path === "settings");
@@ -281,6 +333,7 @@ export function startRouter() {
     const path = (location.hash || "").replace(/^#\/?/, "").split("/")[0];
     syncStrip(path);
     syncTabs();
+    syncSky(getJourney()?.shift);
     if (trayOpen) return;
     if (path === "home" || path === "log" || path === "") render();
   });

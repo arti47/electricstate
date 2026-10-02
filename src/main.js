@@ -5,9 +5,12 @@ import { applyTheme } from "./screens.js";
 import { Settings, set as setSetting, applyTextScale, applyWakeLock } from "./settings.js";
 import { showToast } from "./ui.js";
 import { icon } from "./icons.js";
+import { mountScene, splash } from "./scene.js";
 
 applyTheme();
 applyTextScale();
+mountScene();
+splash();
 
 // The static chrome in index.html names its icons; draw them from the one icon set.
 document.querySelectorAll("[data-icon]").forEach((slot) => slot.replaceWith(icon(slot.dataset.icon, { size: 22 })));

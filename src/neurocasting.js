@@ -7,6 +7,8 @@ import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js
 import { talent as findTalent } from "./rules.js";
 import { showToast, modal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { helmetGraphic, ringDial } from "./graphics.js";
+import { sound } from "./sound.js";
 import { Settings } from "./settings.js";
 
 const TASK_KINDS = [
@@ -101,8 +103,12 @@ function build(rerender) {
     saveCharacter(worn);
   }
 
+  const model = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
   wrap.append(el("div", { class: "card" },
-    el("div", { class: "card-row" }, el("strong", {}, NEUROCASTERS.find((n) => n.id === ch.neurocaster).name),
+    el("div", { class: "art-row" },
+      helmetGraphic({ ...caster, max: model }, { worn: true, near: (ch.state.bliss ?? 0) === (ch.state.hope ?? 0) - 1, lost: isLost(ch) }),
+      el("strong", {}, model.name)),
+    el("div", {},
       el("span", { class: "mono faint" },
         `Processor ${caster.processor} · Network ${caster.network} · Graphics ${caster.graphics}`)),
     el("p", { class: "faint" }, "The helmet is on: real-world actions needing mobility or vision lose dice, and you act in one realm per round. Take it off on the sheet when you are done."),
@@ -161,9 +167,12 @@ function build(rerender) {
       el("button", { class: "stepper-btn", "aria-label": "More helpers", disabled: (session.helpers || 0) >= 3,
         onclick: () => { session.helpers = Math.min(3, (session.helpers || 0) + 1); rerender(); } }, "+"))));
 
+  // Difficulty as a ring: one segment per success the task needs.
   card.append(el("div", { class: "card-row" },
     el("span", { class: "faint" }, `${spec.attr} + ${spec.gear} · one Stretch per roll`),
-    el("span", { class: "mono" }, `${session.progress}/${session.difficulty}`)));
+    el("span", { class: "dial-row" },
+      ringDial(session.progress, session.difficulty, { tone: "neuro", size: 48, label: "Progress", center: "" }),
+      el("span", { class: "mono" }, `${session.progress}/${session.difficulty}`))));
   wrap.append(card);
 
   if (spec.id === "avatarCombat") wrap.append(avatarCombatCard(ch, rerender));
@@ -272,6 +281,7 @@ function scriptedExperienceCard(ch, rerender) {
 }
 
 function doNeuroRoll(ch, rerender) {
+  sound("static");   // the network answers in noise
   if (session.progress >= session.difficulty) { showToast("That task is already done."); return; }
   const result = neuroRoll(ch, session.kind, { wired: session.wired, extraModifier: session.helpers || 0 });
   const updated = applyNeuroResult(ch, result);

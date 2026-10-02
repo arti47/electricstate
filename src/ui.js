@@ -2,6 +2,7 @@
 import { $, el } from "./core.js";
 import { Settings } from "./settings.js";
 import { icon } from "./icons.js";
+import { sound } from "./sound.js";
 
 let openModals = 0;
 
@@ -27,6 +28,7 @@ export function showToast(message, kind = "", action = null) {
 const BUZZ = { tick: 8, roll: [12, 40, 12, 40, 18], loss: [60, 50, 90], success: [18, 30, 30] };
 export function haptic(kind = "tick") {
   try { navigator.vibrate?.(BUZZ[kind] ?? kind); } catch { /* unsupported */ }
+  sound(kind);
 }
 
 export function modal({ title, body, actions = [], dismissible = true }) {

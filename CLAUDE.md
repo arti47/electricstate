@@ -375,4 +375,24 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
     above-the-fold tests catch it as a 400px drop.
   - Tablet: the sheet flows into two columns (`.sheet-cols`), GM keeps the party in a side
     column (`.gm-layout`). Every text token clears AA 4.5:1 in both themes.
+- **Thirteenth pass — graphics and layout (no copy changed).** See `docs/app/UX-OVERHAUL.md`.
+  - `src/scene.js`: the silhouette landscape behind every screen (`.sky`), a sky per Shift via
+    `html[data-shift]` from `syncSky(journey.shift)` (no Journey = evening), fog drift, parallax
+    and night lights (all off under reduced motion), `sceneBand(kind)` for the session beat and
+    empty states, and the once-per-launch `splash()` (pointer-events none, so tests are unaffected).
+  - `src/graphics.js`: `ringDial`, `shiftDial`, `tensionGraph`, `routeStrip`, `fuelDial`,
+    `playingCard`, `deckStack`, `archetypeGlyph`, `helmetGraphic`, `vehicleArt`, `dieIcon`,
+    `successSeal`, `failureStatic`. Pure SVG strings coloured by tokens; no text beyond numbers.
+  - `src/sound.js`: WebAudio-synthesised sounds behind `Settings.sound()` (off by default);
+    `ui.haptic(kind)` also plays the matching sound, so callers need one call.
+  - Router decorate pass also prepends die icons to buttons reading `D6`/`D66`/`D100`/`Roll D66`
+    and a scene band to every `.empty`. Both are marked so the observer never loops.
+  - Section rows with more than 6 items fold into **More** (`PRIORITY` in `router.js` decides
+    what stays: Play, Time, Solo, GM first — the flow probe taps Time and Solo from home).
+  - `.manual` on Rules, the tutorial and `#/play` puts their cards on paper by redefining the
+    tokens inside — any component reads correctly there without its own paper variant.
+  - Secondary buttons are sentence-case ghosts; only `.btn-primary` is condensed uppercase.
+  - Conditions now store `healTotal` beside `heal` so the healing ring can show progress.
+  - Phone art must not push primaries below the fold: the scene band is 96px under 640px and
+    the zone map renders below the card of whoever is up. `probe-layout` caught both.
 

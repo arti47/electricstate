@@ -6,6 +6,7 @@ import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATION
          ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, COUNTDOWN_ELEMENTS, D66_ORDER } from "../data-gm.js";
 import { getJourney, saveJourney } from "./store.js";
 import { spoiler } from "./ui.js";
+import { ringDial } from "./graphics.js";
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
 const d6Pick = (table) => table[d6() - 1];
@@ -125,7 +126,10 @@ export function stopCard(stop, { onCountdown, onResolve, compact = false } = {})
   }
 
   const done = stop.countdownProgress || 0;
-  card.append(el("h3", {}, `Countdown ${done}/${stop.countdown.length}`));
+  // The Countdown as a ring that fills in rust as it fires.
+  card.append(el("div", { class: "dial-row", style: "margin-top:var(--s4)" },
+    ringDial(done, stop.countdown.length, { tone: "danger", size: 52, label: "Countdown" }),
+    el("h3", { style: "margin:0" }, `Countdown ${done}/${stop.countdown.length}`)));
   const list = el("ol", {});
   stop.countdown.forEach((step, i) => {
     list.append(el("li", { class: i < done ? "" : "faint", style: i < done ? "color:var(--danger)" : "" },

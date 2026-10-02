@@ -146,7 +146,7 @@ const PHASES = {
 // ==================================================================== screen
 export function playScreen() {
   const step = currentStep();
-  const wrap = el("div", {}, el("h1", {}, "Running a session"));
+  const wrap = el("div", { class: "manual" }, el("h1", {}, "Running a session"));
   wrap.append(explain("Not what the buttons do — what happens at the table. Three acts: getting started, keeping it going, and stopping well. The card at the top always says which one you are in right now."));
 
   wrap.append(whatNowCard(step));

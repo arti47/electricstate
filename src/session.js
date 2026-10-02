@@ -21,6 +21,11 @@ import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolv
 import { getCombat } from "./combat.js";
 import { rollGender, splitPairedName, subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, explain, modal } from "./ui.js";
+import { sceneBand } from "./scene.js";
+
+/** Which picture each beat gets: the road at first light, a stop, trouble, nightfall. */
+const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop", scene: "stop",
+  pressure: "crisis", crisis: "crisis", fighting: "crisis", wrap: "close", "no-one": "open" };
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d6() * 10 + d6())];
 const someone = () => {
@@ -278,7 +283,8 @@ function build(rerender) {
   const wrap = el("div", {}, el("h1", {}, "Play"));
   wrap.append(explain("The app runs the session. Each screen is one thing happening and two or three things you can do about it. Press one and the next thing happens. Everything it does is written into the same Journey the other screens use, so you can take over by hand whenever you want."));
 
-  wrap.append(el("div", { class: "beat" },
+  wrap.append(el("div", { class: "beat has-scene" },
+    sceneBand(SCENE_FOR[beat.id] || "road"),
     el("div", { class: "beat-heading" }, beat.heading),
     el("p", { class: "beat-now" }, beat.now || "—"),
     el("p", { class: "faint" }, beat.you)));

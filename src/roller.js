@@ -12,6 +12,7 @@ import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } f
 import { Settings } from "./settings.js";
 import { showToast, modal, promptModal, confirmModal, explain, diceRow, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { successSeal, failureStatic } from "./graphics.js";
 import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn } from "./combat.js";
 
@@ -442,7 +443,9 @@ function resultCard(ch, pool, legality, rerender) {
   const card = el("div", { class: "card", "aria-live": "polite" },
     el("div", { class: "result-head" },
       el("h3", { class: "result-word " + (total ? "is-success" : "is-failure") }, total ? `${total} success${total > 1 ? "es" : ""}` : "Failure"),
-      el("span", { class: "faint" }, `${r.base.length + r.gear.length} dice`)),
+      // A success is stamped; a failure goes to static.
+      total ? successSeal() : el("span", { class: "faint" }, `${r.base.length + r.gear.length} dice`)),
+    total ? null : failureStatic(),
     diceRow(r, { rolling, kept: r.pushed ? pending.kept : null }),
     el("div", { class: "faint" },
       `base ${r.base.join(" ") || "—"}${r.gear.length ? ` · gear ${r.gear.join(" ")}` : ""}`));

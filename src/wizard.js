@@ -1,5 +1,6 @@
 // Creation wizard (Phase 1). Follows the book's 17-step order, grouped into screens.
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
+import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt } from "./graphics.js";
 import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
@@ -12,7 +13,8 @@ import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
 import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
          GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS, ANYTHING_WORDS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
-import { listCharacters, saveCharacter, getJourney, saveJourney } from "./store.js";
+import { listCharacters, getCharacter, saveCharacter, getJourney, saveJourney } from "./store.js";
+import { listStops, activeStop } from "./stops.js";
 import { showToast, modal, confirmModal, explain, actionBar, dismissModal } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 import { GENDERS, DEFAULT_GENDER, splitPairedName, resolvePairedName, genderOf } from "./pronouns.js";
@@ -41,21 +43,23 @@ function stepArchetype(rerender) {
   const taken = takenArchetypes();
   const wrap = el("div", {},
     el("p", { class: "muted" }, "Who are you in this collapsing world? One archetype per group — the rest are greyed out."));
-  const list = el("ul", { class: "list" });
+  // Ten tiles, each with its mark, rather than ten lines of text.
+  const list = el("ul", { class: "list arch-grid" });
   for (const a of ARCHETYPES) {
     const isTaken = taken.has(a.id) && draft.archetype !== a.id;
+    const chosen = draft.archetype === a.id;
     list.append(el("li", {},
       el("button", {
-        class: "row", disabled: isTaken,
-        style: isTaken ? "opacity:.4" : "",
+        class: "row arch-tile" + (chosen ? " is-chosen" : ""), disabled: isTaken,
+        "aria-pressed": chosen ? "true" : "false",
         onclick: () => { draft.archetype = a.id; draft.talents = []; rerender(); }
       },
-        el("div", { class: "card-row" },
-          el("strong", {}, a.name),
-          el("span", { class: "faint" }, draft.archetype === a.id ? "✓" : ATTRIBUTES.find((x) => x.id === a.key)?.label)),
-        isTaken ? el("div", { class: "faint" }, "Already in the group") : null)));
+        el("span", { class: "glyph-tile" }, archetypeGlyph(a.id)),
+        el("strong", {}, a.name),
+        el("span", { class: "faint" }, chosen ? "✓" : ATTRIBUTES.find((x) => x.id === a.key)?.label),
+        isTaken ? el("span", { class: "faint" }, "Already in the group") : null)));
   }
-  wrap.append(el("div", { class: "card" }, list));
+  wrap.append(list);
   if (draft.archetype && isDronePilot(draft)) {
     wrap.append(el("div", { class: "card" },
       el("h3", {}, "You are a drone"),
@@ -562,6 +566,21 @@ export function journeyScreen() {
   return host;
 }
 
+/**
+ * The Journey drawn as a road: Stops played, the one you are at, the ones the chosen
+ * length still promises, with the starting point and destination under its two ends.
+ */
+export function routeCard(j) {
+  const stops = listStops();
+  const current = activeStop();
+  const length = JOURNEY_LENGTH.find((l) => l.id === j?.length);
+  const played = stops.filter((st) => st.resolved).length;
+  return el("div", { class: "route-card" },
+    routeStrip({ planned: length ? length.stops[0] : 0, played, current: !!(current && !current.resolved) }),
+    el("div", { class: "route-ends" },
+      el("span", {}, j?.start || "—"), el("span", {}, j?.destination || "—")));
+}
+
 function buildJourney(rerender) {
   const j = getJourney() || { destination: "", route: "", stops: null, vehicle: null, sharedItems: [], fuel: null };
   const save = (patch) => { saveJourney({ ...j, ...patch }); rerender(); };
@@ -575,6 +594,7 @@ function buildJourney(rerender) {
   const destInput = el("input", { value: j.destination || "", onchange: (e) => save({ destination: e.target.value }) });
 
   wrap.append(el("div", { class: "card" },
+    routeCard(j),
     el("div", { class: "field" }, el("label", {}, "Starting point"),
       el("div", { class: "card-row" }, startInput,
         el("button", { class: "btn", "aria-label": "Roll a starting point", onclick: () => save({ start: fromD100(JOURNEY_PLACES) }) }, "D100"))),
@@ -610,7 +630,9 @@ function buildJourney(rerender) {
   const vehicleCard = el("div", { class: "card" }, el("h3", {}, "Vehicle"));
   if (j.vehicle) {
     const v = j.vehicle;
+    const fuel = j.fuel ?? Math.round(FUEL.tankGallons * FUEL.startingFraction);
     vehicleCard.append(
+      el("div", { class: "art-row" }, vehicleArt(v, { hull: j.hull ?? v.hull, max: v.hull }), fuelDial(fuel, FUEL.tankGallons)),
       el("div", { class: "card-row" }, el("strong", {}, v.label || v.name), el("span", { class: "faint mono" }, `Hull ${v.hull}`)),
       el("div", { class: "faint" }, `Passengers ${v.passengers ?? "—"} · Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability ?? "—"} · Speed ${v.speed} · Armor ${v.armor}`),
       v.traits?.length ? el("p", { class: "faint" }, "Traits: " + v.traits.map((t) => t.name).join(", ")) : null,
@@ -712,14 +734,16 @@ function applyTrait(base, trait) {
 
 // ------------------------------------------------------------------- Tension
 export function tensionScreen() {
-  const chars = listCharacters();
   const host = el("div");
-  const rerender = () => host.replaceChildren(buildTension(rerender, chars));
-  host.append(buildTension(rerender, chars));
+  const rerender = () => host.replaceChildren(buildTension(rerender));
+  host.append(buildTension(rerender));
   return host;
 }
 
-function buildTension(rerender, chars) {
+function buildTension(rerender) {
+  // Read fresh every time. The list used to be captured once when the screen opened, so a
+  // second change wrote back the first Traveler's stale Tension and silently undid it.
+  const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Tension"));
   wrap.append(explain("What each Traveler feels toward each other Traveler, from 0 to 2. It is asymmetric on purpose — you can resent someone who thinks you are friends. It adds dice when you two are opposed, and talking it down is how Hope comes back."));
   if (chars.length < 2) {
@@ -728,7 +752,16 @@ function buildTension(rerender, chars) {
       el("a", { class: "btn btn-primary", href: "#/create" }, "Create another Traveler")));
     return wrap;
   }
+  const setTension = (fromId, toId, n) => {
+    const from = getCharacter(fromId);
+    if (!from) return;
+    saveCharacter({ ...from, tension: { ...(from.tension || {}), [toId]: n } });
+    rerender();
+  };
   wrap.append(el("p", { class: "faint" }, "Asymmetric on purpose: what you feel toward someone need not be returned. Start at 1 toward one or two others, 0 toward the rest."));
+  // The whole matrix at a glance: an arrow from each Traveler to each other, heavier and
+  // redder as it climbs. Tap an arrow to step it.
+  wrap.append(el("div", { class: "card" }, tensionGraph(chars, setTension)));
   for (const from of chars) {
     const card = el("div", { class: "card" }, el("h3", {}, from.name || "Unnamed"));
     for (const to of chars) {
@@ -736,14 +769,12 @@ function buildTension(rerender, chars) {
       const value = from.tension?.[to.id] ?? 0;
       card.append(el("div", { class: "card-row", style: "margin:6px 0" },
         el("span", {}, `toward ${to.name || "Unnamed"}`),
-        el("div", { class: "btn-row" },
+        el("div", { class: "seg", role: "group", "aria-label": `Tension toward ${to.name || "Unnamed"}` },
           ...[0, 1, 2].map((n) => el("button", {
-            class: "btn" + (value === n ? " btn-primary" : ""),
+            class: "seg-item" + (value === n ? " is-on" : ""),
+            "aria-pressed": value === n ? "true" : "false",
             "aria-label": `${from.name} tension ${n} toward ${to.name}`,
-            onclick: () => {
-              saveCharacter({ ...from, tension: { ...(from.tension || {}), [to.id]: n } });
-              rerender();
-            }
+            onclick: () => setTension(from.id, to.id, n)
           }, n)))));
     }
     card.append(el("p", { class: "faint" }, TENSION.labels[Math.max(...Object.values(from.tension || { x: 0 }))] || TENSION.labels[0]));

@@ -42,3 +42,32 @@ The audit covered 20 routes at 390px, in the fresh, mid-session and stress seeds
 - `src/router.js`: tabs, title line, combat strip, tray.
 - `src/sheet.js`: gauges, quick stepper, `vitalSteppers`, scroll-spy section bar.
 - `src/roller.js`: attribute picker, dice faces, tumble, kept dice on push, `rollFor`.
+
+# Thirteenth pass: graphics and layout
+
+A second audit (25 route/state combinations) found the interface structurally sound but without imagery: every screen was a column of identical cards. No user-facing copy was changed, apart from the Sound setting's label and the "More" pill, which are new controls.
+
+## Findings
+
+| # | Finding | Fix |
+|---|---|---|
+| F1 | There were no graphics anywhere. | `src/scene.js` draws a silhouette landscape (road, pylons, wires, a derelict giant, fog) and `src/graphics.js` the drawn objects, all inline SVG tinted by tokens. |
+| F2 | The session screen left 60% of the viewport empty. | A scene band per phase: open, road, stop, crisis, close. |
+| F3 | Play's 7-item section row clipped. | The current item plus the 4 most-used stay in the row; the rest sit under a **More** pill. |
+| F5 | The Journey was a plain form. | Route strip (Stops played, current, still to come) with a vehicle marker, a fuel gauge, and the vehicle silhouette with a Hull bar. |
+| F6 | Tension was two rows of buttons. | A directed graph; tap an arrow to step it. The rows became `.seg` switches. |
+| F7 | The sky never changed. | The sky follows `journey.shift`: Morning, Day, Evening and Night each have their own gradient, glow, stars and blinking pylon lights. |
+| F8 | Countdowns and clocks were "1/3" text. | Ring dials for the Countdown, healing clocks (`healTotal` now stored), neurocasting difficulty, and the Shift of day. |
+| F9 | Combat had no spatial picture. | A zone map with tokens (amber allies, rust foes, teal machines); tap a token, then a zone. It sits under the card of whoever is up. |
+| F10 | Solo cards were text. | Rendered playing cards that flip on a draw, a five-card fan for NPCs, and a deck stack that thins as it's drawn down. |
+| F11 | Archetypes were plain text. | Ten line glyphs: creation tiles, the home roster, the sheet hero. |
+| F12 | Table-roll buttons said D6/D66/D100 in text only. | A die icon, added by the router's decorate pass. |
+| F13 | Every button had the same weight. | Amber condensed primaries; secondaries are sentence-case ghosts. |
+| F14 | A roll result had no moment. | A success stamps an amber seal; a failure draws static. |
+| F15 | The empty-state emblem was a bare circle. | A small scene band per surface. |
+| F16 | No splash. | The helmet draws itself once per launch. Pointer-events are off, and it is skipped under reduced motion. |
+| F17 | The rules list was uniform. | An icon badge per subject. Rules, the tutorial and the session guide are field-manual paper, with tokens redefined inside (AA ≥4.8:1). |
+| F20 | The tab bar was static. | Dice glows rust during combat; Traveler shows a dot when someone is down, broken or lost. |
+| — | The sheet's header was plain. | A hero band: name, archetype, a cassette label for the song, stamped description words, and a large glyph watermark. |
+| — | There was no sound. | Synthesised WebAudio sounds (dice, card, static, tick, loss), off by default in Settings. |
+| Bug | `tensionScreen` captured the Traveler list once, so a second change wrote stale Tension back and undid the first. | Reads fresh on every render. |

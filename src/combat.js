@@ -4,7 +4,7 @@ import { el, uid, rollDice, countSixes, d6, clamp, randomInt } from "./core.js";
 import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js";
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
-import { maxHealth } from "./derived.js";
+import { maxHealth, isDronePilot } from "./derived.js";
 import { showToast, modal, promptModal, confirmModal, explain, moreMenu } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
@@ -118,6 +118,56 @@ export function rollInitiative() {
 }
 
 // ==================================================================== screen
+// ------------------------------------------------------------------ zone map
+/** Initials for a token, made longer only where two combatants would otherwise share them. */
+function tokenLabel(x, all) {
+  const words = (n) => String(n || "?").split(/\s+/).filter(Boolean);
+  const short = (n) => words(n).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const mine = short(x.name);
+  if (all.filter((o) => short(o.name) === mine).length < 2) return mine;
+  const w = words(x.name);
+  return (w[0][0] + (w[w.length - 1] || "").slice(0, 2)).toUpperCase();
+}
+let picked = null;   // the token lifted off the map, waiting for a zone to land in
+
+/**
+ * The fight as a map: one column per zone, a token per combatant — amber for Travelers,
+ * rust for the other side, teal for anything with a Hull. Tap a token, then a zone.
+ */
+function zoneMap(c, ordered, upNext, rerender) {
+  const top = Math.max(3, ...c.combatants.map((x) => x.zone || 1)) + 1;
+  if (picked && !c.combatants.some((x) => x.id === picked)) picked = null;
+  const moving = picked ? c.combatants.find((x) => x.id === picked) : null;
+  const map = el("div", { class: "zonemap" + (moving ? " is-moving" : ""), role: "group", "aria-label": "Zones" });
+  for (let z = 1; z <= top; z++) {
+    const here = ordered.filter((x) => (x.zone || 1) === z);
+    const lane = moving && moving.zone !== z
+      ? el("button", {
+          class: "zone is-target", "aria-label": `Move ${moving.name} to zone ${z}`,
+          onclick: () => {
+            writeCombat({ ...c, combatants: c.combatants.map((x) => (x.id === moving.id ? { ...x, zone: z } : x)) });
+            picked = null; rerender();
+          }
+        })
+      : el("div", { class: "zone" });
+    lane.append(el("span", { class: "zone-n" }, String(z)));
+    for (const x of here) {
+      const ch = x.kind === "traveler" ? getCharacter(x.id) : null;
+      const machine = x.gender === "neuter" || isDronePilot(ch || {});
+      const initials = tokenLabel(x, c.combatants);
+      lane.append(el(moving && moving.zone !== z ? "span" : "button", {
+        class: ["token", x.side === "travelers" ? "is-ally" : "is-foe", machine && "is-machine",
+          x.acted && "is-spent", upNext?.id === x.id && "is-up", picked === x.id && "is-picked"].filter(Boolean).join(" "),
+        title: x.name, "aria-label": `${x.name}, zone ${z}${picked === x.id ? " — choose a zone" : " — move"}`,
+        onclick: (e) => { e.stopPropagation(); picked = picked === x.id ? null : x.id; rerender(); }
+      }, initials));
+    }
+    map.append(lane);
+  }
+  return el("div", { class: "card zonecard" }, map,
+    moving ? el("p", { class: "faint", style: "margin:8px 0 0" }, `${moving.name}: tap a zone.`) : null);
+}
+
 /**
  * Turn order is the thing you are constantly re-deriving at the table: the side that acts
  * first, then whoever has not gone, then the spent. The tracker lists it; the combat strip
@@ -203,8 +253,13 @@ function build(rerender) {
       }, "Next round"),
       el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"))));
 
+  // Whoever is up comes first — their turn is the thing to press — then the map of
+  // the whole fight, then everyone else.
+  const map = zoneMap(c, ordered, upNext, rerender);
+  if (!upNext) wrap.append(map);
   for (const combatant of ordered) {
     wrap.append(combatantCard(combatant, c, rerender));
+    if (upNext && combatant.id === upNext.id) wrap.append(map);
   }
   wrap.append(tasksCard(rerender));
   return wrap;
