@@ -115,6 +115,7 @@ function build(rerender) {
       el("span", { class: "mono faint" },
         `Processor ${caster.processor} · Network ${caster.network} · Graphics ${caster.graphics}`)),
     el("p", { class: "faint" }, "The helmet is on: real-world actions needing mobility or vision lose dice, and you act in one realm per round. Take it off on the sheet when you are done."),
+    related([[`#/sheet/${ch.id}`, ch.name || "Unnamed", "traveler"]]),
     el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;margin-top:8px" },
       el("span", {}, el("strong", {}, "Plugged into a terminal"), el("div", { class: "faint" }, `+${WIRED_BONUS} dice to everything`)),
       el("input", { type: "checkbox", checked: session.wired,onchange: (e) => { session.wired = e.target.checked; } })),

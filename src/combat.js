@@ -10,6 +10,7 @@ import { renderVitals } from "./sheet.js";
 import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 import { portrait } from "./graphics.js";
 import { sceneBand } from "./scene.js";
+import { icon } from "./icons.js";
 
 // ------------------------------------------------------------- progress tasks
 /** A task is N successes against an optional opposing count. Used everywhere. */
@@ -276,13 +277,17 @@ function combatantCard(combatant, c, rerender) {
   };
 
   const health = ch ? `${ch.state.health}/${maxHealth(ch)}` : `${combatant.health ?? "?"} hp`;
+  // A face for a Traveler, a mark for anything else, so the list reads at a glance.
+  const face = () => ch
+    ? el("span", { class: "cbt-face" }, portrait(ch, { size: 30, frame: false }))
+    : el("span", { class: "cbt-face is-threat" }, icon(ANIMALS.some((a) => a.id === combatant.threatId) ? "animal" : combatant.gender === "neuter" ? "bolt" : "person", { size: 18 }));
 
   // Ten combatants is five screens of identical cards. Whoever has taken their turn
   // collapses to a line — you only need the ones who have not gone yet.
   if (combatant.acted) {
     return el("div", { class: "card is-spent" },
       el("div", { class: "card-row" },
-        el("span", {}, el("strong", {}, combatant.name),
+        el("span", { class: "cbt-name" }, face(), el("strong", {}, combatant.name),
           el("span", { class: "faint" }, ` · zone ${combatant.zone}`)),
         el("div", { class: "btn-row" },
           el("span", { class: "mono faint" }, health),
@@ -293,7 +298,7 @@ function combatantCard(combatant, c, rerender) {
   const isUp = turnOrder(c).upNext?.id === combatant.id;
   const card = el("div", { class: "card" + (isUp ? " is-up" : "") + (combatant.side !== "travelers" ? " is-enemy" : "") },
     el("div", { class: "card-row" },
-      el("strong", {}, combatant.name),
+      el("span", { class: "cbt-name" }, face(), el("strong", {}, combatant.name)),
       el("span", { class: "mono faint" }, health)));
 
   if (combatant.forfeit) {

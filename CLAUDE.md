@@ -476,3 +476,8 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   (`.face-head` — kept outside `h3:first-child` so the card-icon pass leaves it alone).
   `gearIcon()` moved to `icons.js` (a sheet ↔ wizard import would be circular); the Journey's
   shared items wear the same icons as the sheet's inventory.
+- **Round 6.** Combat cards lead with a face: the Traveler's portrait, or a rust-ringed mark for
+  a Threat (person, animal, or bolt for machines). Every sentence that sends the player to
+  another screen ("on the sheet", "on the Time screen") now carries a `related()` chip to it —
+  Neuroscape → sheet, solo procedure → Journey and Time. Not inside modals: a link under an
+  open dialog navigates behind it.

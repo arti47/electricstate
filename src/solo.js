@@ -12,7 +12,7 @@ import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
-import { showToast, modal, explain, actionBar, dismissModal } from "./ui.js";
+import { showToast, modal, explain, actionBar, dismissModal, related } from "./ui.js";
 import { subj, obj, poss, Subj, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
 import { playingCard, deckStack } from "./graphics.js";
 import { sound } from "./sound.js";
@@ -266,6 +266,7 @@ function build(rerender) {
         el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Arrive somewhere: Generate a Stop. It hands you a Blocker — the reason you cannot drive on.")),
         el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Play it out. Whenever you do not know what happens next, Draw a card. Whenever you want to know if something is good or bad, Tilt.")),
         el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Deal with the Blocker, end the Stop, drive on. Time passes on the Time screen."))),
+      related([["#/journey", "Journey", "road"], ["#/time", "Time", "clock"]]),
       el("p", { class: "faint" }, "Nothing you roll is binding. If a card contradicts something you have already decided, throw it out."),
       el("div", { class: "btn-row" },
         el("a", { class: "btn", href: "#/tutorial" }, "The longer walkthrough"),
