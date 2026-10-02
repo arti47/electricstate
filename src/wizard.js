@@ -16,7 +16,7 @@ import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, getCharacter, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { listStops, activeStop } from "./stops.js";
-import { showToast, modal, confirmModal, explain, actionBar, dismissModal } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar, dismissModal, related } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 import { GENDERS, DEFAULT_GENDER, splitPairedName, resolvePairedName, genderOf } from "./pronouns.js";
 
@@ -651,7 +651,8 @@ function buildJourney(rerender) {
         }, "Roll 3")),
       el("div", { class: "card-row", style: "margin-top:8px" },
         el("span", { class: "faint" }, `Fuel ${j.fuel ?? Math.round(FUEL.tankGallons * FUEL.startingFraction)} / ${FUEL.tankGallons} gal`),
-        el("button", { class: "btn", onclick: () => save({ vehicle: null }) }, "Change")));
+        el("button", { class: "btn", onclick: () => save({ vehicle: null }) }, "Change")),
+      related([["#/driving", "Driving", "car"], ["#/time", "Time", "clock"]]));
   } else {
     const select = el("select", { "aria-label": "Vehicle" },
       el("option", { value: "" }, "Choose a vehicle…"),
@@ -771,7 +772,9 @@ function buildTension(rerender) {
   wrap.append(el("p", { class: "faint" }, "Asymmetric on purpose: what you feel toward someone need not be returned. Start at 1 toward one or two others, 0 toward the rest."));
   // The whole matrix at a glance: an arrow from each Traveler to each other, heavier and
   // redder as it climbs. Tap an arrow to step it.
-  wrap.append(el("div", { class: "card" }, tensionGraph(chars, setTension)));
+  wrap.append(el("div", { class: "card" }, tensionGraph(chars, setTension),
+    // Talking it down happens on the Time screen; that is where these numbers fall.
+    related([["#/time", "Time", "clock"]])));
   for (const from of chars) {
     const card = el("div", { class: "card" }, el("h3", {}, from.name || "Unnamed"));
     for (const to of chars) {

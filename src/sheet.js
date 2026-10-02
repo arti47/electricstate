@@ -7,7 +7,7 @@ import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./deriv
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
-import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic } from "./ui.js";
+import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic, related } from "./ui.js";
 import { undoLast } from "./store.js";
 import { helmetGraphic, archetypeGlyph, ringDial, portrait } from "./graphics.js";
 import { syncVignette } from "./scene.js";
@@ -502,6 +502,8 @@ function conditionsCard(ch, patch) {
       }, `Operate ($${SURGERY.cashAlternative} or a Surgeon)`) : null));
   }
   card.append(el("a", { class: "btn btn-block", href: `#/injury/${ch.id}` }, "Add injury or trauma"));
+  // Healing clocks tick when a Day passes, on the Time screen.
+  if ((ch.conditions || []).some((x) => x.heal)) card.append(related([["#/time", "Time", "clock"]]));
   return card;
 }
 
@@ -564,6 +566,7 @@ function neurocasterCard(ch, patch, rerender) {
       }
     }, "Repair the neurocaster"));
   }
+  card.append(related([["#/neuro", "Neuroscape", "helmet"]]));
   return card;
 }
 

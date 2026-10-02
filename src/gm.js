@@ -59,7 +59,7 @@ function partyCard() {
   for (const c of chars) {
     const bliss = c.state?.bliss ?? 0;
     const lost = bliss >= (c.state?.hope ?? 0);
-    card.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+    card.append(el("a", { class: "party-row", href: `#/sheet/${c.id}`, style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
       el("div", { class: "card-row" },
         el("strong", {}, c.name || "Unnamed"),
         el("span", { class: "mono faint" },

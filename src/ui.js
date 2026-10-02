@@ -247,6 +247,16 @@ export function actionBar({ lead = null, children = [] } = {}) {
 }
 
 
+// ------------------------------------------------------------------ related
+/**
+ * The screens a card is tied to, as a quiet row of chips under it: the vehicle card to
+ * Driving and Time, the neurocaster to the Neuroscape. Labels are the screens' own names.
+ */
+export function related(links) {
+  return el("div", { class: "related" }, ...links.filter(Boolean).map(([href, label, mark]) =>
+    el("a", { class: "related-link", href }, mark ? icon(mark, { size: 14 }) : null, label, icon("chevron", { size: 12 }))));
+}
+
 // ------------------------------------------------------------- select picker
 /**
  * Every <select> wears a face — the chosen option, large, with a chevron — and opens as a

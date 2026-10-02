@@ -23,6 +23,9 @@ import { getCombat } from "./combat.js";
 import { rollGender, splitPairedName, subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, explain, modal } from "./ui.js";
 import { sceneBand } from "./scene.js";
+import { portrait } from "./graphics.js";
+import { miniVitals } from "./sheet.js";
+import { routeCard } from "./wizard.js";
 
 /** Which picture each beat gets: the road at first light, a stop, trouble, nightfall. */
 const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop", scene: "stop",
@@ -353,6 +356,16 @@ function build(rerender) {
         }, c.label));
   }
   wrap.append(actions);
+
+  // Who is in the car and where the road has got to: the session sits on both, so both are
+  // here, and each opens its own screen.
+  const cast = listCharacters();
+  if (cast.length && getJourney()) {
+    wrap.append(el("div", { class: "card party-bar" },
+      el("div", { class: "party-faces" }, ...cast.map((c) => el("a", { href: `#/sheet/${c.id}`, class: "party-face", title: c.name || "Unnamed", "aria-label": c.name || "Unnamed" },
+        portrait(c, { size: 44, frame: false }), miniVitals(c)))),
+      el("a", { class: "route-link", href: "#/journey", "aria-label": "The Journey" }, routeCard(getJourney()))));
+  }
 
   if (state.log.length) {
     const log = el("details", { class: "card phase-fold" },

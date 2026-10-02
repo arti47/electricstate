@@ -9,6 +9,7 @@ import { showToast, modal, promptModal, confirmModal, explain, moreMenu } from "
 import { renderVitals } from "./sheet.js";
 import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 import { portrait } from "./graphics.js";
+import { sceneBand } from "./scene.js";
 
 // ------------------------------------------------------------- progress tasks
 /** A task is N successes against an optional opposing count. Used everywhere. */
@@ -204,7 +205,7 @@ function build(rerender) {
   }
 
   if (!c) {
-    wrap.append(el("div", { class: "card" },
+    wrap.append(el("div", { class: "card has-band" }, sceneBand("crisis"),
       el("p", { class: "faint" }, "Zones, not grids. The side that starts the fight acts first — if that is unclear, roll a die and add the best Wits on each side."),
       el("div", { class: "btn-row" },
         el("button", { class: "btn btn-primary", onclick: () => { startCombat(); rerender(); } }, "Start combat"),
@@ -340,9 +341,10 @@ function combatantCard(combatant, c, rerender) {
     el("button", { class: "btn" + (isUp ? " btn-primary" : ""), onclick: () => update({ acted: true }) }, "Turn spent"),
     el("button", {
       class: "btn", onclick: async () => {
-        const { setTarget } = await import("./roller.js");
+        // The tray rolls over the fight, so the tracker stays where it was.
+        const [{ setTarget }, { openTray }] = await Promise.all([import("./roller.js"), import("./router.js")]);
         setTarget(combatant.id);
-        location.hash = "#/dice";
+        openTray();
       }
     }, "Attack this"),
     ch ? el("a", { class: "btn", href: `#/sheet/${ch.id}` }, "Sheet") : null,

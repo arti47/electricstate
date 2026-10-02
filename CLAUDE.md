@@ -453,4 +453,10 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   - Fixed with it: push gear damage reaches the item (it never did), Network weapons roll the
     Network rating, neurocasting can push and wear the caster, ending the Journey sets
     `ended`, solo arrival sets the Shift.
+- **Round 1 of six (links between tabs).** `ui.related(links)` puts chips under a card for the
+  screens it affects (vehicle → Driving/Time, neurocaster → Neuroscape, healing → Time, Talk
+  it through ↔ Tension, Driving → Journey, Busted caster → sheet). Any `a[href="#/dice"]`
+  outside the Dice tab, tab bar and section rows opens the tray over the current screen;
+  combat's Attack opens the tray instead of leaving the fight. GM party rows open sheets. The
+  session shows the party (portraits + mini vitals) and the route, each linking out.
 

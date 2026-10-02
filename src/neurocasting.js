@@ -5,7 +5,7 @@ import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIR
 import { maxHope, maxHealth, tracksBliss, pushLegality } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent } from "./rules.js";
-import { showToast, modal, explain, actionBar } from "./ui.js";
+import { showToast, modal, explain, actionBar, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { resolvePush } from "./roller.js";
 import { PUSH } from "../data.js";
@@ -94,7 +94,8 @@ function build(rerender) {
   if (isBusted(ch)) {
     wrap.append(el("div", { class: "card", style: "border-left:3px solid var(--danger)" },
       el("strong", {}, "Neurocaster Busted"),
-      el("p", { class: "faint" }, "Repair it before connecting. Being cut off mid-session drops Hope to zero and inflicts a trauma.")));
+      el("p", { class: "faint" }, "Repair it before connecting. Being cut off mid-session drops Hope to zero and inflicts a trauma."),
+      related([[`#/sheet/${ch.id}`, ch.name || "Unnamed", "traveler"]])));
     return wrap;
   }
 

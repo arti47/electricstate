@@ -6,7 +6,7 @@ import { STUNTS, ACCIDENTS, RAMMING, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, A
 import { GEAR, REPAIR } from "../data-tables.js";
 import { maxHealth } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJourney } from "./store.js";
-import { showToast, modal, explain } from "./ui.js";
+import { showToast, modal, explain, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { forfeitNextTurn } from "./combat.js";
 import { vehicleArt, hazardArt, driveArt } from "./graphics.js";
@@ -250,7 +250,8 @@ function buildVehicle(rerender) {
       el("div", { class: "card-row" }, el("strong", {}, v.label || v.name),
         el("span", { class: "mono faint" }, `Hull ${j.hull ?? v.hull}/${v.hull}`))),
     el("div", { class: "faint" }, `Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability} · Speed ${v.speed} · Armor ${v.armor}`),
-    (j.hull ?? v.hull) <= 0 ? el("p", { style: "color:var(--danger)" }, "Wrecked — it needs repairs and a spare part before it moves again.") : null));
+    (j.hull ?? v.hull) <= 0 ? el("p", { style: "color:var(--danger)" }, "Wrecked — it needs repairs and a spare part before it moves again.") : null,
+    related([["#/journey", "Journey", "road"]])));
 
   const driver = el("select", { "aria-label": "Driver", onchange: (e) => { driveWho = e.target.value; } },
     ...chars.map((c) => el("option", { value: c.id, selected: c.id === driveWho }, c.name || "Unnamed")));

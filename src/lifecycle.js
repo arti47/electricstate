@@ -10,7 +10,7 @@ import { talent as findTalent } from "./rules.js";
 import { shiftDial, fuelDial, portrait } from "./graphics.js";
 import { icon } from "./icons.js";
 import { subj, obj, poss, Subj } from "./pronouns.js";
-import { showToast, modal, confirmModal, explain, actionBar, haptic } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar, haptic, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
 
@@ -308,6 +308,7 @@ function build(rerender) {
       el("p", { class: "faint" }, "A Stretch with no immediate threat. Both sides drop a step of Tension and each regains a point of Hope — the only reliable way Hope comes back."),
       // The two people at the table, face to face, above the two pickers.
       talkPair(a, b, chars),
+      related([["#/tension", "Tension", "link"]]),
       el("div", { class: "field" }, a), el("div", { class: "field" }, b),
       el("button", {
         class: "btn btn-block", onclick: async () => {

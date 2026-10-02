@@ -427,6 +427,16 @@ export function startRouter() {
     if (path === "home" || path === "log" || path === "") render();
   });
   $("#trayBtn")?.addEventListener("click", () => (trayOpen ? closeTray() : openTray()));
+  // "Roll for it" from the session, solo, the GM screen or a card: roll over the screen you
+  // are on rather than leave it. The tab bar and section rows still go to the Dice screen.
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest?.('a[href="#/dice"]');
+    if (!a || a.closest(".tabbar, .subnav, .rail-sub, #tray") || e.defaultPrevented) return;
+    const here = (location.hash || "").replace(/^#\/?/, "").split("/")[0];
+    if ((ROUTES.find((r) => r.path === here) || ROUTES[0]).tab === "dice") return;
+    e.preventDefault();
+    openTray();
+  });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && trayOpen && !document.querySelector(".modal-backdrop")) closeTray(); });
   if (!location.hash) location.hash = "#/home";
   render();
