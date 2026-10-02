@@ -1956,3 +1956,16 @@ a.party-row:hover { background: var(--bg-hover); }
 .log-who-link { display: inline-flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; min-height: 32px; }
 .log-who-link .portrait, .log-who-link svg { border-radius: 50%; }
 .btn-grid > .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ---- round 3 ---- */
+a.party-row.has-face { display: grid; grid-template-columns: 44px 1fr; column-gap: 12px; align-items: start; }
+a.party-row.has-face > :not(:first-child) { grid-column: 2; }
+a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; overflow: hidden; }
+/* a button sharing a row with text never wraps its own label */
+.card-row > .btn, .card-row > a.btn { flex: 0 0 auto; white-space: nowrap; }
+.tension-who { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; min-height: 36px; }
+.tension-who svg { border-radius: 50%; }
+.tension-vals { display: inline-flex; align-items: center; gap: 8px; }
+.t-meter { display: inline-flex; gap: 2px; }
+.t-meter i { width: 6px; height: 14px; border-radius: 2px; background: var(--line-strong); }
+.t-meter i.on { background: var(--danger); }

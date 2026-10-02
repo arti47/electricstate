@@ -666,9 +666,13 @@ function tensionCard(ch) {
   for (const other of others) {
     const mine = ch.tension?.[other.id] ?? 0;
     const theirs = other.tension?.[ch.id] ?? 0;
-    card.append(el("div", { class: "card-row", style: "padding:4px 0" },
-      el("span", {}, other.name || "Unnamed"),
-      el("span", { class: "mono faint" }, `you ${mine} · ${subj(other)} ${theirs}`)));
+    const meter = (v) => el("span", { class: "t-meter", "aria-hidden": "true" },
+      ...[0, 1].map((i) => el("i", { class: i < v ? "on" : "" })));
+    card.append(el("div", { class: "card-row tension-row", style: "padding:4px 0" },
+      el("a", { class: "tension-who", href: `#/sheet/${other.id}` },
+        portrait(other, { size: 28, frame: false }), el("span", {}, other.name || "Unnamed")),
+      el("span", { class: "tension-vals" }, meter(mine),
+        el("span", { class: "mono faint" }, `you ${mine} · ${subj(other)} ${theirs}`), meter(theirs))));
   }
   card.append(el("p", { class: "faint" }, TENSION.reduce.hopeGain === 1
     ? "Talking it through in a calm scene lowers both by 1 and returns 1 Hope each."

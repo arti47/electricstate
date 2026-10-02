@@ -466,3 +466,6 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   not a result. Roll log rows link to the roller's sheet with a portrait; Settings backup
   actions are a `.btn-grid`.
 
+- **Round 3.** GM party rows carry portraits; sheet Tension rows link to the other Traveler's
+  sheet with a portrait and a 0–2 meter per side. Buttons inside a `.card-row` never wrap their
+  own label (`Roll 3` broke onto two lines on the Journey vehicle card).

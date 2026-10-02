@@ -14,7 +14,7 @@ import { maxHealth, maxHope } from "./derived.js";
 import { showToast, modal, promptModal, explain, spoiler } from "./ui.js";
 import { miniVitals } from "./sheet.js";
 import { icon } from "./icons.js";
-import { archetypeGlyph } from "./graphics.js";
+import { archetypeGlyph, portrait } from "./graphics.js";
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
 const d6Pick = (table) => table[d6() - 1];
@@ -59,7 +59,8 @@ function partyCard() {
   for (const c of chars) {
     const bliss = c.state?.bliss ?? 0;
     const lost = bliss >= (c.state?.hope ?? 0);
-    card.append(el("a", { class: "party-row", href: `#/sheet/${c.id}`, style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+    card.append(el("a", { class: "party-row has-face", href: `#/sheet/${c.id}`, style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+      portrait(c, { size: 44, frame: false }),
       el("div", { class: "card-row" },
         el("strong", {}, c.name || "Unnamed"),
         el("span", { class: "mono faint" },
