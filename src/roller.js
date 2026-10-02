@@ -182,7 +182,8 @@ function build(rerender) {
   wrap.append(el("div", { class: "field" }, el("label", {}, "Attribute"),
     el("div", { class: "attr-pick", role: "group", "aria-label": "Attribute" },
       ...ATTRIBUTES.map((a) => el("button", {
-        class: "btn" + (pending.attr === a.id ? " btn-primary" : ""),
+        // The chosen attribute is marked, not lit: Roll is the one lit button here.
+        class: "btn" + (pending.attr === a.id ? " is-picked" : ""),
         "aria-pressed": pending.attr === a.id ? "true" : "false",
         onclick: () => { haptic(); pending.attr = a.id; pending.talents = []; pending.result = null; rerender(); }
       }, el("span", { class: "attr-name" }, a.label), " ", el("span", { class: "attr-val" }, ch.attributes[a.id])))),

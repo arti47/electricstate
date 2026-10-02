@@ -11,7 +11,7 @@ import { listCharacters, getJourney, saveJourney } from "./store.js";
 import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveStop, removeStop,
          advanceCountdown, resolveStop, stopCard } from "./stops.js";
 import { maxHealth, maxHope } from "./derived.js";
-import { showToast, modal, promptModal, explain, spoiler } from "./ui.js";
+import { showToast, modal, promptModal, explain, spoiler, actionBar } from "./ui.js";
 import { miniVitals } from "./sheet.js";
 import { icon } from "./icons.js";
 import { archetypeGlyph, portrait } from "./graphics.js";
@@ -44,6 +44,13 @@ function build(rerender) {
   wrap.append(el("div", { class: "gm-layout" },
     el("div", { class: "gm-side" }, partyCard()),
     el("div", {}, stopBuilder(rerender), threatCard(), tablesCard())));
+  // With no Stop in play, building one is the GM's next job — pinned, not under the party.
+  if (!activeStopId()) {
+    wrap.append(...actionBar({
+      lead: el("span", { class: "faint" }, "No Stop in play"),
+      children: [el("button", { class: "btn btn-primary", onclick: () => newStop(rerender) }, "Roll up a Stop")]
+    }));
+  }
   return wrap;
 }
 
@@ -74,6 +81,13 @@ function partyCard() {
 }
 
 // ------------------------------------------------------------- stop builder
+async function newStop(rerender) {
+  const name = await promptModal("New Stop", { label: "Name it", value: "" });
+  if (!name) return;
+  saveStop(makeStop(name), { makeActive: !activeStopId() });
+  rerender();
+}
+
 function stopBuilder(rerender) {
   const list = sharedStops();
   const activeId = activeStopId();
@@ -111,15 +125,7 @@ function stopBuilder(rerender) {
         : null));
   }
 
-  card.append(el("button", {
-    class: "btn btn-block", style: "margin-top:8px",
-    onclick: async () => {
-      const name = await promptModal("New Stop", { label: "Name it", value: "" });
-      if (!name) return;
-      saveStop(makeStop(name), { makeActive: !activeStopId() });
-      rerender();
-    }
-  }, "Roll up a Stop"));
+  card.append(el("button", { class: "btn btn-block", style: "margin-top:8px", onclick: () => newStop(rerender) }, "Roll up a Stop"));
   card.append(el("p", { class: "faint" }, COUNTDOWN_PRINCIPLE));
   card.append(el("p", { class: "faint" }, `A Stop is worth ${SESSIONS_PER_STOP[0]} to ${SESSIONS_PER_STOP[1]} sessions of play.`));
   return card;

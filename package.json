@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node tests/run.js && node tests/links.mjs && node tests/coverage.mjs && node tests/reachability.mjs && node tests/browser.js",
     "audit": "node tests/audit.js",
-    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-onboarding.mjs && node tests/probe-novice.mjs && node tests/probe-pwa.mjs",
+    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-onboarding.mjs && node tests/probe-novice.mjs && node tests/probe-lit.mjs && node tests/probe-pwa.mjs",
     "probe:layout": "node tests/probe-layout.mjs",
     "probe:flow": "node tests/probe-flow.mjs",
     "probe:pwa": "node tests/probe-pwa.mjs",
@@ -18,7 +18,8 @@
     "coverage": "node tests/coverage.mjs",
     "reachability": "node tests/reachability.mjs",
     "links": "node tests/links.mjs",
-    "probe:novice": "node tests/probe-novice.mjs"
+    "probe:novice": "node tests/probe-novice.mjs",
+    "probe:lit": "node tests/probe-lit.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.47.0"

@@ -425,8 +425,8 @@ function build(rerender) {
         const lead = passTheSpotlight();
         logEvent("New Stop", `${stop.setting.terrain} · ${stop.blocker}`);
         rerender();
-        if (lead) showToast(`${lead.name || "They"} lead this one.`);
-      }, true),
+        if (lead) showToast(`${lead.name || "Unnamed"} leads this one.`);
+      }, !activeStop()),
       act("Generate a Threat", () => {
         const current = activeStop();
         if (!current) { showToast("Generate a Stop first."); return; }
@@ -590,7 +590,8 @@ function build(rerender) {
   wrap.append(...actionBar({
     lead: el("span", { class: "pool" }, String(s.deck.length), " ", el("small", {}, "cards left")),
     children: [
-      el("button", { class: "btn btn-primary", onclick: () => draw(rerender) }, "Draw a card"),
+      // Until there is a Journey to play on, the setup card above holds the lit button.
+      el("button", { class: "btn" + (setup.phase === "setup" ? "" : " btn-primary"), onclick: () => draw(rerender) }, "Draw a card"),
       el("button", { class: "btn", onclick: () => tilt(rerender) }, "Tilt")
     ]
   }));

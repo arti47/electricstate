@@ -201,7 +201,7 @@ export function sheetScreen(id) {
 }
 
 const missing = () => el("div", { class: "empty card" },
-  el("p", {}, "That Traveler is gone."), el("a", { class: "btn", href: "#/home" }, "Back"));
+  el("p", {}, "That Traveler is gone."), el("a", { class: "btn btn-primary", href: "#/home" }, "Back"));
 
 function build(ch, rerender) {
   const hMax = maxHealth(ch), pMax = maxHope(ch);

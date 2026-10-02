@@ -1996,3 +1996,8 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .mode-tile:hover, .mode-tile:focus-visible { border-color: var(--accent); }
 .attr-hint { margin: 6px 2px 0; }
 .tray-close { min-height: 36px; padding: 4px 12px; gap: 6px; display: inline-flex; align-items: center; }
+
+/* ---- novice round 4 ---- */
+.attr-pick .btn.is-picked { border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  box-shadow: inset 0 -3px 0 var(--accent); }
+.attr-pick .btn.is-picked .attr-val { color: var(--ink); }

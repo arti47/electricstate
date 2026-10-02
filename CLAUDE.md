@@ -513,3 +513,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   the sheet lights **Back to the fight** while one runs); **End the session** opened Time,
   whose debrief sat folded away (it now goes to `#/time/debrief`, which runs the debrief at
   once, then resets the director and returns to Play).
+- **Round 4 — one lit button per screen.** `tests/probe-lit.mjs` (in `npm run probe`,
+  alone as `npm run probe:lit`): across fresh / mid / stress, every working route has at
+  least one and at most two enabled `.btn-primary`. Excused by name: the empty home (mode
+  tiles lead), creation (Next names what it waits for), a full log (a record). Fixed with it:
+  GM had nothing lit (**Roll up a Stop** pinned while no Stop is in play), solo lit Draw a card
+  with nobody to draw for, the dice screen lit the chosen attribute as well as Roll (it is now
+  `.is-picked`), a missing Traveler's Back was unlit, and solo's lead toast read
+  "<name> lead this one" with a "They" fallback.
