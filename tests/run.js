@@ -1233,6 +1233,21 @@ await test("solo with a single Traveler is told to make another, once, before th
   } finally { setSetting("solo", false); }
 });
 
+await test("one solo deck: a draw from Play and a draw from Solo come off the same cards", async () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "the coast", vehicle: { name: "Van" } });
+  const before = (store.getJourney().solo?.deck || []).length || 52;
+  const drawn = await soloMod.drawForStory();
+  assert.ok(drawn.card, "a card was drawn");
+  assert.equal(store.getJourney().solo.deck.length, before - 1, "the shared deck shrank by one");
+  assert.equal(store.getJourney().solo.history[0].rank, drawn.card.rank, "and the Solo history shows it");
+  store.saveJourney({ ...store.getJourney(), solo: { ...store.getJourney().solo, deck: [] } });
+  assert.equal(await soloMod.drawForStory(), null, "the Solo button still refuses a spent deck");
+  const again = await soloMod.drawForStory({ autoShuffle: true });
+  assert.ok(again.shuffled && again.left === 51, "Play reshuffles a spent deck and carries on");
+});
+
 await test("the app names the next setup step until the group can actually play", () => {
   assert.equal(play.whatNow({ chars: [], journey: null }).id, "no-traveler");
   assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: null }).id, "no-destination");

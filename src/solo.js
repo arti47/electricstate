@@ -56,7 +56,7 @@ function tiltMeaning(read) {
       class: [n < 0 ? "is-bad" : "is-good", (read.good ? n === step : n === -step) && "is-on"].filter(Boolean).join(" ")
     })));
   return el("div", {}, meter,
-    el("p", {}, `Whatever you were wondering about goes ${read.good ? "your way" : "against you"} — ${DEGREE_WORDS[read.degree] || "a little"}.`));
+    el("p", {}, tiltSentence(read)));
 }
 
 export const eventFor = (card) => (isFace(card) ? EVENT_TRIGGERS[card.suit] : null);
@@ -642,15 +642,22 @@ async function encounter(rerender) {
   });
 }
 
-async function draw(rerender) {
-  sound("card");
-  const s = state();
+/**
+ * One card off the solo deck, resolved and recorded: a face card fires its suit's event,
+ * a number card is a Tilt. Shared by the Draw button here and by Play in solo mode, so the
+ * deck, its history and the Countdown it can fire are one record whichever screen drew.
+ * `autoShuffle` starts a fresh deck when it is spent instead of refusing the draw.
+ */
+export async function drawForStory({ autoShuffle = false } = {}) {
+  let s = state();
+  let shuffled = false;
+  if (!s.deck.length && autoShuffle) { write({ deck: freshDeck() }); s = state(); shuffled = true; }
   const { card, deck, exhausted } = drawFrom(s.deck);
-  if (!card) { showToast("The deck is spent — reshuffle."); return; }
+  if (!card) return null;
 
   const event = eventFor(card);
   const tiltRead = readTilt(card);
-  let note = event ? event.label : tiltRead.label;
+  const note = event ? event.label : tiltRead.label;
   let extra = null;
 
   if (event?.id === "conversation") extra = `Subject: ${CONVERSATION_SUBJECTS[d6() - 1]}`;
@@ -662,8 +669,21 @@ async function draw(rerender) {
     extra = step ? `Step ${step.index} of ${step.of}: ${step.event}` : "It has already caught up with you — that Threat has played out.";
   }
 
-  write({ deck, history: [{ suit: card.suit, rank: card.rank, note }, ...s.history].slice(0, 40) });
+  write({ deck, history: [{ suit: card.suit, rank: card.rank, note }, ...state().history].slice(0, 40) });
   if (event) logEvent(event.label, extra || note, card);
+  return { card, event, note, extra, tilt: event ? null : tiltRead, exhausted, shuffled, left: deck.length };
+}
+
+/** A Tilt as a sentence, for anything that reports a card in text rather than on screen. */
+export function tiltSentence(read, subject = "Whatever you were wondering about") {
+  return `${subject} goes ${read.good ? "your way" : "against you"} — ${DEGREE_WORDS[read.degree] || "a little"}.`;
+}
+
+async function draw(rerender) {
+  sound("card");
+  const drawn = await drawForStory();
+  if (!drawn) { showToast("The deck is spent — reshuffle."); return; }
+  const { card, event, note, extra, tilt: tiltRead, exhausted } = drawn;
 
   await modal({
     title: `${card.rank}${SUIT_GLYPH[card.suit]}`,

@@ -535,3 +535,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   walk from cold start to the next session, plus the GM and player tiles), `probe-lit` (one or
   two lit buttons on every working screen), and the Stop hook that will not let a session end
   its turn on a red `npm run verify`.
+- **Solo pass 2, round 1 — one deck for both solo screens.** Play in solo mode used to never
+  touch the deck: you could play the whole session without a card, and the Solo screen's
+  deck sat untouched. Every "what happens next" in Play now turns a card through
+  `solo.drawForStory({ autoShuffle: true })` — the same function as the Solo screen's Draw
+  button, writing the same deck, history, events and Countdown. A face card fires its suit's
+  event; a number card is a Tilt on the scene ("This scene goes your way — a lot."). The card
+  sits face up on the beat with the count left, and a spent deck reshuffles in Play (the
+  Solo button still refuses, as the book's pacing wants). Not in `player` mode.

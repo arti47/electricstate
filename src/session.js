@@ -19,11 +19,12 @@ import { SHIFT_NAMES } from "../data.js";
 import { listCharacters, getJourney, saveJourney, noteEvent, getRollLog } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolveStop, listStops } from "./stops.js";
 import { currentStep } from "./play.js";
+import { Settings } from "./settings.js";
 import { getCombat } from "./combat.js";
 import { rollGender, splitPairedName, subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, explain, modal } from "./ui.js";
 import { sceneBand } from "./scene.js";
-import { portrait } from "./graphics.js";
+import { portrait, playingCard } from "./graphics.js";
 import { miniVitals } from "./sheet.js";
 import { routeCard } from "./wizard.js";
 
@@ -50,7 +51,7 @@ const write = (patch) => {
 function say(text, kind = "") {
   const d = director();
   // `at` marks when this beat was told, so a roll made after it can move the story on.
-  write({ log: [{ id: `${Date.now()}-${d.log.length}`, text, kind }, ...d.log].slice(0, 40), at: Date.now() });
+  write({ log: [{ id: `${Date.now()}-${d.log.length}`, text, kind }, ...d.log].slice(0, 40), at: Date.now(), card: null });
   noteEvent("scene", text);
 }
 
@@ -329,6 +330,24 @@ export function advance(act) {
   }
 }
 
+/**
+ * Solo is played with a deck: every "what happens next" turns a card. A face card fires its
+ * suit's event (the same one the Solo screen would), a number card is a Tilt on the scene.
+ * The card goes on the beat, and anything it fired — a Countdown step above all — is the
+ * same record the Solo and GM screens read.
+ */
+async function soloCard() {
+  if (!Settings.solo() || Settings.playMode() === "player") return;
+  const { drawForStory, tiltSentence } = await import("./solo.js");
+  const drawn = await drawForStory({ autoShuffle: true });
+  if (!drawn) return;
+  const line = drawn.event
+    ? `${drawn.note}${drawn.extra ? ` — ${drawn.extra}` : ""}`
+    : tiltSentence(drawn.tilt, "This scene");
+  say(`Card: ${drawn.card.rank}${{ spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" }[drawn.card.suit]}. ${line}`, "card");
+  write({ card: { suit: drawn.card.suit, rank: drawn.card.rank, line, left: drawn.left, shuffled: drawn.shuffled } });
+}
+
 // ==================================================================== screen
 export function sessionScreen() {
   const host = el("div");
@@ -348,6 +367,12 @@ function build(rerender) {
     sceneBand(SCENE_FOR[beat.id] || "road"),
     el("div", { class: "beat-heading" }, beat.heading),
     el("p", { class: "beat-now" }, beat.now || "—"),
+    // The card solo play turned for this beat, face up beside what it means.
+    state.card && beat.id === "scene"
+      ? el("div", { class: "beat-card" }, playingCard(state.card, { flip: false }),
+          el("div", {}, el("p", {}, state.card.line),
+            el("p", { class: "faint" }, `${state.card.left} cards left${state.card.shuffled ? " — the deck was spent and has been reshuffled" : ""}.`)))
+      : null,
     beat.you ? el("p", { class: "faint" }, beat.you) : null));
 
   // Back from the dice with a result: the roll was the thing to do, so the next press is
@@ -375,7 +400,7 @@ function build(rerender) {
       ? el("a", { class: "btn" + (c.primary ? " btn-primary" : ""), href: c.href }, c.label)
       : el("button", {
           class: "btn" + (c.primary ? " btn-primary" : ""),
-          onclick: () => { advance(c.act); rerender(); }
+          onclick: async () => { advance(c.act); if (c.act === "scene") await soloCard(); rerender(); }
         }, c.label));
   }
   wrap.append(actions);

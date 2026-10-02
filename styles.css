@@ -2010,3 +2010,8 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .tilt-meter i:nth-child(4) { margin-right: 6px; }
 .tilt-meter i.is-bad.is-on { background: var(--danger); box-shadow: 0 0 6px var(--danger-soft); }
 .tilt-meter i.is-good.is-on { background: var(--accent); box-shadow: 0 0 6px var(--accent-soft); }
+
+/* ---- solo pass 2: the card on the beat ---- */
+.beat-card { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+.beat-card .pcard, .beat-card svg { width: 56px; height: auto; }
+.beat-card p { margin: 0 0 4px; }
