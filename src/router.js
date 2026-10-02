@@ -152,6 +152,9 @@ function travelerHref() {
 }
 
 export function syncTabs() {
+  // The Play tab plays: once there is somebody to play, it opens the session itself. With
+  // nobody yet it opens Travelers, where making one is the first thing on screen.
+  document.querySelector('[data-tab="home"]')?.setAttribute("href", listCharacters().length ? "#/session" : "#/home");
   const t = document.querySelector('[data-tab="traveler"]');
   if (t) {
     t.setAttribute("href", travelerHref());

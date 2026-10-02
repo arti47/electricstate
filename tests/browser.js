@@ -459,6 +459,9 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   // Solo and the GM screen are modes of Play now, not tabs: enabling one adds it to the
   // Play section's nav.
   check(await page.evaluate(() => !!document.querySelector('#screen .subnav-item[href="#/gm"]')), "GM still missing from the Play section nav after enabling");
+  // With a Traveler in the game, the Play tab opens the session itself.
+  check(await page.evaluate(() => document.querySelector('.tabbar [data-tab="home"]').getAttribute("href")) === "#/session",
+    "the Play tab does not open the session once there is a Traveler");
 
   // restore both gated tabs for the remaining checks
   await page.evaluate(() => {

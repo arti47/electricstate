@@ -436,4 +436,6 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   resolved elsewhere. `beatFor()` also runs the same setup ladder as the home card
   (`play.currentStep()`), so Play, Home and Running a session always agree on what is
   missing. Two unit tests pin both directions.
+- The bottom **Play** tab opens `#/session` once a Traveler exists (`syncTabs`), and `#/home`
+  before that so creation is the first thing seen. The app still launches on `#/home`.
 
