@@ -14,6 +14,7 @@ const PATHS = {
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   fight: '<path d="M5 19L17 7M17 7V4h3v3h-3"/><path d="M19 19L7 7M7 7V4H4v3h3"/>',
   chevron: '<path d="M9 6l6 6-6 6"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>',
   // rules subjects
   heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
   hazard: '<path d="M12 4 21 19H3Z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".8" fill="currentColor"/>',

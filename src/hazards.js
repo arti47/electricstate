@@ -114,7 +114,7 @@ function build(rerender) {
 
   // cold and hunger live on the Time screen, where their intervals belong
   wrap.append(card("Cold, hunger and sleep", "These are checked when time passes, so the controls live on the Time screen — tick Out in the cold there and end a Shift.",
-    el("a", { class: "btn", href: "#/time" }, "Time")));
+    related([["#/time", "Time", "clock"]])));
 
   return wrap;
 }

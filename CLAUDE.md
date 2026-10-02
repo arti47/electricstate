@@ -469,3 +469,6 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **Round 3.** GM party rows carry portraits; sheet Tension rows link to the other Traveler's
   sheet with a portrait and a 0–2 meter per side. Buttons inside a `.card-row` never wrap their
   own label (`Roll 3` broke onto two lines on the Journey vehicle card).
+- **Round 4.** Each rules group whose subject has a screen ends with a `related()` chip to it
+  (`GROUP_ROUTE` in `screens.js`); the Rules search carries a search glyph. The Hazards
+  cold/hunger card links to Time with a chip instead of a bare button.

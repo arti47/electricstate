@@ -1969,3 +1969,10 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .t-meter { display: inline-flex; gap: 2px; }
 .t-meter i { width: 6px; height: 14px; border-radius: 2px; background: var(--line-strong); }
 .t-meter i.on { background: var(--danger); }
+
+/* ---- round 4 ---- */
+.rule-group-foot { padding: 4px 12px 12px; }
+.rule-group-foot .related { margin-top: 0; }
+.search-field { position: relative; }
+.search-field > .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); pointer-events: none; display: inline-flex; }
+.search-field > input { padding-left: 42px; }

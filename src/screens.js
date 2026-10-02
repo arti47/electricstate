@@ -18,8 +18,13 @@ import { icon } from "./icons.js";
 const GROUP_ICON = { "Words this game uses": "book", "Rolling dice": "dice", "Health, Hope and Bliss": "heart",
   Combat: "fight", Hazards: "hazard", Neurocasting: "helmet", Vehicles: "car", Gear: "pack", Tension: "link",
   Time: "clock", Advancement: "star", "The Journey": "road", "Everything else": "info" };
+// Where each subject is played, so a rule read here is one tap from the screen that runs it.
+const GROUP_ROUTE = { "Rolling dice": ["#/dice", "Dice", "dice"], Combat: ["#/combat", "Combat", "fight"],
+  Hazards: ["#/hazards", "Hazards", "hazard"], Neurocasting: ["#/neuro", "Neuroscape", "helmet"],
+  Vehicles: ["#/driving", "Driving", "car"], Tension: ["#/tension", "Tension", "link"],
+  Time: ["#/time", "Time", "clock"], "The Journey": ["#/journey", "Journey", "road"] };
 const groupMark = (title) => el("span", { class: "group-mark" }, icon(GROUP_ICON[title] || "info", { size: 20 }));
-import { showToast, confirmModal, promptModal, explain, moreMenu, diceRow } from "./ui.js";
+import { showToast, confirmModal, promptModal, explain, moreMenu, diceRow, related } from "./ui.js";
 import { ARCHETYPES } from "../data.js";
 
 /**
@@ -116,7 +121,7 @@ export function rulesScreen() {
     type: "search", placeholder: "Search rules…", "aria-label": "Search rules",
     oninput: (e) => render(e.target.value)
   });
-  wrap.append(el("div", { class: "field" }, input), results);
+  wrap.append(el("div", { class: "field search-field" }, icon("search", { size: 18 }), input), results);
 
   const focus = sessionStorage.getItem("ruleFocus");
   if (focus) sessionStorage.removeItem("ruleFocus");
@@ -215,6 +220,7 @@ function ruleGroup(title, entries, searching, focus) {
       el("p", {}, entry.text),
       entry.page ? el("p", { class: "faint" }, `Book page ${entry.page}`) : null));
   }
+  if (GROUP_ROUTE[title]) group.append(el("div", { class: "rule-group-foot" }, related([GROUP_ROUTE[title]])));
   return group;
 }
 
