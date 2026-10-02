@@ -1,7 +1,8 @@
 // Combat tracker and the generic progress-task tracker (Phase 4).
 // One task component serves neurocasting difficulties, countdowns, healing clocks and diseases.
 import { el, uid, rollDice, countSixes, d6, clamp, randomInt, onReset } from "./core.js";
-import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js";
+import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS, WEAPONS } from "../data.js";
+import { weapon as findWeapon, rangePenalty } from "./rules.js";
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
 import { maxHealth, isDronePilot } from "./derived.js";
@@ -419,31 +420,101 @@ function combatantCard(combatant, c, rerender) {
 }
 
 /**
- * A Threat's turn, rolled for whoever runs the other side. NPCs roll their best combat
- * attribute and never push; one 6 hits, and each extra 6 adds a point of damage.
+ * A Threat's turn, rolled for whoever runs the other side, by the combat rules
+ * (docs/rules/03-combat-hazards.md): Engaged is close combat on Strength, anything further
+ * is ranged on Agility; the weapon adds its gear dice and its range penalty; one 6 hits
+ * and each extra 6 adds a point to the weapon's Damage. The target then chooses: take the
+ * hit, or react — fight back up close, dodge at range — as an opposed roll that costs the
+ * target's next turn. The attacker must beat the target's 6s; a target who fights back and
+ * wins deals its own base Damage plus extras. NPCs never push.
  */
 async function enemyAttack(combatant, c, rerender) {
   const t = bestiaryEntry(combatant.threatId) || {};
-  const dice = Math.max(t.strength || 0, t.agility || 0) || 3;
-  const targets = c.combatants.filter((x) => x.kind === "traveler").map((x) => getCharacter(x.id)).filter(Boolean);
-  if (!targets.length) return;
-  const select = el("select", { "aria-label": "Target" }, ...targets.map((ch) => el("option", { value: ch.id }, ch.name || "Unnamed")));
+  const travelers = c.combatants.filter((x) => x.kind === "traveler" && getCharacter(x.id));
+  if (!travelers.length) return;
+  const nearest = [...travelers].sort((a, b) => Math.abs(a.zone - combatant.zone) - Math.abs(b.zone - combatant.zone))[0];
+
+  // The Threat's own weapon where its gear names one; an animal's bite is its printed Damage.
+  const gearText = (t.gear || []).join(" ").toLowerCase();
+  const named = WEAPONS.filter((w) => !w.unarmed && gearText.includes(w.name.toLowerCase()));
+  const target = el("select", { "aria-label": "Target" }, ...travelers.map((x) => el("option", { value: x.id, selected: x.id === nearest.id }, x.name)));
+  const weapon = el("select", { "aria-label": "Weapon" },
+    ...(t.damage != null ? [el("option", { value: "__natural" }, `Teeth and claws (Damage ${t.damage})`)] : []),
+    ...WEAPONS.map((w) => el("option", { value: w.id, selected: named[0]?.id === w.id }, w.name)));
+  const bandFor = (x) => { const d = Math.abs(x.zone - combatant.zone); return d === 0 ? "engaged" : d === 1 ? "medium" : d <= 4 ? "long" : "extreme"; };
+  const range = el("select", { "aria-label": "Range" }, ...RANGES.map((r) => el("option", { value: r.id, selected: r.id === bandFor(nearest) }, `${r.label} — ${r.blurb}`)));
+  target.addEventListener("change", () => { range.value = bandFor(c.combatants.find((x) => x.id === target.value)); });
+
   const go = await modal({
     title: `${combatant.name} attacks`,
     body: el("div", {},
-      el("div", { class: "field" }, el("label", {}, "Who at"), select),
-      el("p", { class: "faint" }, `${dice} dice — one 6 hits, each extra 6 adds a point of damage. Threats never push.`)),
+      el("div", { class: "field" }, el("label", {}, "Who at"), target),
+      el("div", { class: "field" }, el("label", {}, "With"), weapon),
+      el("div", { class: "field" }, el("label", {}, "Range"), range),
+      el("p", { class: "faint" }, "Engaged is close combat on Strength; further is ranged on Agility. The weapon adds its gear dice. One 6 hits; each extra 6 adds a point of damage. Threats never push.")),
     actions: [{ label: "Roll", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
   });
   if (!go) return;
-  const rolled = rollDice(dice);
-  const sixes = countSixes(rolled);
-  const target = getCharacter(select.value);
-  logRoll({ label: `${combatant.name} attacks`, dice: rolled, outcome: sixes ? `Hits ${target.name}` : "Misses" });
+
+  const close = range.value === "engaged";
+  const natural = weapon.value === "__natural";
+  const w = natural ? { bonus: 0, damage: t.damage, min: "engaged", max: "engaged" } : findWeapon(weapon.value);
+  const penalty = rangePenalty(w, range.value);
+  if (penalty === null) { showToast(`Out of range for ${natural ? "that" : w.name}.`, "danger"); return; }
+  const attr = (close ? t.strength : t.agility) ?? 3;
+  const dice = rollDice(Math.max(1, attr + (w.bonus || 0) + penalty));
+  const hits = countSixes(dice);
+  const victim = getCharacter(target.value);
+  const victimFighter = c.combatants.find((x) => x.id === victim.id);
   writeCombat({ ...c, combatants: c.combatants.map((x) => (x.id === combatant.id ? { ...x, acted: true } : x)) });
-  if (!sixes) { showToast(`${combatant.name} misses.`); rerender(); return; }
+
+  if (!hits) {
+    logRoll({ label: `${combatant.name} attacks`, dice, outcome: "Misses" });
+    showToast(`${combatant.name} misses.`);
+    rerender();
+    return;
+  }
+
+  // The target's choice. Someone down, or already reacting this round, just takes it.
+  let defence = 0, defDice = null;
+  const canReact = (victim.state?.health ?? 1) > 0 && victimFighter?.realm !== "neuroscape";
+  const reactLabel = close ? "Fight back" : "Dodge";
+  const choice = canReact ? await modal({
+    title: `${hits} ${hits === 1 ? "hit" : "hits"} on ${victim.name}`,
+    body: el("div", {},
+      el("p", { class: "mono faint" }, dice.join(" ")),
+      el("p", {}, `${victim.name} can take the hit, or ${close ? "fight back with Strength" : "dodge with Agility"} — an opposed roll. Reacting costs ${poss(victim)} next turn but covers every attack until then.`)),
+    actions: [{ label: "Take the hit", value: "take", class: "btn-primary" }, { label: reactLabel, value: "react" }]
+  }) : "take";
+
+  if (choice === "react") {
+    defDice = rollDice(Math.max(1, defencePool(victimFighter, close ? "close" : "ranged")));
+    defence = countSixes(defDice);
+    forfeitNextTurn(victim.id, "reacted");
+  }
+  const net = hits - defence;
+  logRoll({ label: `${combatant.name} attacks`, dice, outcome: net > 0 ? `Hits ${victim.name}` : `${victim.name} ${close ? "fights it off" : "dodges"}` });
+
+  if (net <= 0) {
+    // Fight back won by the target: the attacker takes the target's base Damage + extras.
+    let note = "";
+    if (close && choice === "react" && defence > hits) {
+      const { baseDamage } = await import("./roller.js");
+      const dmg = baseDamage(victim) + (defence - hits - 1);
+      const after = damageCombatant(combatant.id, dmg);
+      note = ` ${victim.name} hits back for ${dmg}${after ? ` — ${after.health} left` : ""}.`;
+    }
+    await modal({
+      title: close ? "Fought off" : "Dodged",
+      body: el("div", {}, el("p", { class: "mono faint" }, `${dice.join(" ")} against ${defDice?.join(" ") || "—"}`),
+        el("p", {}, `${combatant.name} rolled no more 6s than ${victim.name}, so the attack fails.${note}`)),
+      actions: [{ label: "Good", value: true, class: "btn-primary" }]
+    });
+    rerender();
+    return;
+  }
   const { takeHit } = await import("./roller.js");
-  await takeHit(target, (t.damage ?? 1) + sixes - 1, rerender);
+  await takeHit(victim, (w.damage ?? 1) + net - 1, rerender);
   rerender();
 }
 

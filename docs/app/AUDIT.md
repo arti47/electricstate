@@ -701,3 +701,20 @@ what is happening, and offers at least two things to press.
 
 111 invariants, coverage clean (137 mapped), reachability clean, browser smoke clean, five
 probes clean, button audit clean.
+
+## Rules-fidelity check after the UX and novice passes
+
+Every rule-touching change from the twelfth pass onward was read against `docs/rules/`.
+
+| Change | Verdict |
+|---|---|
+| **Roll its attack** (Threat turn, novice round 2) | **Was wrong, fixed.** Rolled the better of Strength/Agility with no weapon, ignored range, offered the target no reaction, and dealt 1 + extra 6s. Now: Engaged = close combat on Strength, further = ranged on Agility (`03-combat-hazards.md`), weapon gear dice and below-minimum range penalty via `rules.rangePenalty`, out-of-range refused, Damage = weapon Damage (an animal's printed Damage) + extra 6s, the target may take it or fight back / dodge as an opposed roll that forfeits the next turn, the attacker must roll more 6s, and a target who fights back and wins deals its base Damage + extras. Threats never push. |
+| Roll starting Tension | Faithful: 1 toward one or two others, 0 to the rest (`02-traveler.md:47`); the roll only picks who. |
+| Roll the rest (Journey) | Faithful: shared items from the D66 table, a vehicle from the list with one rolled trait, start/destination from house-aid tables already flagged. Length defaults to Short. |
+| Play draws a card each "what happens next" (solo) | Faithful: "draw a card whenever you need input or momentum" (`07-solo-play.md:6`); same deck, events and Countdown as the Solo screen. Play reshuffles a spent deck. |
+| Solo asks for a second Traveler | Faithful: solo runs 2–4 Travelers (`07-solo-play.md:3`). |
+| Attack marks the attacker acted; Apply damage once per roll | Faithful: an attack is the action; one hit per roll. |
+| No dodge for someone at Health 0 | Faithful: Incapacitated makes no attribute rolls. |
+| Night Shift pre-ticks Slept | Rules-neutral default; untick for a night on the road. |
+| Every third scene lights Time passes | Pacing aid only; the Countdown still fires one step at a time, never by itself. |
+| Journey offers its ending at the planned Stop count | Faithful to the length table; an offer, never forced. |

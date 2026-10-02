@@ -584,3 +584,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - `tests/audit.js` counts toasts **shown** (a MutationObserver tally), not toasts on screen: an
   old toast expiring while a new one appeared left the count flat and once flagged Journey's
   working **Add** as a no-op.
+- **Rules-fidelity check after the UX/novice passes** (table in `docs/app/AUDIT.md`). One
+  deviation, fixed: a Threat's **Roll its attack** now follows `03-combat-hazards.md` — Strength
+  at Engaged, Agility beyond, weapon gear dice and range penalty (`rules.rangePenalty`), weapon
+  Damage + extra 6s, and the target's take-it / fight back / dodge opposed reaction that
+  forfeits the next turn. Everything else added since the twelfth pass checked faithful or
+  rules-neutral.
