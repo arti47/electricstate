@@ -11,7 +11,7 @@ import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu
 import { undoLast } from "./store.js";
 import { helmetGraphic, archetypeGlyph, ringDial, portrait } from "./graphics.js";
 import { syncVignette } from "./scene.js";
-import { icon } from "./icons.js";
+import { icon, gearIcon } from "./icons.js";
 import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
 // ---------------------------------------------------------------- vitals header
@@ -92,16 +92,6 @@ export function miniVitals(ch) {
     pips(hope, pMax, "hope", "Hope"),
     tracksBliss(ch) ? blissBar(ch.state?.bliss ?? 0, ch.state?.permanentBliss ?? 0, hope, pMax) : null);
 }
-
-/** An item's icon from its name: a gun, a blade, a medical kit, rope, food, tools… */
-const GEAR_ICONS = [
-  [/gun|pistol|rifle|revolver|shotgun|carbine|taser/i, "gun"], [/knife|blade|machete|sword|axe|bayonet/i, "blade"],
-  [/aid|medic|bandage|pill|drug|neurine|syringe|morphine/i, "med"], [/rope|cord|cable/i, "rope"],
-  [/food|ration|can|water|drink|bottle|coffee|cigar/i, "food"], [/tool|wrench|kit|crowbar|hammer|spare/i, "wrench"],
-  [/radio|phone|walkie|computer|camera|tape/i, "radio"], [/light|torch|lamp|flare/i, "flashlight"],
-  [/armor|armour|vest|helmet|jacket|shield/i, "shield"]
-];
-const gearIcon = (name = "") => GEAR_ICONS.find(([re]) => re.test(name))?.[1] || "pack";
 
 /** One segment per point: what is left, and how much there was. */
 function pips(value, max, kind, label) {

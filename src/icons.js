@@ -56,3 +56,13 @@ export function icon(name, { label = null, size = 20 } = {}) {
   wrap.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"${label ? ` role="img" aria-label="${label}"` : ' aria-hidden="true"'}>${PATHS[name] || ""}</svg>`;
   return wrap;
 }
+
+/** An item's icon from its name: a gun, a blade, a medical kit, rope, food, tools… */
+const GEAR_ICONS = [
+  [/gun|pistol|rifle|revolver|shotgun|carbine|taser/i, "gun"], [/knife|blade|machete|sword|axe|bayonet/i, "blade"],
+  [/aid|medic|bandage|pill|drug|neurine|syringe|morphine/i, "med"], [/rope|cord|cable/i, "rope"],
+  [/food|ration|can|water|drink|bottle|coffee|cigar/i, "food"], [/tool|wrench|kit|crowbar|hammer|spare/i, "wrench"],
+  [/radio|phone|walkie|computer|camera|tape/i, "radio"], [/light|torch|lamp|flare/i, "flashlight"],
+  [/armor|armour|vest|helmet|jacket|shield/i, "shield"]
+];
+export const gearIcon = (name = "") => GEAR_ICONS.find(([re]) => re.test(name))?.[1] || "pack";

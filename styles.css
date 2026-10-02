@@ -1976,3 +1976,8 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .search-field { position: relative; }
 .search-field > .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); pointer-events: none; display: inline-flex; }
 .search-field > input { padding-left: 42px; }
+
+/* ---- round 5 ---- */
+.face-head { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; margin-bottom: 4px; }
+.face-head svg { border-radius: 50%; }
+.face-head h3 { margin: 0; }

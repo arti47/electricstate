@@ -472,3 +472,7 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **Round 4.** Each rules group whose subject has a screen ends with a `related()` chip to it
   (`GROUP_ROUTE` in `screens.js`); the Rules search carries a search glyph. The Hazards
   cold/hunger card links to Time with a chip instead of a bare button.
+- **Round 5.** Tension screen cards open with the Traveler's portrait, linking to the sheet
+  (`.face-head` — kept outside `h3:first-child` so the card-icon pass leaves it alone).
+  `gearIcon()` moved to `icons.js` (a sheet ↔ wizard import would be circular); the Journey's
+  shared items wear the same icons as the sheet's inventory.

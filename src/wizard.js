@@ -1,7 +1,7 @@
 // Creation wizard (Phase 1). Follows the book's 17-step order, grouped into screens.
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
-import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt, ringDial } from "./graphics.js";
-import { icon } from "./icons.js";
+import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt, ringDial, portrait } from "./graphics.js";
+import { icon, gearIcon } from "./icons.js";
 import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, onReset } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
@@ -699,7 +699,7 @@ function buildJourney(rerender) {
   const list = el("ul", { class: "list" });
   for (const item of j.sharedItems || []) {
     list.append(el("li", {}, el("div", { style: "padding:10px 4px" },
-      el("div", { class: "card-row" }, el("strong", {}, item.name),
+      el("div", { class: "card-row" }, el("span", { class: "item-name" }, el("span", { class: "item-icon" }, icon(gearIcon(item.name), { size: 20 })), el("strong", {}, item.name)),
         el("button", { class: "btn", onclick: () => save({ sharedItems: j.sharedItems.filter((x) => x !== item) }) }, "Drop")))));
   }
   itemsCard.append(list);
@@ -795,7 +795,8 @@ function buildTension(rerender) {
     // Talking it down happens on the Time screen; that is where these numbers fall.
     related([["#/time", "Time", "clock"]])));
   for (const from of chars) {
-    const card = el("div", { class: "card" }, el("h3", {}, from.name || "Unnamed"));
+    const card = el("div", { class: "card" },
+      el("a", { class: "face-head", href: `#/sheet/${from.id}` }, portrait(from, { size: 36, frame: false }), el("h3", {}, from.name || "Unnamed")));
     for (const to of chars) {
       if (to.id === from.id) continue;
       const value = from.tension?.[to.id] ?? 0;
