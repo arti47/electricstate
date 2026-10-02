@@ -428,4 +428,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   - `html[data-route]` is set on every render; the Neuroscape skin keys off it.
   - Text nodes between a number and its `<small>` label need a real space (`" "`): tests and
     screen readers read `textContent`, where `52` + `cards left` ran together as `52cards left`.
+- **Play is in step with the rest of the game.** The session director kept a private `beat`
+  and only moved when its own buttons were pressed, so a Stop built on the GM screen or in
+  solo, a Countdown fired there, or a Blocker resolved there left Play saying "Ready when
+  you are". `session.reconcile()` runs before every render: it arrives at a Stop it did not
+  open, says a Countdown step fired elsewhere (`director.firedSeen`), and wraps a Stop
+  resolved elsewhere. `beatFor()` also runs the same setup ladder as the home card
+  (`play.currentStep()`), so Play, Home and Running a session always agree on what is
+  missing. Two unit tests pin both directions.
 

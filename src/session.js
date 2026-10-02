@@ -17,7 +17,8 @@ import { ROUTE_FEATURES } from "../data-journey.js";
 import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { SHIFT_NAMES } from "../data.js";
 import { listCharacters, getJourney, saveJourney, noteEvent } from "./store.js";
-import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolveStop } from "./stops.js";
+import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolveStop, listStops } from "./stops.js";
+import { currentStep } from "./play.js";
 import { getCombat } from "./combat.js";
 import { rollGender, splitPairedName, subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, explain, modal } from "./ui.js";
@@ -25,7 +26,8 @@ import { sceneBand } from "./scene.js";
 
 /** Which picture each beat gets: the road at first light, a stop, trouble, nightfall. */
 const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop", scene: "stop",
-  pressure: "crisis", crisis: "crisis", fighting: "crisis", wrap: "close", "no-one": "open" };
+  pressure: "crisis", crisis: "crisis", fighting: "crisis", wrap: "close", "no-one": "open",
+  "no-destination": "open", "no-vehicle": "open", "no-tension": "open", "journey-over": "close" };
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d6() * 10 + d6())];
 const someone = () => {
@@ -130,6 +132,14 @@ export function beatFor(state = director()) {
       choices: [{ label: "Make a Traveler", href: "#/create", primary: true }] };
   }
 
+  // The Journey has to exist before a session can run on it. The same ladder the home card
+  // and Running a session use, so all three always agree on what is missing.
+  const ladder = currentStep();
+  if (ladder.phase === "setup" || ladder.phase === "done") {
+    return { id: ladder.id, heading: ladder.title, now: ladder.blurb, you: ladder.aside || null,
+      choices: ladder.actions };
+  }
+
   if (combat?.active) {
     return { id: "fighting", heading: `A fight — round ${combat.round}`,
       now: "Somebody swung first. Nothing else happens until this is over.",
@@ -200,6 +210,48 @@ export function beatFor(state = director()) {
   }
 }
 
+// ------------------------------------------------------------------ keeping in step
+const STOP_BEATS = ["arrived", "scene", "pressure", "crisis"];
+const RESOLVED_LINE = "It is dealt with. Not tidily, probably, but the road ahead is open again.";
+
+/**
+ * The director keeps its own place in the story, but the story also moves on the other
+ * screens: a Stop built on the GM screen or generated in solo, a Countdown fired there, a
+ * Blocker resolved there. Before showing a beat, catch up with the real game — otherwise
+ * Play says "ready when you are" while the GM screen is three Countdown steps into a Stop.
+ */
+export function reconcile() {
+  const state = director();
+  const stop = activeStop();
+
+  // A Stop is in play that this screen did not open: arrive at it.
+  if (stop && !stop.resolved && state.stopId !== stop.id) {
+    const now = arrivalLine(stop);
+    say(now, "arrive");
+    write({ beat: "arrived", now, stopId: stop.id, scenes: 0, firedSeen: stop.countdownProgress || 0 });
+    return;
+  }
+  if (!state.stopId || !STOP_BEATS.includes(state.beat)) return;
+
+  const mine = listStops().find((x) => x.id === state.stopId);
+  if (!mine) { write({ beat: "idle", stopId: null, now: null }); return; }
+
+  // Resolved somewhere else: the Stop is over here too.
+  if (mine.resolved) {
+    say(RESOLVED_LINE, "wrap");
+    write({ beat: "wrap", now: RESOLVED_LINE });
+    return;
+  }
+
+  // Its Countdown ran on somewhere else: say the newest step, as if it had fired here.
+  const fired = mine.countdownProgress || 0;
+  if (fired > (state.firedSeen ?? 0) && mine.countdown?.[fired - 1]) {
+    const now = `${mine.countdown[fired - 1]} (${fired} of ${mine.countdown.length})`;
+    say(now, "pressure");
+    write({ beat: fired >= mine.countdown.length ? "crisis" : "pressure", now, firedSeen: fired });
+  }
+}
+
 // --------------------------------------------------------------- the machinery
 export function advance(act) {
   const state = director();
@@ -224,7 +276,7 @@ export function advance(act) {
     setActiveStop(fresh.id);
     const now = arrivalLine(fresh);
     say(now, "arrive");
-    write({ beat: "arrived", now, stopId: fresh.id, scenes: 0 });
+    write({ beat: "arrived", now, stopId: fresh.id, scenes: 0, firedSeen: 0 });
     return;
   }
 
@@ -250,13 +302,13 @@ export function advance(act) {
     }
     const now = `${fired.step} (${fired.index} of ${fired.of})`;
     say(now, "pressure");
-    write({ beat: fired.index >= fired.of ? "crisis" : "pressure", now });
+    write({ beat: fired.index >= fired.of ? "crisis" : "pressure", now, firedSeen: fired.index });
     return;
   }
 
   if (act === "resolve") {
     if (stop) resolveStop(stop.id);
-    const now = "It is dealt with. Not tidily, probably, but the road ahead is open again.";
+    const now = RESOLVED_LINE;
     say(now, "wrap");
     write({ beat: "wrap", now });
     return;
@@ -278,6 +330,7 @@ export function sessionScreen() {
 }
 
 function build(rerender) {
+  reconcile();
   const state = director();
   const beat = beatFor(state);
   const wrap = el("div", {}, el("h1", {}, "Play"));
@@ -287,7 +340,7 @@ function build(rerender) {
     sceneBand(SCENE_FOR[beat.id] || "road"),
     el("div", { class: "beat-heading" }, beat.heading),
     el("p", { class: "beat-now" }, beat.now || "—"),
-    el("p", { class: "faint" }, beat.you)));
+    beat.you ? el("p", { class: "faint" }, beat.you) : null));
 
   const actions = el("div", { class: "btn-grid" });
   for (const c of beat.choices) {

@@ -1348,6 +1348,51 @@ await test("the director writes to the shared session record, not a private one"
     "what the director narrates is what the debrief will read back");
 });
 
+await test("Play catches up with a Stop built, fired or resolved on another screen", () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "the coast", vehicle: { name: "Van" } });
+  session.resetDirector();
+  assert.equal(session.beatFor().id, "idle");
+
+  // The GM screen or solo builds a Stop: Play arrives at it rather than still waiting.
+  const stop = stopsMod.saveStop(stopsMod.makeStop(""), { makeActive: true });
+  session.reconcile();
+  assert.equal(session.beatFor().id, "arrived", "a Stop made elsewhere is where Play is now");
+  assert.equal(session.director().stopId, stop.id);
+
+  // Its Countdown fired there: Play says the step, and the third is the crisis.
+  stopsMod.advanceCountdown(stop.id);
+  session.reconcile();
+  assert.equal(session.beatFor().id, "pressure", "a Countdown fired elsewhere lands here");
+  assert.ok(session.beatFor().now.includes(stopsMod.activeStop().countdown[0]), "and says which step it was");
+  stopsMod.advanceCountdown(stop.id); stopsMod.advanceCountdown(stop.id);
+  session.reconcile();
+  assert.equal(session.beatFor().id, "crisis");
+
+  // Resolved there: the Stop is over here too.
+  stopsMod.resolveStop(stop.id);
+  session.reconcile();
+  assert.equal(session.beatFor().id, "wrap", "a Stop resolved elsewhere is finished here");
+
+  // Nothing changed: catching up twice changes nothing.
+  const before = JSON.stringify(session.director());
+  session.reconcile();
+  assert.equal(JSON.stringify(session.director()), before, "reconciling is idempotent");
+});
+
+await test("Play asks for the same setup the home card asks for", () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  session.resetDirector();
+  assert.equal(session.beatFor().id, "no-destination", "no Journey: Play sends you to set one up");
+  assert.equal(session.beatFor().choices[0].href, "#/journey");
+  store.saveJourney({ destination: "the coast" });
+  assert.equal(session.beatFor().id, "no-vehicle");
+  store.saveJourney({ destination: "the coast", vehicle: { name: "Van" } });
+  assert.equal(session.beatFor().id, "idle", "with a Journey, the session can start");
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);
