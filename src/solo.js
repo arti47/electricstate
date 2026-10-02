@@ -267,8 +267,11 @@ function build(rerender) {
 
   // Before the Journey exists there is nothing for a card to answer about. Say what is
   // missing first, the same step Home and Play show.
+  // Before the Journey exists, and once a Stop is behind you, the deck is not the next
+  // thing: say what is, the same step Home and Play show.
   const setup = currentStep();
-  if (setup.phase === "setup") wrap.append(whatNowCard(setup));
+  const steering = ["setup", "close", "done"].includes(setup.phase);
+  if (steering) wrap.append(whatNowCard(setup, { here: "#/solo" }));
 
   // The deck on the table: how much is left, and the last card turned over with what it
   // said. Running the deck down is the pacing, so it leads the screen.
@@ -608,7 +611,7 @@ function build(rerender) {
     lead: el("span", { class: "pool" }, String(s.deck.length), " ", el("small", {}, "cards left")),
     children: [
       // Until there is a Journey to play on, the setup card above holds the lit button.
-      el("button", { class: "btn" + (setup.phase === "setup" ? "" : " btn-primary"), onclick: () => draw(rerender) }, "Draw a card"),
+      el("button", { class: "btn" + (steering ? "" : " btn-primary"), onclick: () => draw(rerender) }, "Draw a card"),
       el("button", { class: "btn", onclick: () => tilt(rerender) }, "Tilt")
     ]
   }));
@@ -666,7 +669,11 @@ export async function drawForStory({ autoShuffle = false } = {}) {
   if (event?.id === "stopCountdown") extra = (await nextStopCountdown()).text;
   if (event?.id === "personalThreat") {
     const step = advancePersonalThreat();
-    extra = step ? `Step ${step.index} of ${step.of}: ${step.event}` : "It has already caught up with you — that Threat has played out.";
+    extra = step ? `Step ${step.index} of ${step.of}: ${step.event}`
+      // Nobody ever set one: saying it "caught up with you" would invent a Threat.
+      : !Object.keys(personalThreats()).length
+        ? "Nobody has a personal Threat running, so nothing comes for anyone yet. Set one under Before you set out."
+        : "It has already caught up with you — that Threat has played out.";
   }
 
   write({ deck, history: [{ suit: card.suit, rank: card.rank, note }, ...state().history].slice(0, 40) });

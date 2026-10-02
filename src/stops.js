@@ -138,11 +138,14 @@ export function stopCard(stop, { onCountdown, onResolve, compact = false } = {})
   card.append(list);
 
   const actions = el("div", { class: "btn-row" });
-  if (onCountdown && done < stop.countdown.length) {
-    actions.append(el("button", { class: "btn btn-primary", onclick: () => onCountdown(stop) }, "Fire the next step"));
+  // The Countdown is pressure, not the next thing to press: lit, a newcomer fires all
+  // three steps before a single scene is played. Once it is spent, ending the Stop is.
+  const spent = done >= stop.countdown.length;
+  if (onCountdown && !spent) {
+    actions.append(el("button", { class: "btn", onclick: () => onCountdown(stop) }, "Fire the next step"));
   }
   if (onResolve && !stop.resolved) {
-    actions.append(el("button", { class: "btn", onclick: () => onResolve(stop) }, "Blocker resolved"));
+    actions.append(el("button", { class: "btn" + (spent ? " btn-primary" : ""), onclick: () => onResolve(stop) }, "Blocker resolved"));
   }
   if (actions.children.length) card.append(actions);
 

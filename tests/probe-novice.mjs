@@ -9,7 +9,7 @@
 // session — creation, the Journey, Tension, a scene, the Countdown, a fight with a hit
 // applied, the debrief, and the next session starting — inside its press budget.
 import { chromium } from "playwright-core";
-import { serve, CHROMIUM } from "./fixtures.js";
+import { serve, CHROMIUM, GAME_HELPERS, SEEDS, seedPage } from "./fixtures.js";
 
 const BUDGET = 320;
 const { base, close } = await serve();
@@ -96,6 +96,39 @@ for (const [tile, expect] of [[1, /#\/gm$/], [2, /#\/sheet\//]]) {
     lit: [...document.querySelectorAll("#screen .btn-primary")].filter((e) => !e.disabled && e.getBoundingClientRect().height > 0).map((e) => e.textContent.trim()) }));
   if (!expect.test(at.hash) || !at.lit.length) modeChecks.push(`tile ${tile} landed on ${at.hash} with lit [${at.lit.join(", ")}]`);
   await c2.close();
+}
+// The Solo screen on its own, the way the book plays it: a Journey ready, the deck on the
+// table, nothing pressed but the lit button. It must get from "Generate a Stop" through
+// the deck's Countdown to the Blocker resolved and the debrief — not draw forever.
+{
+  const c3 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await c3.addInitScript(GAME_HELPERS);
+  await c3.addInitScript(() => sessionStorage.setItem("es.splashed", "1"));
+  const p3 = await c3.newPage();
+  p3.on("pageerror", (e) => errors.push(e.message));
+  await seedPage(p3, base, SEEDS.mid, "solo");
+  await p3.waitForTimeout(300);
+  let debriefed = false;
+  for (let i = 0; i < 260 && !debriefed; i++) {
+    const r = await p3.evaluate(() => {
+      const vis = (e) => { const x = e.getBoundingClientRect(); return x.width > 0 && x.height > 0 && !e.disabled; };
+      const d = document.querySelector(".modal-backdrop:last-of-type .modal");
+      const t = d ? [...d.querySelectorAll(".btn-primary, button")].filter(vis)[0]
+        : [...document.querySelectorAll("#screen .btn-primary, .actionbar .btn-primary")].filter(vis)[0];
+      const log = window.__game.read()?.rollLog || [];
+      if (log.some((x) => x.label === "Improvement")) return "done";
+      if (!t) return null;
+      t.setAttribute("data-solo", "1");
+      return "ok";
+    });
+    if (r === "done") { debriefed = true; break; }
+    if (!r) { modeChecks.push(`solo screen: dead end at ${await p3.evaluate(() => location.hash)}`); break; }
+    await p3.click('[data-solo="1"]', { timeout: 3000 }).catch(() => {});
+    await p3.evaluate(() => document.querySelectorAll("[data-solo]").forEach((e) => e.removeAttribute("data-solo")));
+    await p3.waitForTimeout(120);
+  }
+  if (!debriefed) modeChecks.push("solo screen: the lit button never reached the end of the Stop and the debrief");
+  await c3.close();
 }
 await browser.close();
 close();

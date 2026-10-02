@@ -543,3 +543,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   event; a number card is a Tilt on the scene ("This scene goes your way — a lot."). The card
   sits face up on the beat with the count left, and a spent deck reshuffles in Play (the
   Solo button still refuses, as the book's pacing wants). Not in `player` mode.
+- **Round 2 — the Solo screen on its own.** A lit-only walk of `#/solo` fired the whole
+  Countdown before a scene (Fire the next step was lit; it is pressure, not a next step, so
+  it is plain now), then drew forever after the Blocker was resolved (Solo now shows the
+  shared step card for `setup` / `close` / `done` and unlights Draw while it does — so a
+  resolved Stop lights **End the session**; `whatNowCard(step, { here })` drops links to the
+  screen you are on). A Spades face card with no personal Threat set said one "has already
+  caught up with you"; it now says nobody has one running. **Blocker resolved** lights once
+  the Countdown is spent. `probe-novice` gained this walk: seeded mid-session, `#/solo`,
+  lit-only, must reach the debrief within 260 presses.

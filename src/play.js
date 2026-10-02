@@ -139,8 +139,10 @@ export const currentStep = () => whatNow({
 });
 
 /** The card the home screen shows: where you are, and the one thing to do next. */
-export function whatNowCard(step = currentStep()) {
+export function whatNowCard(step = currentStep(), { here = null } = {}) {
   if (!step) return null;
+  // A link to the screen you are already on is a button that does nothing.
+  if (here) step = { ...step, actions: step.actions.filter((a) => a.href !== here) };
   const card = el("div", { class: "card whatnow" },
     // The act you are in, as a large faded mark behind the card.
     el("span", { class: "whatnow-mark" }, icon(PHASE_ICON[step.phase] || "road", { size: 120 })),
