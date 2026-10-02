@@ -14,7 +14,7 @@ import { showToast, modal, promptModal, confirmModal, explain, diceRow, haptic }
 import { renderVitals } from "./sheet.js";
 import { successSeal, failureStatic, poolPreview } from "./graphics.js";
 import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
-import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn } from "./combat.js";
+import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn, markActed } from "./combat.js";
 
 // ============================================================ pure resolution
 
@@ -456,6 +456,8 @@ async function doRoll(ch, pool, rerender, manual, burst = 1) {
   pending.kept = null;
   haptic(countSixes([...pending.result.base, ...pending.result.gear]) ? "success" : "roll");
   writeLog(ch, pool, pending.result, false, burst);
+  // An attack aimed at someone in the fight is this Traveler's action for the round.
+  if (pending.targetId && getCombat()?.active) markActed(ch.id);
   rerender();
   showResult();
 }
@@ -565,7 +567,11 @@ function resultCard(ch, pool, legality, rerender) {
     actions.append(el("button", { class: "btn", onclick: () => opposedDialog(ch, total, rerender) }, "The target fights back"));
   }
   if (weapon?.special !== "stun") {
-    actions.append(el("button", { class: "btn", onclick: () => damageDialog(ch, rerender) }, "Apply damage"));
+    // A hit on someone in the fight: applying it is the next thing to do, so it is lit.
+    const hit = total > 0 && pending.targetId;
+    actions.append(r.applied
+      ? el("button", { class: "btn", disabled: true }, "Damage applied")
+      : el("button", { class: "btn" + (hit ? " btn-primary" : ""), onclick: () => damageDialog(ch, rerender) }, "Apply damage"));
   }
   card.append(actions);
   return card;
@@ -863,13 +869,13 @@ export async function rallyDialog(target, onDone) {
 }
 
 // ================================================================ damage flow
-export async function damageDialog(ch, onDone) {
+export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
   const combatTarget = pending?.targetId ? findCombatant(pending.targetId) : null;
   // Default to what this attack actually did: the weapon's damage plus every extra 6.
   const sixes = pending?.result ? successes(pending.result) : 0;
   const amount = el("input", {
     type: "number", min: "0", "aria-label": "Damage",
-    value: String(sixes ? damageWithExtras(ch, pending.weaponId, sixes) : 1)
+    value: String(preset ?? (sixes ? damageWithExtras(ch, pending.weaponId, sixes) : 1))
   });
   const armor = el("select", { "aria-label": "Armor or cover" },
     el("option", { value: "0" }, "None"),
@@ -892,6 +898,8 @@ export async function damageDialog(ch, onDone) {
   // If a combatant is targeted and it is not this character, the damage lands on them.
   if (combatTarget && combatTarget.id !== ch.id) {
     const result = damageCombatant(combatTarget.id, soaked.damage);
+    // One roll, one hit: the button that applied it cannot apply it again.
+    if (pending?.result) pending.result.applied = true;
     logRoll({ by: ch.name, label: "Damage", dice: soaked.dice, outcome: `${soaked.damage} to ${result?.name ?? "target"}` });
     await modal({
       title: `${soaked.damage} to ${result?.name ?? "the target"}`,
@@ -1224,5 +1232,20 @@ export function setTarget(id) {
   pending.targetId = id;
   pending.result = null;
 }
+
+/** Something hit this Traveler: a clean table (no stale target), then the damage dialog. */
+export function takeHit(ch, amount, onDone) {
+  pending = { charId: ch.id, attr: "strength", gear: 0, modifier: 0, talents: [], opposedId: null, result: null, weaponId: null };
+  return damageDialog(ch, onDone, { amount });
+}
+
+/** The fight's Attack button: this Traveler's pool, aimed at that combatant. */
+export function attackWith(charId, targetId) {
+  rollFor(charId);
+  setTarget(targetId);
+}
+
+/** A tray opened for a new roll starts with an empty table, not the last result. */
+export function clearResult() { if (pending) pending.result = null; }
 
 onReset(() => { pending = null; });

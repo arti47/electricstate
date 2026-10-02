@@ -2,7 +2,7 @@
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
 import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt, ringDial, portrait } from "./graphics.js";
 import { icon, gearIcon } from "./icons.js";
-import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, onReset } from "./core.js";
+import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, shuffle, onReset } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
@@ -16,7 +16,7 @@ import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, getCharacter, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { listStops, activeStop } from "./stops.js";
-import { showToast, modal, confirmModal, explain, actionBar, dismissModal, related, dieFace } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar, dismissModal, related, dieFace, haptic } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 import { GENDERS, DEFAULT_GENDER, splitPairedName, resolvePairedName, genderOf } from "./pronouns.js";
 
@@ -500,17 +500,19 @@ function build(rerender) {
     // Seven screens of choices from a game you may not have read. Say what the whole thing
     // is for, once, at the top of every step.
     explain("Seven screens make one Traveler. Nothing here is permanent and nothing has to be invented: every field has a roll button, so you can put the whole character together by tapping if you would rather find out who this Traveler is than decide it. If you want to start playing this minute, tap the ready-made Traveler button on the first screen instead — the book's four ready-made Travelers, complete."),
-    body,
-    issues.length ? el("div", { class: "card" }, ...issues.map((i) => el("p", { class: "faint" }, i))) : null,
+    // The fastest way in sits above the archetypes, not under four screens of them.
     draft.step === 0
       ? el("div", { class: "card" },
           el("p", { class: "faint" }, "In a hurry, or new to this? The book prints four finished Travelers. Take one and you can start playing now."),
           el("button", { class: "btn btn-block", onclick: choosePregen }, "Use a ready-made Traveler"))
-      : null);
+      : null,
+    body,
+    issues.length ? el("div", { class: "card" }, ...issues.map((i) => el("p", { class: "faint" }, i))) : null);
 
   // Seven steps, and Next sat below the content of each one.
   wrap.append(...actionBar({
-    lead: el("span", { class: "pool" }, `${draft.step + 1}/${STEPS.length}`, el("small", {}, titles[step])),
+    // A greyed Next with no reason is a dead end: while it is off, the bar says what is missing.
+    lead: el("span", { class: "pool" + (issues.length ? " is-blocked" : "") }, `${draft.step + 1}/${STEPS.length}`, el("small", {}, issues[0] || titles[step])),
     children: [
       draft.step > 0 ? el("button", { class: "btn", onclick: () => { draft.step--; rerender(); } }, "Back") : null,
       draft.step < STEPS.length - 1
@@ -542,21 +544,26 @@ function finish() {
 
 async function choosePregen() {
   const body = el("ul", { class: "list" });
-  for (const p of PREGENS) {
+  // One archetype per group: a ready-made Traveler whose archetype is taken cannot be
+  // picked, so it says so and sits at the bottom instead of failing on the tap.
+  const taken = takenArchetypes();
+  const order = [...PREGENS].sort((a, b) => taken.has(a.archetype) - taken.has(b.archetype));
+  for (const p of order) {
     const erratum = PREGEN_ERRATA.find((e) => e.id === p.id);
+    const used = taken.has(p.archetype);
     body.append(el("li", {}, el("button", {
-      class: "row",
+      class: "row", disabled: used,
       onclick: () => { instantiatePregen(p, DEFAULT_GENDER); dismissModal(false); }
     },
       el("div", { class: "card-row" }, el("strong", {}, p.name),
-        el("span", { class: "faint mono" }, `${p.health}/${p.hope}`)),
+        el("span", { class: "faint mono" }, used ? "Already in the group" : `${p.health}/${p.hope}`)),
       el("div", { class: "faint" }, p.blurb),
       erratum ? el("div", { class: "faint" }, `Note: the printed sheet shows Hope ${erratum.printed}; the formula gives ${erratum.computed}, which is what this app uses.`) : null)));
     // The book prints each pregen with a paired name so either half can play it. Both
     // halves are offered, because the choice also fixes every pronoun the app will write.
     body.append(el("div", { class: "btn-row", style: "padding:0 4px 10px" },
       ...GENDERS.map((g) => el("button", {
-        class: "btn", onclick: () => { instantiatePregen(p, g.id); dismissModal(false); }
+        class: "btn", disabled: used, onclick: () => { instantiatePregen(p, g.id); dismissModal(false); }
       }, pregenName(p, g.id)))));
   }
   await modal({ title: "Pre-made Travelers", body, actions: [{ label: "Cancel", value: false }] });
@@ -730,9 +737,34 @@ function buildJourney(rerender) {
   // of a page that grows every time you roll something.
   const missing = [!j.destination && "a destination", !j.vehicle && "a vehicle",
     (j.sharedItems || []).length < 3 && `${3 - (j.sharedItems || []).length} more shared items`].filter(Boolean);
+  // Someone who does not know what a good destination or vehicle is should not have to
+  // decide: one tap rolls every empty field with the same tables the buttons above use.
+  const rollRest = () => {
+    const patch = {};
+    if (!j.start) patch.start = fromD100(JOURNEY_PLACES);
+    if (!j.destination) patch.destination = `${fromD100(JOURNEY_PLACES)} — ${fromD100(JOURNEY_PURPOSE)}`;
+    if (!j.vehicle) {
+      const base = pick(VEHICLES);
+      const trait = rollTrait();
+      Object.assign(patch, { vehicle: { ...base, label: base.name, traits: [trait], ...applyTrait(base, trait) },
+        fuel: Math.round(FUEL.tankGallons * FUEL.startingFraction), hull: null, chase: null });
+    }
+    const items = [...(j.sharedItems || [])];
+    let guard = 0;
+    while (items.length < 3 && guard++ < 100) {
+      const item = pick(SHARED_ITEMS);
+      if (!items.some((x) => x.roll === item.roll)) items.push(item);
+    }
+    patch.sharedItems = items;
+    save(patch);
+    haptic("roll");
+  };
   wrap.append(...actionBar({
     lead: el("span", { class: "faint" }, missing.length ? `Still needs ${missing.join(", ")}` : "Ready to set out"),
-    children: [el("a", { class: "btn btn-primary", href: "#/home" }, "Done")]
+    children: missing.length
+      ? [el("button", { class: "btn btn-primary", onclick: rollRest }, "Roll the rest"),
+         el("a", { class: "btn", href: "#/home" }, "Done")]
+      : [el("a", { class: "btn btn-primary", href: "#/home" }, "Done")]
   }));
   return wrap;
 }
@@ -813,5 +845,25 @@ function buildTension(rerender) {
     card.append(el("p", { class: "faint" }, TENSION.labels[Math.max(...Object.values(from.tension || { x: 0 }))] || TENSION.labels[0]));
     wrap.append(card);
   }
+  // The book's starting rule, done for you: each Traveler at 1 toward one or two of the
+  // others (never more than there are), 0 toward the rest.
+  const rollStart = () => {
+    for (const from of listCharacters()) {
+      const others = shuffle(chars.filter((c) => c.id !== from.id));
+      const count = Math.min(others.length, d6() <= 3 ? 1 : 2);
+      const tension = Object.fromEntries(others.map((c, i) => [c.id, i < count ? 1 : 0]));
+      saveCharacter({ ...getCharacter(from.id), tension });
+    }
+    haptic("roll");
+    rerender();
+  };
+  const anySet = chars.some((c) => Object.values(c.tension || {}).some((v) => v > 0));
+  wrap.append(...actionBar({
+    lead: el("span", { class: "faint" }, anySet ? "Tension is set" : "Nobody feels anything yet"),
+    children: anySet
+      ? [el("button", { class: "btn", onclick: rollStart }, "Roll it again"),
+         el("a", { class: "btn btn-primary", href: "#/home" }, "Done")]
+      : [el("button", { class: "btn btn-primary", onclick: rollStart }, "Roll starting Tension")]
+  }));
   return wrap;
 }

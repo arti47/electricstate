@@ -15,7 +15,7 @@ import { getJourney } from "./store.js";
 import { homeScreen, rulesScreen, settingsScreen, rollLogScreen } from "./screens.js";
 import { soloScreen } from "./solo.js";
 import { gmScreen } from "./gm.js";
-import { diceScreen } from "./roller.js";
+import { diceScreen, clearResult } from "./roller.js";
 import { wizardScreen, journeyScreen, tensionScreen } from "./wizard.js";
 import { sheetScreen, injuryScreen, clearVitals } from "./sheet.js";
 import { lifecycleScreen } from "./lifecycle.js";
@@ -308,6 +308,9 @@ export function openTray() {
   if (!tray || trayOpen) return;
   trayOpen = true;
   trayHash = location.hash;
+  // Each time the tray opens it is for a new roll: a stale result reads as if it just
+  // happened, and the only button left on it would be Done.
+  clearResult();
   const close = () => closeTray();
   const scrim = el("div", { class: "tray-scrim", onclick: close });
   scrim.id = "trayScrim";
@@ -317,7 +320,9 @@ export function openTray() {
       el("span", { class: "tray-title" }, "Dice"),
       el("div", { class: "btn-row" },
         el("a", { class: "icon-btn", href: "#/log", title: "Roll log", "aria-label": "Roll log", onclick: close }, icon("book")),
-        el("button", { class: "icon-btn", "aria-label": "Close the dice tray", onclick: close }, icon("close")))),
+        // A word, not only an ✕: the way back to the scene has to be findable by someone
+        // who has never used a bottom sheet.
+        el("button", { class: "btn tray-close", "aria-label": "Close the dice tray", onclick: close }, icon("close", { size: 16 }), "Done"))),
     el("div", { class: "tray-body" }, diceScreen()));
   tray.hidden = false;
   document.body.classList.add("tray-open");

@@ -16,7 +16,7 @@ import { MINOR_ENCOUNTERS, TRAVELER_EVENTS, CONVERSATION_SUBJECTS, NPC_PERSONALI
 import { ROUTE_FEATURES } from "../data-journey.js";
 import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { SHIFT_NAMES } from "../data.js";
-import { listCharacters, getJourney, saveJourney, noteEvent } from "./store.js";
+import { listCharacters, getJourney, saveJourney, noteEvent, getRollLog } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolveStop, listStops } from "./stops.js";
 import { currentStep } from "./play.js";
 import { getCombat } from "./combat.js";
@@ -49,7 +49,8 @@ const write = (patch) => {
 /** One line of what happened, newest first. This is the session as the table saw it. */
 function say(text, kind = "") {
   const d = director();
-  write({ log: [{ id: `${Date.now()}-${d.log.length}`, text, kind }, ...d.log].slice(0, 40) });
+  // `at` marks when this beat was told, so a roll made after it can move the story on.
+  write({ log: [{ id: `${Date.now()}-${d.log.length}`, text, kind }, ...d.log].slice(0, 40), at: Date.now() });
   noteEvent("scene", text);
 }
 
@@ -181,7 +182,10 @@ export function beatFor(state = director()) {
                   { label: "Roll for something", href: "#/dice" }] };
 
     case "scene":
+      // Every third scene at a Stop, the clock is the next thing to press: someone who only
+      // ever presses the lit button must still reach the Countdown and the crisis.
       return { id: "scene", heading: `Scene ${state.scenes}`, now: state.now,
+        after: stop && state.scenes % 3 === 0 ? "pressure" : "scene",
         you: "Say what you do. If it could go badly, roll — one 6 is a success. If it could not, it just works.",
         choices: [{ label: "Roll for it", href: "#/dice", primary: true },
                   { label: "Next thing that happens", act: "scene" },
@@ -346,8 +350,22 @@ function build(rerender) {
     el("p", { class: "beat-now" }, beat.now || "—"),
     beat.you ? el("p", { class: "faint" }, beat.you) : null));
 
+  // Back from the dice with a result: the roll was the thing to do, so the next press is
+  // whatever happens because of it — not the same Roll button again.
+  const lastRoll = getRollLog()[0];
+  const rolled = lastRoll && state.at && lastRoll.ts > state.at;
+  let choices = beat.choices;
+  if (rolled && choices.some((c) => c.primary && c.href === "#/dice") && choices.some((c) => c.act)) {
+    const next = choices.find((c) => c.act === beat.after)
+      || choices.find((c) => c.act && c.act !== "resolve" && c.act !== "leave") || choices.find((c) => c.act);
+    choices = choices.map((c) => ({ ...c, primary: c === next }));
+    wrap.append(el("div", { class: "card roll-echo" },
+      el("strong", {}, lastRoll.label || "Roll"), " ",
+      el("span", { class: "faint" }, lastRoll.outcome || ""),
+      el("p", { class: "faint" }, "Say what that means for the scene, then press on.")));
+  }
   const actions = el("div", { class: "btn-grid" });
-  for (const c of beat.choices) {
+  for (const c of choices) {
     actions.append(c.href
       ? el("a", { class: "btn" + (c.primary ? " btn-primary" : ""), href: c.href }, c.label)
       : el("button", {

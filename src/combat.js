@@ -46,6 +46,13 @@ export function startCombat(side = "attackers") {
 
 export function endCombat() { writeCombat(null); }
 
+/** This combatant has taken a turn this round. */
+export function markActed(id) {
+  const c = getCombat();
+  if (!c?.combatants.some((x) => x.id === id && !x.acted)) return;
+  writeCombat({ ...c, combatants: c.combatants.map((x) => (x.id === id ? { ...x, acted: true } : x)) });
+}
+
 export const findCombatant = (id) => (getCombat()?.combatants || []).find((c) => c.id === id) || null;
 
 /** Anything with a stat block that can stand opposite the Travelers, animals included. */
@@ -239,8 +246,25 @@ function build(rerender) {
       "End it");
     if (!ok) return;
     endCombat();
-    rerender();
+    // Back to the story if the app was running one; otherwise stay on the tracker.
+    const beat = getJourney()?.director?.beat;
+    if (beat && beat !== "idle") location.hash = "#/session";
+    else rerender();
   };
+  // A fight with nobody on the other side is the first thing a newcomer creates, and the
+  // round loop spins forever on it. Say so, and make adding the other side the button.
+  const foes = c.combatants.filter((x) => x.side !== "travelers");
+  if (!foes.length) {
+    wrap.append(el("div", { class: "card is-up" },
+      el("strong", {}, "Nobody on the other side yet"),
+      el("p", { class: "faint" }, "Add whoever the Travelers are fighting — a Threat from the book, or an animal. Each one gets a card with its health, and the Attack button rolls against it."),
+      el("button", { class: "btn btn-primary btn-block", onclick: () => addThreat(rerender) }, "Add who you are fighting")));
+  } else if (foes.every((x) => (x.health ?? 1) <= 0)) {
+    wrap.append(el("div", { class: "card is-up" },
+      el("strong", {}, "The other side is down"),
+      el("p", { class: "faint" }, "Nobody is left standing against you. End the fight; anyone Incapacitated still owes a serious injury roll."),
+      el("button", { class: "btn btn-primary btn-block", onclick: endFight }, "End the fight")));
+  }
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },
       el("strong", {}, `Round ${c.round}`),
@@ -342,8 +366,24 @@ function combatantCard(combatant, c, rerender) {
     }
   }
 
+  // Whoever is up gets the thing they would actually do as the lit button: a Traveler
+  // attacks the nearest Threat still standing, a Threat rolls its attack on a Traveler.
+  // "Turn spent" stays beside it for every other kind of turn.
+  const standing = c.combatants.filter((x) => x.side !== "travelers" && (x.health ?? 1) > 0)
+    .sort((a, b) => Math.abs(a.zone - combatant.zone) - Math.abs(b.zone - combatant.zone));
+  const turnAct = !isUp ? null
+    : ch && standing.length
+      ? el("button", { class: "btn btn-primary", onclick: async () => {
+          const [{ attackWith }, { openTray }] = await Promise.all([import("./roller.js"), import("./router.js")]);
+          attackWith(ch.id, standing[0].id);
+          openTray();
+        } }, `Attack ${standing[0].name}`)
+      : !ch && (combatant.health ?? 1) > 0
+        ? el("button", { class: "btn btn-primary", onclick: () => enemyAttack(combatant, c, rerender) }, "Roll its attack")
+        : null;
   card.append(el("div", { class: "btn-grid", style: "margin-top:8px" },
-    el("button", { class: "btn" + (isUp ? " btn-primary" : ""), onclick: () => update({ acted: true }) }, "Turn spent"),
+    turnAct,
+    el("button", { class: "btn" + (isUp && !turnAct ? " btn-primary" : ""), onclick: () => update({ acted: true }) }, "Turn spent"),
     el("button", {
       class: "btn", onclick: async () => {
         // The tray rolls over the fight, so the tracker stays where it was.
@@ -372,6 +412,35 @@ function combatantCard(combatant, c, rerender) {
       }
     }, "Damage") : null));
   return card;
+}
+
+/**
+ * A Threat's turn, rolled for whoever runs the other side. NPCs roll their best combat
+ * attribute and never push; one 6 hits, and each extra 6 adds a point of damage.
+ */
+async function enemyAttack(combatant, c, rerender) {
+  const t = bestiaryEntry(combatant.threatId) || {};
+  const dice = Math.max(t.strength || 0, t.agility || 0) || 3;
+  const targets = c.combatants.filter((x) => x.kind === "traveler").map((x) => getCharacter(x.id)).filter(Boolean);
+  if (!targets.length) return;
+  const select = el("select", { "aria-label": "Target" }, ...targets.map((ch) => el("option", { value: ch.id }, ch.name || "Unnamed")));
+  const go = await modal({
+    title: `${combatant.name} attacks`,
+    body: el("div", {},
+      el("div", { class: "field" }, el("label", {}, "Who at"), select),
+      el("p", { class: "faint" }, `${dice} dice — one 6 hits, each extra 6 adds a point of damage. Threats never push.`)),
+    actions: [{ label: "Roll", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (!go) return;
+  const rolled = rollDice(dice);
+  const sixes = countSixes(rolled);
+  const target = getCharacter(select.value);
+  logRoll({ label: `${combatant.name} attacks`, dice: rolled, outcome: sixes ? `Hits ${target.name}` : "Misses" });
+  writeCombat({ ...c, combatants: c.combatants.map((x) => (x.id === combatant.id ? { ...x, acted: true } : x)) });
+  if (!sixes) { showToast(`${combatant.name} misses.`); rerender(); return; }
+  const { takeHit } = await import("./roller.js");
+  await takeHit(target, (t.damage ?? 1) + sixes - 1, rerender);
+  rerender();
 }
 
 async function addThreat(rerender) {

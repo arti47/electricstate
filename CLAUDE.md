@@ -489,3 +489,19 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - **Stop hook.** `.claude/settings.json` runs `.claude/hooks/verify-on-stop.sh`: a session
   cannot end its turn while `npm run verify` fails (exit 2 feeds failures back). It skips when
   HEAD + working tree are unchanged since the last clean run (`.claude/.verified`, ignored).
+- **Round 2 — the lit-button walk.** `tests/probe-novice.mjs` (in `npm run probe`, alone as
+  `npm run probe:novice`): cold start, presses only the lit button, must reach Travelers →
+  destination → Tension → a scene → the Countdown → a fight → a hit applied, with no screen
+  lacking a lit button. Its first run found seven dead ends, all fixed: the empty home's lit
+  button skipped the mode question (the tiles now lead); a greyed wizard Next gave no reason
+  (the bar now names what is missing) and the ready-made Traveler sat under the archetypes;
+  the pregen picker let you tap a taken archetype; Journey's only lit button was Done (now
+  **Roll the rest**); Tension had nothing to press (**Roll starting Tension**, the book's rule);
+  a session scene offered the same Roll forever (after a roll the next beat is lit, and every
+  third scene lights **Time passes**); the tray reopened on a stale result (`clearResult()`)
+  and closed only by an ✕ (now **Done**); a fight could start with nobody on the other side,
+  and the up card's lit button was Turn spent. Now: **Add who you are fighting**, a Traveler's
+  lit button is **Attack <nearest Threat>** (`attackWith`), a Threat's is **Roll its attack**
+  (best of Strength/Agility, never pushes, `takeHit` → damage dialog), an aimed roll marks the
+  attacker acted (`markActed`), **Apply damage** is lit on a hit and cannot apply twice
+  (`result.applied`), **End the fight** lights when the other side is down and returns to Play.

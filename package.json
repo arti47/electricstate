@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Player-character companion app for The Electric State RPG. Dev tooling only — the app itself has no build step.",
+  "description": "Player-character companion app for The Electric State RPG. Dev tooling only \u2014 the app itself has no build step.",
   "scripts": {
     "test": "node tests/run.js && node tests/links.mjs && node tests/coverage.mjs && node tests/reachability.mjs && node tests/browser.js",
     "audit": "node tests/audit.js",
-    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-onboarding.mjs && node tests/probe-pwa.mjs",
+    "probe": "node tests/probe-layout.mjs && node tests/probe-flow.mjs && node tests/probe-onboarding.mjs && node tests/probe-novice.mjs && node tests/probe-pwa.mjs",
     "probe:layout": "node tests/probe-layout.mjs",
     "probe:flow": "node tests/probe-flow.mjs",
     "probe:pwa": "node tests/probe-pwa.mjs",
@@ -17,7 +17,8 @@
     "probe:onboarding": "node tests/probe-onboarding.mjs",
     "coverage": "node tests/coverage.mjs",
     "reachability": "node tests/reachability.mjs",
-    "links": "node tests/links.mjs"
+    "links": "node tests/links.mjs",
+    "probe:novice": "node tests/probe-novice.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.47.0"

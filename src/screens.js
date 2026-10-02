@@ -50,9 +50,6 @@ export function homeScreen() {
   }
 
   if (!chars.length) {
-    wrap.append(el("div", { class: "empty card" },
-      el("p", {}, "No Travelers yet. The road is long and someone has to drive it."),
-      el("a", { class: "btn btn-primary", href: "#/create" }, "Create a Traveler")));
     // The first question a newcomer cannot answer from the screen: is this for one person
     // or a table? Each answer switches on the right mode and goes straight to creation.
     const go = (flag) => () => { if (flag) setSetting(flag, true); location.hash = "#/create"; };
@@ -68,6 +65,9 @@ export function homeScreen() {
         el("button", { class: "mode-tile", onclick: go(null) }, icon("chat", { size: 28 }),
           el("strong", {}, "With friends — someone else is the GM"),
           el("span", { class: "faint" }, "Make your one Traveler; this app is your character sheet and dice.")))));
+    wrap.append(el("div", { class: "empty card" },
+      el("p", {}, "No Travelers yet. The road is long and someone has to drive it."),
+      el("a", { class: "btn", href: "#/create" }, "Create a Traveler")));
   } else {
     const list = el("ul", { class: "list" });
     for (const c of chars) {
