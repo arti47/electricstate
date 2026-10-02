@@ -283,7 +283,9 @@ function build(rerender) {
       j.vehicle ? el("div", { class: "card-row" },
         el("span", { class: "faint" }, `Fuel ${j.fuel ?? 0} gallons`), fuelDial(j.fuel ?? 0, FUEL.tankGallons)) : null)));
 
-  const opts = { resting: true, slept: false, fed: true, travelled: false, nurse: false, neurocastToday: false };
+  // The Night Shift is the one people sleep through: pre-ticked, so pressing Shift all day
+  // does not quietly sleep-deprive everyone. Untick it for a night spent driving.
+  const opts = { resting: true, slept: (j.shift || SHIFT_NAMES[0]) === "Night", fed: true, travelled: false, nurse: false, neurocastToday: false };
   // Each thing that happened is a tile with its mark; the switch is still a real checkbox.
   const OPTION_ICON = { resting: "bed", nurse: "med", slept: "moon", fed: "food", cold: "snow",
     extremeCold: "snow", travelled: "car", neurocastToday: "helmet" };

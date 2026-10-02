@@ -559,3 +559,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   more it needs. Death rolls and pushes use the same pad. The browser smoke taps a pool in,
   short first. Its gear test once read the pool size off `.pool` — the lead number and the
   small label concatenate in `textContent` ("31 base"), so read `.pool small`.
+- **Round 4 — lit-only walks of every other screen.** GM: **Roll up a Stop** did nothing with
+  the name left blank (now named after its Blocker), and with a Stop in play nothing was lit
+  (the GM's Countdown is lit via `stopCard({ litCountdown })` — the GM is the deck at a
+  table; solo keeps it plain), and a resolved Stop left nothing lit and a new one inactive.
+  Neuroscape lit Roll on a finished task (now **New task**). Time pre-ticks **Slept** on the
+  Night Shift, so pressing Shift all day no longer sleep-deprives everyone. Hazards no longer
+  offers a dodge to someone already down.
+  `tests/probe-screens.mjs` (in `npm run probe`, alone as `npm run probe:screens`) keeps
+  them closed: fourteen screens, a dozen lit-only presses each, from mid-session.

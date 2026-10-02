@@ -124,7 +124,8 @@ async function applyHazard(ch, label, power, { dodgeable = false } = {}, onDone)
   let final = roll.damage;
   let dodge = null;
 
-  if (dodgeable && final > 0) {
+  // Someone already down cannot throw themselves clear.
+  if (dodgeable && final > 0 && (ch.state?.health ?? 1) > 0) {
     const wants = await modal({
       title: `${label}: ${final} damage`,
       body: el("div", {},

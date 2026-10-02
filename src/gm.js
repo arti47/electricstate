@@ -45,9 +45,10 @@ function build(rerender) {
     el("div", { class: "gm-side" }, partyCard()),
     el("div", {}, stopBuilder(rerender), threatCard(), tablesCard())));
   // With no Stop in play, building one is the GM's next job — pinned, not under the party.
-  if (!activeStopId()) {
+  const live = sharedStops().find((x) => x.id === activeStopId());
+  if (!live || live.resolved) {
     wrap.append(...actionBar({
-      lead: el("span", { class: "faint" }, "No Stop in play"),
+      lead: el("span", { class: "faint" }, live ? "That Stop is dealt with" : "No Stop in play"),
       children: [el("button", { class: "btn btn-primary", onclick: () => newStop(rerender) }, "Roll up a Stop")]
     }));
   }
@@ -82,9 +83,14 @@ function partyCard() {
 
 // ------------------------------------------------------------- stop builder
 async function newStop(rerender) {
-  const name = await promptModal("New Stop", { label: "Name it", value: "" });
-  if (!name) return;
-  saveStop(makeStop(name), { makeActive: !activeStopId() });
+  // A name is optional: Save with the box empty and the Stop is named after its Blocker.
+  const name = await promptModal("New Stop", { label: "Name it (or leave it blank)", value: "" });
+  if (name === undefined) return;
+  const stop = makeStop(name || "");
+  if (!stop.name) stop.name = stop.blocker;
+  // Into play if nothing is — and a resolved Stop is nothing.
+  const live = sharedStops().find((x) => x.id === activeStopId());
+  saveStop(stop, { makeActive: !live || live.resolved });
   rerender();
 }
 
@@ -109,6 +115,9 @@ function stopBuilder(rerender) {
         : spoiler(`${stop.setting.terrain} · ${stop.blocker} · Countdown ${stop.countdownProgress}/${stop.countdown.length}`)),
       isActive
         ? stopCard(stop, {
+            // At a table the GM is the deck: firing the Countdown when a scene stalls is the
+            // GM's lit job (in solo the cards do it, so it stays plain there).
+            litCountdown: true,
             onCountdown: async (s2) => {
               const fired = advanceCountdown(s2.id);
               rerender();

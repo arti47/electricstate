@@ -95,7 +95,7 @@ export function resolveStop(id) {
 }
 
 /** Shared renderer, so a Stop looks the same whoever rolled it. */
-export function stopCard(stop, { onCountdown, onResolve, compact = false } = {}) {
+export function stopCard(stop, { onCountdown, onResolve, compact = false, litCountdown = false } = {}) {
   if (!stop) return null;
   const row = (k, v) => el("div", { class: "def" },
     el("span", { class: "def-key" }, k), el("span", { class: "def-value" }, v));
@@ -142,7 +142,7 @@ export function stopCard(stop, { onCountdown, onResolve, compact = false } = {})
   // three steps before a single scene is played. Once it is spent, ending the Stop is.
   const spent = done >= stop.countdown.length;
   if (onCountdown && !spent) {
-    actions.append(el("button", { class: "btn", onclick: () => onCountdown(stop) }, "Fire the next step"));
+    actions.append(el("button", { class: "btn" + (litCountdown ? " btn-primary" : ""), onclick: () => onCountdown(stop) }, "Fire the next step"));
   }
   if (onResolve && !stop.resolved) {
     actions.append(el("button", { class: "btn" + (spent ? " btn-primary" : ""), onclick: () => onResolve(stop) }, "Blocker resolved"));

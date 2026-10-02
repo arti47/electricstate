@@ -213,7 +213,10 @@ function build(rerender) {
   wrap.append(...actionBar({
     lead: el("span", { class: "pool" }, `${session.progress}/${session.difficulty}`,
       el("small", {}, `${spec.attr} + ${spec.gear}`)),
-    children: [el("button", { class: "btn btn-primary", onclick: () => doNeuroRoll(ch, rerender) }, "Roll")]
+    // A finished task's next press is a new task, not a Roll that only says "already done".
+    children: [session.progress >= session.difficulty
+      ? el("button", { class: "btn btn-primary", onclick: () => { session.progress = 0; session.rolls = []; rerender(); } }, "New task")
+      : el("button", { class: "btn btn-primary", onclick: () => doNeuroRoll(ch, rerender) }, "Roll")]
   }));
   return wrap;
 }
