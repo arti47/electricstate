@@ -42,6 +42,23 @@ export function readTilt(card) {
   return { good, degree, label: `${degree} — ${good ? "good for the Travelers" : "bad for the Travelers"}` };
 }
 
+/**
+ * A Tilt in words a newcomer can act on, and as a meter: four steps of bad on the left,
+ * four of good on the right, the card's step lit. "Medium — bad for the Travelers" is a
+ * rule; "it goes against you, clearly" is an answer.
+ */
+const DEGREE_WORDS = { Low: "a little", Medium: "clearly", High: "a lot", Extreme: "completely" };
+const DEGREE_STEP = { Low: 1, Medium: 2, High: 3, Extreme: 4 };
+function tiltMeaning(read) {
+  const step = DEGREE_STEP[read.degree] || 1;
+  const meter = el("div", { class: "tilt-meter", role: "img", "aria-label": read.label },
+    ...[-4, -3, -2, -1, 1, 2, 3, 4].map((n) => el("i", {
+      class: [n < 0 ? "is-bad" : "is-good", (read.good ? n === step : n === -step) && "is-on"].filter(Boolean).join(" ")
+    })));
+  return el("div", {}, meter,
+    el("p", {}, `Whatever you were wondering about goes ${read.good ? "your way" : "against you"} — ${DEGREE_WORDS[read.degree] || "a little"}.`));
+}
+
 export const eventFor = (card) => (isFace(card) ? EVENT_TRIGGERS[card.suit] : null);
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
@@ -655,6 +672,7 @@ async function draw(rerender) {
       el("p", {}, note),
       extra ? el("p", { class: "faint" }, extra) : null,
       !event ? el("p", { class: "faint" }, "No event — read it as a Tilt if you need one.") : null,
+      !event ? tiltMeaning(tiltRead) : null,
       exhausted ? el("p", { class: "faint" }, "That was the last card. Reshuffle before the next draw.") : null),
     actions: [{ label: "Good", value: true, class: "btn-primary" }]
   });
@@ -671,7 +689,7 @@ async function tilt(rerender) {
   logEvent("Tilt", read.label, card);
   await modal({
     title: `Tilt — ${card.rank}${SUIT_GLYPH[card.suit]}`,
-    body: el("div", {}, el("div", { class: "card-reveal" }, playingCard(card)), el("p", {}, read.label)),
+    body: el("div", {}, el("div", { class: "card-reveal" }, playingCard(card)), el("p", {}, read.label), tiltMeaning(read)),
     actions: [{ label: "Good", value: true, class: "btn-primary" }]
   });
   rerender();

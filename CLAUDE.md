@@ -527,3 +527,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   the story" → sheet, dice) instead of the Journey ladder, and Play shows the same. **GM**: the
   tile goes straight to `#/gm`, where **Roll up a Stop** is lit. The novice probe also checks both
   tiles land somewhere with a lit button that does that job.
+- **Round 6 — the deck answers in words.** A Tilt (and a number card drawn with no event)
+  now says what it means — "goes your way / against you — a little / clearly / a lot /
+  completely" — beside an eight-step meter (`tiltMeaning()` in `solo.js`), instead of only
+  "Medium — bad for the Travelers".
+- **Six novice rounds closed.** The guards that keep it closed: `probe-novice` (the lit-button
+  walk from cold start to the next session, plus the GM and player tiles), `probe-lit` (one or
+  two lit buttons on every working screen), and the Stop hook that will not let a session end
+  its turn on a red `npm run verify`.

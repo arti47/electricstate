@@ -2003,3 +2003,10 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .attr-pick .btn.is-picked .attr-val { color: var(--ink); }
 .mode-seg { display: flex; margin: 8px 0 4px; }
 .mode-seg .seg-item { flex: 1; }
+
+/* ---- novice round 6: the Tilt as a meter ---- */
+.tilt-meter { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin: 10px 0 4px; }
+.tilt-meter i { height: 10px; border-radius: 3px; background: var(--line); }
+.tilt-meter i:nth-child(4) { margin-right: 6px; }
+.tilt-meter i.is-bad.is-on { background: var(--danger); box-shadow: 0 0 6px var(--danger-soft); }
+.tilt-meter i.is-good.is-on { background: var(--accent); box-shadow: 0 0 6px var(--accent-soft); }
