@@ -90,7 +90,7 @@ export function whatNow({ chars = [], journey = null, stop = null, stops = [], c
   if (stop.resolved) {
     return step("stop-resolved", "close", "The Blocker is dealt with",
       "You can drive on. If the table is winding down, end the session here — the debrief is where Travelers improve, and it wants the memory fresh.",
-      [{ label: "End the session", href: "#/time", primary: true },
+      [{ label: "End the session", href: "#/time/debrief", primary: true },
        { label: "Back on the road", href: Settings.solo() ? "#/solo" : "#/gm" }],
       "A Stop is worth one to three sessions. Leaving usually ends the session.");
   }
@@ -116,7 +116,7 @@ export function whatNow({ chars = [], journey = null, stop = null, stops = [], c
     "Everything the Stop had to throw is on the table. It ends one of two ways: the Travelers deal with the Blocker, or the group cuts its losses and drives out with it unresolved. Both are endings.",
     [{ label: "Resolve the Blocker", href: Settings.solo() ? "#/solo" : "#/gm", primary: true },
      { label: "Roll dice", href: "#/dice" },
-     { label: "End the session", href: "#/time" }],
+     { label: "End the session", href: "#/time/debrief" }],
     "Leaving a Stop unresolved is a real choice, not a failure. It follows you.");
 }
 
@@ -201,7 +201,7 @@ export function playScreen() {
      "Both are endings. An unresolved Stop follows you, which is more interesting than a clean one."],
     ["End the Journey when arriving would mean something",
      "Reaching the destination is not the point and it is not required. When the road has done what it was going to do, close it: each Traveler gets an epilogue and the campaign is kept as a record rather than deleted."]
-  ], [{ label: "End the session", href: "#/time" }, { label: "End the Journey", href: "#/time" }]));
+  ], [{ label: "End the session", href: "#/time/debrief" }, { label: "End the Journey", href: "#/time" }]));
 
   const STUCK = [
     "Nobody is doing anything — fire the Countdown. Pressure beats invitation.",

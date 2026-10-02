@@ -44,7 +44,11 @@ export function startCombat(side = "attackers") {
   return combat();
 }
 
-export function endCombat() { writeCombat(null); }
+export function endCombat() {
+  // When the fight ended, so the story that sent you here knows it is over and moves on.
+  const j = getJourney() || {};
+  saveJourney({ ...j, combat: null, fightEndedAt: Date.now() });
+}
 
 /** This combatant has taken a turn this round. */
 export function markActed(id) {

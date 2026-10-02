@@ -210,7 +210,7 @@ export function beatFor(state = director()) {
     case "wrap":
       return { id: "wrap", heading: "That is the Stop", now: state.now,
         you: "Good place to stop for the night. The debrief is where Travelers improve, and it wants the memory fresh.",
-        choices: [{ label: "End the session", href: "#/time", primary: true },
+        choices: [{ label: "End the session", href: "#/time/debrief", primary: true },
                   { label: "Keep driving", act: "road" }] };
 
     default:
@@ -355,7 +355,12 @@ function build(rerender) {
   const lastRoll = getRollLog()[0];
   const rolled = lastRoll && state.at && lastRoll.ts > state.at;
   let choices = beat.choices;
-  if (rolled && choices.some((c) => c.primary && c.href === "#/dice") && choices.some((c) => c.act)) {
+  // Back from the fight the crisis sent you to: settling it is the next thing, not another fight.
+  const fought = state.at && (getJourney()?.fightEndedAt || 0) > state.at;
+  if (beat.id === "crisis" && fought) {
+    choices = choices.map((c) => ({ ...c, primary: c.act === "resolve" }));
+  }
+  if (!fought && rolled && choices.some((c) => c.primary && c.href === "#/dice") && choices.some((c) => c.act)) {
     const next = choices.find((c) => c.act === beat.after)
       || choices.find((c) => c.act && c.act !== "resolve" && c.act !== "leave") || choices.find((c) => c.act);
     choices = choices.map((c) => ({ ...c, primary: c === next }));

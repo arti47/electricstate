@@ -7,11 +7,11 @@
 // offered the same Roll forever, a fight with nobody on the other side. So the probe fails
 // on any screen with no lit button, on any page error, and on not reaching every act of a
 // session — creation, the Journey, Tension, a scene, the Countdown, a fight with a hit
-// applied — inside its press budget.
+// applied, the debrief, and the next session starting — inside its press budget.
 import { chromium } from "playwright-core";
 import { serve, CHROMIUM } from "./fixtures.js";
 
-const BUDGET = 140;
+const BUDGET = 260;
 const { base, close } = await serve();
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -40,7 +40,11 @@ for (let i = 0; i < BUDGET; i++) {
       scene: j?.journey?.director?.beat === "scene",
       pressure: (j?.journey?.stops || []).some((s) => (s.countdownProgress || 0) > 0),
       fight: (j?.journey?.combat?.combatants || []).some((x) => x.side !== "travelers"),
-      hit: (j?.rollLog || []).some((r) => r.label === "Damage")
+      hit: (j?.rollLog || []).some((r) => r.label === "Damage"),
+      improved: (j?.rollLog || []).some((r) => r.label === "Improvement"),
+      // A new session: the debrief ran and Play is back at its first beat.
+      again: (j?.rollLog || []).some((r) => r.label === "Improvement") && location.hash === "#/session"
+        && (j?.journey?.director?.beat || "idle") === "idle"
     };
     let pressed = null;
     if (dialog) {
@@ -64,7 +68,7 @@ for (let i = 0; i < BUDGET; i++) {
   if (step.facts.travelers) reached.add("travelers");
   trail.push(`${step.facts.hash} → ${step.pressed}`);
   if (!step.pressed) { deadEnd = step.facts.hash; break; }
-  if (["destination", "tension", "scene", "pressure", "fight", "hit"].every((k) => reached.has(k))) break;
+  if (reached.has("again")) break;
   await page.click('[data-novice="1"]', { timeout: 3000 }).catch(() => {});
   await page.evaluate(() => document.querySelectorAll("[data-novice]").forEach((e) => e.removeAttribute("data-novice")));
   await page.waitForTimeout(200);
@@ -75,7 +79,7 @@ close();
 const failures = [];
 if (errors.length) failures.push(`page errors: ${errors.join(" | ")}`);
 if (deadEnd) failures.push(`dead end at ${deadEnd}: nothing lit to press`);
-for (const k of ["travelers", "destination", "tension", "scene", "pressure", "fight", "hit"]) {
+for (const k of ["travelers", "destination", "tension", "scene", "pressure", "fight", "hit", "improved", "again"]) {
   if (!reached.has(k)) failures.push(`never reached: ${k}`);
 }
 if (failures.length) {

@@ -254,9 +254,12 @@ function build(ch, rerender) {
 
   // The things you reach for mid-scene, directly under the vitals rather than below
   // eight cards of reference. Rally and the death roll appear only when they apply.
+  // While a fight is running the sheet is a detour from it: the way back is the lit button.
+  const fighting = getJourney()?.combat?.active;
+  if (fighting) wrap.append(el("a", { class: "btn btn-primary btn-block", href: "#/combat", style: "margin-bottom:8px" }, "Back to the fight"));
   wrap.append(el("div", { class: "btn-grid" },
     // Rolling opens the dice tray over the sheet, already holding this Traveler's pool.
-    el("button", { class: "btn btn-primary", onclick: async () => {
+    el("button", { class: "btn" + (fighting ? "" : " btn-primary"), onclick: async () => {
       const [{ rollFor }, { openTray }] = await Promise.all([import("./roller.js"), import("./router.js")]);
       rollFor(ch.id); openTray();
     } }, "Roll dice"),
@@ -699,7 +702,8 @@ export function injuryScreen(id) {
       }];
       saveCharacter(next);
       showToast(said(`${entry.name} applied.`, r));
-      location.hash = `#/sheet/${id}`;
+      // Injured mid-fight: back to the fight, which is still waiting on everyone else.
+      location.hash = getJourney()?.combat?.active ? "#/combat" : `#/sheet/${id}`;
     };
 
     if (isDronePilot(ch)) {

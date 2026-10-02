@@ -245,10 +245,22 @@ function talkPair(a, b, chars) {
   return pair;
 }
 
-export function lifecycleScreen() {
+export function lifecycleScreen(param) {
   const host = el("div");
   const rerender = () => host.replaceChildren(build(rerender));
   host.append(build(rerender));
+  // "End the session" from Play lands here as #/time/debrief: run the debrief at once
+  // instead of leaving it folded under Bigger boundaries for someone to find.
+  if (param === "debrief") {
+    history.replaceState(null, "", "#/time");
+    // …and then back to Play, where the next session starts from the top.
+    requestAnimationFrame(async () => {
+      if (!(await debrief(rerender))) return;
+      const { resetDirector } = await import("./session.js");
+      resetDirector();
+      location.hash = "#/session";
+    });
+  }
   return host;
 }
 
@@ -446,6 +458,7 @@ async function debrief(rerender) {
   }
   clearSessionLog();   // the record covers one session; the next one starts empty
   rerender();
+  return true;
 }
 
 async function debriefOne(ch) {

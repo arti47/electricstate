@@ -505,3 +505,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   (best of Strength/Agility, never pushes, `takeHit` → damage dialog), an aimed roll marks the
   attacker acted (`markActed`), **Apply damage** is lit on a hit and cannot apply twice
   (`result.applied`), **End the fight** lights when the other side is down and returns to Play.
+- **Round 3 — to the end of the session.** The lit-button probe now continues through the
+  debrief to the next session's first beat. Three more dead ends closed: after a fight the
+  crisis kept lighting **It comes to a fight** (combat writes `journey.fightEndedAt`; Play
+  lights **We solved it** once a fight has ended since the beat); an injury rolled mid-fight
+  left you on the sheet whose lit button was Roll dice (the injury returns to `#/combat`, and
+  the sheet lights **Back to the fight** while one runs); **End the session** opened Time,
+  whose debrief sat folded away (it now goes to `#/time/debrief`, which runs the debrief at
+  once, then resets the director and returns to Play).
