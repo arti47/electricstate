@@ -790,6 +790,31 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   const bonus = await page.evaluate(() => __game.read().characters.g1.inventory.items[0].bonus);
   check(bonus === 0, `two 1s on the Handgun's gear dice should leave it at bonus 0 (Busted), it is ${bonus}`);
   check(errors.length === 0, `gear link: console errors: ${errors.join(" | ")}`);
+
+  // Physical dice by tapping: a short entry keeps the dialog and says how many more.
+  // A working gun again, so there are gear dice to enter after the base ones.
+  await page.evaluate(() => __game.edit((c) => { c.characters.g1.inventory.items[0].bonus = 2; }));
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(150);
+  await page.selectOption('#screen select[aria-label="Weapon"]', "handgun");
+  await page.waitForTimeout(120);
+  const [pBase, pGear] = (await page.textContent("#screen .actionbar .pool small")).match(/\d+/g).map(Number);
+  check(pGear > 1, `the tap test needs more than one gear die, got ${pGear}`);
+  await page.click('#screen .actionbar button:has-text("Enter dice")');
+  await page.waitForTimeout(120);
+  for (let i = 0; i < pBase; i++) await page.click('.modal .dicepad-key[aria-label="6"]');
+  await page.click('.modal button:has-text("Save")');
+  await page.waitForTimeout(150);
+  await page.click('.modal .dicepad-key[aria-label="5"]');
+  await page.click('.modal button:has-text("Save")');
+  await page.waitForTimeout(150);
+  check(/more to go/.test(await page.textContent(".modal")), "a short manual entry did not keep the dialog and say what is missing");
+  await page.waitForTimeout(400);   // the sheet slides back in; a tap mid-slide lands short
+  for (let i = 1; i < pGear; i++) await page.click('.modal .dicepad-key[aria-label="5"]');
+  await page.click('.modal button:has-text("Save")');
+  await page.waitForTimeout(150);
+  check(/success/.test(await page.textContent("#screen .result-head")), "tapped dice did not produce a result");
   await page.close();
 }
 

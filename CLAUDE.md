@@ -552,3 +552,10 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   caught up with you"; it now says nobody has one running. **Blocker resolved** lights once
   the Countdown is spent. `probe-novice` gained this walk: seeded mid-session, `#/solo`,
   lit-only, must reach the debrief within 260 presses.
+- **Round 3 — physical dice for people who have never typed "3 6 1".** Manual entry was a
+  text box per pool and a wrong count threw the whole entry away with a toast. `dicePad()`
+  in `roller.js` shows a face per die as you go, six tappable die faces and ⌫, the text box
+  kept underneath for typists; a short or long entry keeps the dialog open and says how many
+  more it needs. Death rolls and pushes use the same pad. The browser smoke taps a pool in,
+  short first. Its gear test once read the pool size off `.pool` — the lead number and the
+  small label concatenate in `textContent` ("31 base"), so read `.pool small`.

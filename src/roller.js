@@ -10,7 +10,7 @@ import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
 import { Settings } from "./settings.js";
-import { showToast, modal, promptModal, confirmModal, explain, diceRow, haptic } from "./ui.js";
+import { showToast, modal, confirmModal, explain, diceRow, dieFace, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { successSeal, failureStatic, poolPreview } from "./graphics.js";
 import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
@@ -474,22 +474,50 @@ function showResult() {
 
 /** Manual entry: two stages, so a push charges Hope and degrades gear from the right dice. */
 async function askDice(baseCount, gearCount, title) {
-  const parse = (text, count) => {
-    const values = String(text).match(/[1-6]/g)?.map(Number) || [];
-    return values.length === count ? values : null;
-  };
-  const baseText = await promptModal(title, { label: `${baseCount} base dice, e.g. ${Array.from({ length: baseCount }, () => 4).join(" ")}` });
-  if (baseText == null) return null;
-  const base = parse(baseText, baseCount);
-  if (!base) { showToast(`Enter exactly ${baseCount} numbers from 1 to 6.`, "danger"); return null; }
+  const base = await dicePad(title, baseCount, gearCount ? "base dice (the bone ones)" : "dice");
+  if (!base) return null;
   let gear = [];
   if (gearCount) {
-    const gearText = await promptModal(title, { label: `${gearCount} gear dice` });
-    if (gearText == null) return null;
-    gear = parse(gearText, gearCount);
-    if (!gear) { showToast(`Enter exactly ${gearCount} numbers from 1 to 6.`, "danger"); return null; }
+    gear = await dicePad(title, gearCount, "gear dice (the coloured ones)");
+    if (!gear) return null;
   }
   return { base, gear };
+}
+
+/**
+ * Physical dice in, by tapping the faces you see — or typing, for anyone faster that way.
+ * A wrong count used to throw the whole entry away with a toast; now the dialog stays,
+ * keeps what you entered and says how many more it needs.
+ */
+async function dicePad(title, count, kind) {
+  let text = "";
+  let warn = "";
+  for (;;) {
+    const input = el("input", { value: text, inputmode: "numeric", "aria-label": `${count} ${kind}`, placeholder: Array.from({ length: count }, () => "4").join(" ") });
+    const shown = el("div", { class: "dice dicepad-shown" });
+    const values = () => String(input.value).match(/[1-6]/g)?.map(Number) || [];
+    const sync = () => {
+      shown.replaceChildren(...values().map((v) => dieFace(v, { mini: false })),
+        ...Array.from({ length: Math.max(0, count - values().length) }, () => el("span", { class: "die-slot" })));
+    };
+    input.addEventListener("input", sync);
+    const tap = (v) => { if (values().length >= count) return; input.value = [...values(), v].join(" "); sync(); haptic(); };
+    const pad = el("div", { class: "dicepad", role: "group", "aria-label": "Tap the faces you rolled" },
+      ...[1, 2, 3, 4, 5, 6].map((v) => el("button", { type: "button", class: "dicepad-key", "aria-label": String(v), onclick: () => tap(v) }, dieFace(v))),
+      el("button", { type: "button", class: "dicepad-key is-back", "aria-label": "Remove the last die", onclick: () => { input.value = values().slice(0, -1).join(" "); sync(); } }, "⌫"));
+    sync();
+    const body = el("div", {},
+      el("p", { class: "faint" }, `Roll ${count === 1 ? `one ${kind.replace("dice", "die").replace("ones)", "one)")}` : `${count} ${kind}`}, then tap ${count === 1 ? "the face" : "each face"} you see.`),
+      shown, pad,
+      el("div", { class: "field" }, el("label", {}, count === 1 ? "Or type the number, 1 to 6" : `Or type the ${count} numbers, each 1 to 6`), input),
+      warn ? el("p", { class: "faint", style: "color:var(--danger)" }, warn) : null);
+    const ok = await modal({ title, body, actions: [{ label: "Save", value: true, class: "btn-primary" }, { label: "Cancel", value: false }] });
+    if (!ok) return null;
+    const got = values();
+    if (got.length === count) return got;
+    text = input.value;
+    warn = got.length < count ? `${count - got.length} more to go — ${count} in all.` : `That is ${got.length}; it needs exactly ${count}.`;
+  }
 }
 
 function resultCard(ch, pool, legality, rerender) {

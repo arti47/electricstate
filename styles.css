@@ -2015,3 +2015,10 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .beat-card { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; margin: 10px 0; }
 .beat-card .pcard, .beat-card svg { width: 56px; height: auto; }
 .beat-card p { margin: 0 0 4px; }
+
+/* ---- round 3: physical dice by tapping ---- */
+.dicepad { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0; }
+.dicepad-key { display: grid; place-items: center; min-height: 52px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-sunk); color: var(--ink); font: 600 1.2rem var(--mono); cursor: pointer; }
+.dicepad-key .die { --size: 34px; }
+.dicepad-shown { min-height: 46px; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+@media (max-width: 380px) { .dicepad { grid-template-columns: repeat(4, 1fr); } }
