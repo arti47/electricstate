@@ -395,4 +395,20 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   - Conditions now store `healTotal` beside `heal` so the healing ring can show progress.
   - Phone art must not push primaries below the fold: the scene band is 96px under 640px and
     the zone map renders below the card of whoever is up. `probe-layout` caught both.
+- **Fourteenth pass — the world reacts (no copy changed).** See `docs/app/UX-OVERHAUL.md`.
+  - `scene.syncScene({journey, stop, combat, chars, route})` (called by the router as
+    `sceneNow`) sets `html[data-shift|weather|crisis|vehicle|neuro]`; CSS does the rest.
+    `syncVignette(kind)` from `renderVitals` sets `html[data-state]` for the Traveler in view.
+  - Narrative text uses `--serif` (self-hosted Source Serif 4): `.beat-now`, `.narr`,
+    `.rule-entry p`, `.def-value`, `.countdown-steps`, explain bodies. Controls never use it.
+  - Desktop (≥1100px): `.tabbar` becomes a left rail; `buildRail()` adds `.rail-sub` links per
+    tab from `SUBNAV`. The section row hides and the H1 shows again at that width.
+  - Tab changes use `document.startViewTransition` (directional via `html[data-dir]`), never a
+    transform on the live screen. Skipped when `navigator.webdriver` is true — a transition
+    swallows the next click, and every test clicks straight after navigating.
+  - The dice action bar carries `poolPreview()`; its spacer grows only via
+    `.actionbar-spacer:has(+ .actionbar .pool-strip)`.
+  - A selected picker tile is `disabled` rather than a button that does nothing, which the
+    click audit would rightly flag as a no-op.
+  - Every new token scope (dossier, paper) was checked to AA: re-check when touching them.
 

@@ -7,7 +7,9 @@ import { sound } from "./sound.js";
 let openModals = 0;
 
 export function showToast(message, kind = "", action = null) {
-  const t = el("div", { class: "toast" + (kind ? ` is-${kind}` : ""), role: "status" }, el("span", {}, message));
+  const t = el("div", { class: "toast" + (kind ? ` is-${kind}` : "") + (action ? " has-action" : ""), role: "status" },
+    el("span", { class: "toast-icon" }, icon(kind === "danger" ? "hazard" : "info", { size: 18 })),
+    el("span", {}, message));
   // A destructive action that can be undone says so where it happened, instead of asking
   // "are you sure?" first. The toast stays longer when there is something to press.
   if (action) {
@@ -31,13 +33,14 @@ export function haptic(kind = "tick") {
   sound(kind);
 }
 
-export function modal({ title, body, actions = [], dismissible = true }) {
+export function modal({ title, body, actions = [], dismissible = true, tone = "" }) {
   return new Promise((resolve) => {
     const prevFocus = document.activeElement;
     const backdrop = el("div", { class: "modal-backdrop" });
-    const box = el("div", { class: "modal", role: "dialog", "aria-modal": "true", "aria-label": title || "Dialog" });
+    const box = el("div", { class: "modal" + (tone ? ` tone-${tone}` : ""), role: "dialog", "aria-modal": "true", "aria-label": title || "Dialog" });
 
-    if (title) box.append(el("h2", {}, title));
+    // A warning wears its mark; everything else gets the quiet amber stripe.
+    if (title) box.append(el("h2", { class: "modal-title" }, tone === "danger" ? icon("hazard", { size: 22 }) : null, title));
     if (body) box.append(body instanceof Node ? body : el("div", {}, body));
 
     const close = (value) => {
@@ -216,7 +219,7 @@ export function spoiler(content, label = "Tap to reveal") {
 
 export const confirmModal = (title, message, confirmLabel = "Confirm") =>
   modal({
-    title, body: el("p", { class: "muted" }, message),
+    title, tone: "danger", body: el("p", { class: "muted" }, message),
     actions: [
       { label: confirmLabel, value: true, class: "btn-primary" },
       { label: "Cancel", value: false }

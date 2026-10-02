@@ -9,7 +9,7 @@ import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJ
 import { showToast, modal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { forfeitNextTurn } from "./combat.js";
-import { vehicleArt } from "./graphics.js";
+import { vehicleArt, hazardArt } from "./graphics.js";
 
 // ------------------------------------------------------------------- hazards
 /** Blast Power, Fire Intensity and disease Virulence all roll dice the target cannot push. */
@@ -33,6 +33,9 @@ export function hazardScreen() {
   return host;
 }
 
+let hazardKind = "explosion";   // which of the four is open
+let hazardWho = null;
+
 function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Hazards"));
@@ -47,7 +50,9 @@ function build(rerender) {
     return wrap;
   }
 
-  const who = el("select", { "aria-label": "Traveler" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")));
+  // Remembered across the hazard picker, which re-draws the screen.
+  const who = el("select", { "aria-label": "Traveler", onchange: (e) => { hazardWho = e.target.value; } },
+    ...chars.map((c) => el("option", { value: c.id, selected: c.id === hazardWho }, c.name || "Unnamed")));
   wrap.append(el("div", { class: "field" }, el("label", {}, "Who is exposed"), who));
 
   const card = (title, blurb, ...kids) => el("div", { class: "card" }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
@@ -56,7 +61,8 @@ function build(rerender) {
   // explosions
   const blast = el("select", { "aria-label": "Explosive" },
     ...EXPLOSIVES.map((e) => el("option", { value: e.blastPower }, `${e.name} — Blast Power ${e.blastPower}`)));
-  wrap.append(card("Explosion", "Hits everything at Short range of the impact. You may dodge with Agility, but it costs your next turn.",
+  const cards = {};
+  cards.explosion = (card("Explosion", "Hits everything at Short range of the impact. You may dodge with Agility, but it costs your next turn.",
     el("div", { class: "field" }, blast),
     el("div", { class: "btn-row" },
       el("button", { class: "btn btn-primary", onclick: () => applyHazard(target(), "Explosion", +blast.value, { dodgeable: true }, rerender) }, "Roll blast"))));
@@ -64,14 +70,14 @@ function build(rerender) {
   // fire
   const fire = el("select", { "aria-label": "Fire" },
     ...FIRES.map((f) => el("option", { value: f.intensity }, `${f.name} — Intensity ${f.intensity}`)));
-  wrap.append(card("Fire", `Burns again every round you stay in it, and spreads by ${FIRE_SPREAD_PER_ROUND} Intensity a round.`,
+  cards.fire = (card("Fire", `Burns again every round you stay in it, and spreads by ${FIRE_SPREAD_PER_ROUND} Intensity a round.`,
     el("div", { class: "field" }, fire),
     el("div", { class: "btn-row" },
       el("button", { class: "btn btn-primary", onclick: () => applyHazard(target(), "Fire", +fire.value, {}, rerender) }, "Roll intensity"))));
 
   // falling
   const height = el("input", { type: "number", value: "4", min: "1", "aria-label": "Height in metres" });
-  wrap.append(card("Falling", "Damage is half the height in metres, rounded down. A controlled jump rolls Agility to reduce it.",
+  cards.falling = (card("Falling", "Damage is half the height in metres, rounded down. A controlled jump rolls Agility to reduce it.",
     el("div", { class: "field" }, el("label", {}, "Height in metres"), height),
     el("div", { class: "btn-row" },
       el("button", { class: "btn btn-primary", onclick: () => applyFall(target(), Number(height.value) || 0, rerender) }, "Fall"))));
@@ -85,7 +91,7 @@ function build(rerender) {
     ? el("select", { "aria-label": "Nursed by" }, el("option", { value: "" }, "No one"),
         ...nurses.map((c) => el("option", { value: c.id }, c.name)))
     : null;
-  wrap.append(card("Disease", "An opposed Strength roll against the Virulence, once a day, until you win one. While sick you cannot heal.",
+  cards.disease = (card("Disease", "An opposed Strength roll against the Virulence, once a day, until you win one. While sick you cannot heal.",
     el("div", { class: "field" }, disease),
     nurse ? el("div", { class: "field" }, el("label", {}, "Nursed by (a Stretch of care)"), nurse) : null,
     el("div", { class: "btn-row" },
@@ -93,6 +99,18 @@ function build(rerender) {
         class: "btn btn-primary",
         onclick: () => applyDisease(target(), +disease.value, rerender, nurse?.value ? getCharacter(nurse.value) : null)
       }, "Resist"))));
+
+  // Four hazards, one at a time: pick by its picture, and the one card you need is open
+  // with its single roll — rather than four rolls stacked down the screen.
+  const titles = { explosion: "Explosion", fire: "Fire", falling: "Falling", disease: "Disease" };
+  wrap.append(el("div", { class: "haz-pick", role: "group", "aria-label": "Hazard" },
+    ...Object.keys(cards).map((k) => el("button", {
+      // The open one is not a button to press again.
+      class: "haz-tile" + (hazardKind === k ? " is-on" : ""), "aria-pressed": hazardKind === k ? "true" : "false",
+      disabled: hazardKind === k,
+      onclick: () => { hazardKind = k; rerender(); }
+    }, hazardArt(k), el("span", {}, titles[k])))));
+  wrap.append(cards[hazardKind]);
 
   // cold and hunger live on the Time screen, where their intervals belong
   wrap.append(card("Cold, hunger and sleep", "These are checked when time passes, so the controls live on the Time screen — tick Out in the cold there and end a Shift.",

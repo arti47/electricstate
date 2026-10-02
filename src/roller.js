@@ -12,7 +12,7 @@ import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } f
 import { Settings } from "./settings.js";
 import { showToast, modal, promptModal, confirmModal, explain, diceRow, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
-import { successSeal, failureStatic } from "./graphics.js";
+import { successSeal, failureStatic, poolPreview } from "./graphics.js";
 import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn } from "./combat.js";
 
@@ -353,7 +353,10 @@ function build(rerender) {
   // Roll is the most-pressed control in the game and sat below seven cards of setup.
   // It lives above the tab bar now, carrying the pool size with it.
   wrap.append(el("div", { class: "actionbar-spacer" }));
+  const shift = pending.modifier + mods.mod + (rangeMod || 0) + ambushMod + (pending.helpers || 0) + casterMod + drivingMod;
   wrap.append(el("div", { class: "actionbar" },
+    poolPreview({ attr: ch.attributes[pending.attr], boost: talentDice + tension + Math.max(0, shift),
+      penalty: Math.max(0, -shift), gear: pool.gear }),
     el("div", { class: "actionbar-inner" },
       el("span", { class: "pool" }, `${pool.base + pool.gear}`,
         el("small", {}, `${pool.base} base · ${pool.gear} gear`)),

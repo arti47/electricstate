@@ -1,11 +1,12 @@
 // Network-first for the app shell so updates land fast; cache is the offline fallback.
-const CACHE_VERSION = "es-v51";
+const CACHE_VERSION = "es-v52";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.json", "./icon.svg",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png",
   "./fonts/barlow-condensed-latin-500-normal.woff2", "./fonts/barlow-condensed-latin-600-normal.woff2",
   "./fonts/barlow-condensed-latin-700-normal.woff2", "./fonts/ibm-plex-mono-latin-500-normal.woff2",
-  "./fonts/ibm-plex-mono-latin-600-normal.woff2",
+  "./fonts/ibm-plex-mono-latin-600-normal.woff2", "./fonts/source-serif-4-latin-400-normal.woff2",
+  "./fonts/source-serif-4-latin-400-italic.woff2", "./fonts/source-serif-4-latin-600-normal.woff2",
   "./data.js", "./data-tables.js", "./data-gm.js", "./data-solo.js",
   "./data-npcs.js", "./data-pregens.js", "./data-vehicles.js", "./data-library.js", "./data-names.js", "./data-journey.js",
   "./src/main.js", "./src/core.js", "./src/ui.js", "./src/rules.js", "./src/derived.js",

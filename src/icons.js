@@ -23,7 +23,26 @@ const PATHS = {
   link: '<path d="M5 8h10l-3-3M19 16H9l3 3"/>',
   clock: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',
   star: '<path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6Z"/>',
-  road: '<path d="M9 4 5 20M15 4l4 16M12 6v2M12 11v2M12 16v2"/>'
+  road: '<path d="M9 4 5 20M15 4l4 16M12 6v2M12 11v2M12 16v2"/>',
+  cassette: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><path d="M7 18l1.5-3h7l1.5 3"/>',
+  mask: '<path d="M4 7c5-2 11-2 16 0 0 6-3 11-8 11S4 13 4 7Z"/><path d="M8 11h2M14 11h2"/>',
+  chat: '<path d="M4 5h16v10H9l-4 4V5Z"/>',
+  flag: '<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>',
+  grid: '<path d="M3 20h18M5 16h14M8 12h8M12 8v12M7 20l3-8M17 20l-3-8"/>',
+  bolt: '<path d="M13 3 5 13h6l-1 8 8-10h-6Z"/>',
+  gun: '<path d="M3 9h15l2 2v2h-8l-2 6H6l1.5-6H3Z"/><path d="M12 13v2"/>',
+  blade: '<path d="M4 20 15 9l3-5 2 2-5 3L5 20Z"/><path d="M8 13l3 3"/>',
+  med: '<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V5h6v2M12 10v6M9 13h6"/>',
+  rope: '<circle cx="12" cy="10" r="6"/><circle cx="12" cy="10" r="2.5"/><path d="M17 14c2 2 2 5-1 6"/>',
+  food: '<rect x="6" y="5" width="12" height="15" rx="2"/><path d="M6 9h12M6 16h12"/>',
+  wrench: '<path d="M14.5 4a4 4 0 0 0-4.6 5.4L4 15.3 6.7 18l5.9-5.9A4 4 0 0 0 18 7.5l-2.6 2.6-2.4-.5-.5-2.4Z"/>',
+  radio: '<rect x="5" y="8" width="14" height="12" rx="2"/><path d="M8 8 16 3M9 12h6M9 16h2"/>',
+  flashlight: '<path d="M7 3h10l-2 6H9Z"/><rect x="9" y="9" width="6" height="12" rx="1"/>',
+  shield: '<path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6Z"/>',
+  cash: '<rect x="3" y="7" width="18" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/>',
+  fuel: '<path d="M5 20V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v15M4 20h11M5 10h9"/><path d="M14 8h2l2 2v7a1.5 1.5 0 0 0 3 0v-6l-2-2"/>',
+  person: '<circle cx="12" cy="7" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/>',
+  animal: '<path d="M4 15c0-3 2-5 6-5h5l2-3h2l1 3-2 2v6h-2v-3h-7v3H7v-3c-2 0-3-.5-3-1Z"/>'
 };
 
 /** An inline SVG icon. Decorative by default; pass a label when it is the only content. */

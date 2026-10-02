@@ -1,6 +1,7 @@
 // Creation wizard (Phase 1). Follows the book's 17-step order, grouped into screens.
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
 import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt } from "./graphics.js";
+import { icon } from "./icons.js";
 import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
@@ -455,6 +456,9 @@ export function wizardScreen() {
   return host;
 }
 
+const STEP_ICON = { archetype: "traveler", attributes: "dice", talents: "star", identity: "info",
+  gear: "pack", journey: "road", review: "book" };
+
 function build(rerender) {
   const step = STEPS[draft.step];
   const titles = {
@@ -470,6 +474,10 @@ function build(rerender) {
   const wrap = el("div", {},
     el("h1", {}, titles[step]),
     el("p", { class: "faint" }, `Step ${draft.step + 1} of ${STEPS.length}`),
+    // The seven steps as a track: done, here, still to come.
+    el("ol", { class: "stepper-track", "aria-hidden": "true" },
+      ...STEPS.map((id, i) => el("li", { class: i < draft.step ? "is-done" : i === draft.step ? "is-here" : "" },
+        icon(STEP_ICON[id] || "info", { size: 16 })))),
     // Seven screens of choices from a game you may not have read. Say what the whole thing
     // is for, once, at the top of every step.
     explain("Seven screens make one Traveler. Nothing here is permanent and nothing has to be invented: every field has a roll button, so you can put the whole character together by tapping if you would rather find out who this Traveler is than decide it. If you want to start playing this minute, tap the ready-made Traveler button on the first screen instead — the book's four ready-made Travelers, complete."),

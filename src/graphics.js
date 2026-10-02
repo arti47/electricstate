@@ -265,3 +265,34 @@ export function failureStatic() {
   for (let x = 4; x <= 200; x += 4) d += ` L${x} ${10 + ((x * 7919) % 13) - 6}`;
   return html("static", svg("0 0 200 20", `<path d="${d}"/>`, 'preserveAspectRatio="none" width="100%" height="20"'), { "aria-hidden": "true" });
 }
+
+// ---------------------------------------------------------------- pool preview
+/**
+ * The pool about to be thrown, before it is: your attribute's dice, the dice talents and
+ * Tension add (lit), the ones penalties take away (struck), and the gear dice (rimmed).
+ */
+export function poolPreview({ attr = 0, boost = 0, penalty = 0, gear = 0 }) {
+  const row = el("div", { class: "pool-strip", "aria-hidden": "true" });
+  const own = attr + boost;
+  for (let i = 0; i < own; i++) {
+    const struck = i >= own - penalty;
+    row.append(el("span", { class: "ghost" + (i >= attr ? " is-boost" : "") + (struck ? " is-struck" : "") }));
+  }
+  // A pool never drops below one die: penalties past that leave one standing.
+  if (own - penalty < 1) row.append(el("span", { class: "ghost is-floor" }));
+  if (gear) row.append(el("span", { class: "dice-sep" }));
+  for (let i = 0; i < gear; i++) row.append(el("span", { class: "ghost is-gear" }));
+  return row;
+}
+
+// ---------------------------------------------------------------- hazards
+const HAZARD = {
+  explosion: '<path d="M32 6 L37 22 L52 14 L44 29 L60 33 L44 38 L52 53 L37 44 L32 58 L27 44 L12 53 L20 38 L4 33 L20 29 L12 14 L27 22 Z"/><circle class="hz-core" cx="32" cy="33" r="7"/>',
+  fire: '<path d="M32 58 C18 58 12 48 14 38 C16 30 22 26 22 18 C28 22 30 28 30 32 C34 26 36 18 34 8 C46 16 52 28 50 40 C49 51 42 58 32 58 Z"/><path class="hz-core" d="M32 56 C26 56 23 51 24 46 C25 42 28 40 29 36 C32 39 33 42 33 44 C36 41 37 38 37 35 C42 40 43 46 41 50 C39 54 36 56 32 56 Z"/>',
+  falling: '<circle cx="30" cy="12" r="5"/><path d="M30 18 L28 34 M28 22 L18 16 M28 22 L40 18 M28 34 L20 46 M28 34 L36 44" fill="none" stroke-width="4" stroke-linecap="round"/><path class="hz-core" d="M48 20 L48 50 M42 44 L48 52 L54 44" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  disease: '<circle cx="32" cy="32" r="14"/><path d="M32 8v10M32 46v10M8 32h10M46 32h10M15 15l7 7M42 42l7 7M15 49l7-7M42 22l7-7" fill="none" stroke-width="3.5" stroke-linecap="round"/><circle class="hz-core" cx="27" cy="29" r="3"/><circle class="hz-core" cx="37" cy="36" r="2.5"/>'
+};
+/** A blast, a flame, a falling figure, a virus. */
+export function hazardArt(kind, size = 44) {
+  return html(`hazard-art hz-${kind}`, svg("0 0 64 64", HAZARD[kind] || "", `width="${size}" height="${size}"`), { "aria-hidden": "true" });
+}

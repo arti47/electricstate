@@ -9,7 +9,7 @@ import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEv
 import { talent as findTalent } from "./rules.js";
 import { shiftDial, fuelDial } from "./graphics.js";
 import { subj, obj, poss, Subj } from "./pronouns.js";
-import { showToast, modal, confirmModal, explain, actionBar } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
 
@@ -473,9 +473,15 @@ async function improvementRoll(ch, attrId, index) {
     if (afterH > beforeH) next.state.health += afterH - beforeH;
     if (afterP > beforeP) next.state.hope += afterP - beforeP;
     saveCharacter(next);
+    haptic("success");
     await modal({
       title: index ? `Improvement ${index} of 3` : "Improvement",
-      body: el("p", {}, `Rolled ${die} against ${value}. ${ATTRIBUTES.find((a) => a.id === attrId).label} rises to ${next.attributes[attrId]}.`),
+      body: el("div", {},
+        // The new value bursts in: the one moment of the debrief worth celebrating.
+        el("div", { class: "levelup", "aria-hidden": "true" },
+          el("span", { class: "levelup-from" }, String(value)), el("span", { class: "levelup-arrow" }, "→"),
+          el("span", { class: "levelup-to" }, String(next.attributes[attrId]))),
+        el("p", {}, `Rolled ${die} against ${value}. ${ATTRIBUTES.find((a) => a.id === attrId).label} rises to ${next.attributes[attrId]}.`)),
       actions: [{ label: "Good", value: true, class: "btn-primary" }]
     });
     return;

@@ -95,6 +95,46 @@ const night = () => {
   return stars + `<path class="ls-moon" d="M330 26 A11 11 0 1 0 344 40 A9 9 0 1 1 330 26 Z"/>`;
 };
 
+/** The group's vehicle on the road, small, heading for the vanishing point. */
+const roadVehicle = () => `<g class="ls-vehicle"><g class="ls-vehicle-body">
+  <path d="M-9 0 L-7 -3.6 Q-6.4 -4.6 -5 -4.6 L4 -4.6 Q5.4 -4.6 6.4 -3.4 L8.6 -1 L10 -.6 L10 1.6 L-10 1.6 L-10 .2 Z"/>
+  <circle cx="-5.6" cy="1.8" r="1.6"/><circle cx="5.6" cy="1.8" r="1.6"/>
+  <path class="ls-beam" d="M10 -.4 L40 -6 L40 6 Z"/></g></g>`;
+
+/** The neuroscape's grid laid over the low ground: perspective lines to the vanishing point. */
+const neuroGrid = () => {
+  let d = "";
+  for (let i = -8; i <= 8; i++) d += `M${236 + i * 6} ${H} L${236 + i * 70} 160 `;
+  [0.08, 0.2, 0.38, 0.62, 0.9].forEach((t) => { const y = H + (160 - H) * t; d += `M0 ${y.toFixed(1)} L400 ${y.toFixed(1)} `; });
+  return `<path class="ls-gridlines" d="${d}"/>`;
+};
+
+/** What the Stop's weather does to the sky. */
+const WEATHER = { "Storm": "storm", "Rain or snow": "rain", "Windy": "wind", "Clear blue sky": "clear",
+  "Unusually hot or cold": "haze", "Mist and heavy cloud cover": "mist" };
+
+/**
+ * Point the whole scene at the game: the Shift, the Stop's weather, whether things have
+ * turned (a fight, or a Countdown on its last step), whether the group has a vehicle and
+ * is moving or parked at a Stop, and whether someone is in the network.
+ */
+export function syncScene({ journey = null, stop = null, combat = null, chars = [], route = "" } = {}) {
+  syncSky(journey?.shift);
+  const root = document.documentElement;
+  const set = (k, v) => { if (v) { if (root.dataset[k] !== v) root.dataset[k] = v; } else if (k in root.dataset) delete root.dataset[k]; };
+  set("weather", stop && !stop.resolved ? WEATHER[stop.setting?.weather] || "" : "");
+  const lastStep = stop && !stop.resolved && stop.countdown?.length && (stop.countdownProgress || 0) >= stop.countdown.length - 1;
+  set("crisis", combat?.active || lastStep ? "1" : "");
+  set("vehicle", journey?.vehicle ? (stop && !stop.resolved ? "parked" : "moving") : "");
+  set("neuro", route === "neuro" || chars.some((c) => c.state?.wearingCaster) ? "1" : "");
+}
+
+/** Incapacitated, broken or lost: the edges of the screen say so while it lasts. */
+export function syncVignette(kind = "") {
+  const root = document.documentElement;
+  if (kind) root.dataset.state = kind; else delete root.dataset.state;
+}
+
 // ------------------------------------------------------------------ the sky
 export const shiftKey = (shift) => {
   const s = String(shift || "").toLowerCase();
@@ -116,8 +156,17 @@ export function mountScene(host = document.querySelector(".sky")) {
     layer("ls-l-far", ridge()) +
     `<div class="ls-fog ls-fog-far"></div>` +
     layer("ls-l-mid", pylons()) +
-    layer("ls-l-near", road()) +
-    `<div class="ls-fog ls-fog-near"></div>`;
+    layer("ls-l-near", road() + roadVehicle()) +
+    layer("ls-grid", neuroGrid()) +
+    `<div class="ls-fog ls-fog-near"></div>` +
+    `<div class="wx" aria-hidden="true"><i class="wx-a"></i><i class="wx-b"></i><i class="wx-flash"></i></div>` +
+    `<div class="crisis-tint"></div>`;
+  // The state of the Traveler in view, at the edges of the screen (see syncVignette).
+  if (!document.querySelector(".vignette")) {
+    const v = document.createElement("div");
+    v.className = "vignette"; v.setAttribute("aria-hidden", "true");
+    document.body.append(v);
+  }
 
   // Parallax: the far ridge barely moves, the pylons a little more. Cheap — two
   // transforms in a frame callback, and nothing at all under reduced motion.
@@ -137,7 +186,7 @@ export function mountScene(host = document.querySelector(".sky")) {
 }
 
 /** Point the sky at the Journey's current Shift. */
-export function syncSky(shift) {
+function syncSky(shift) {
   const key = shiftKey(shift);
   const root = document.documentElement;
   if (root.dataset.shift !== key) root.dataset.shift = key;

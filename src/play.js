@@ -11,6 +11,7 @@ import { activeStop, listStops } from "./stops.js";
 import { getCombat } from "./combat.js";
 import { Settings } from "./settings.js";
 import { explain } from "./ui.js";
+import { icon } from "./icons.js";
 
 /**
  * Where this group is in the loop, as a pure function of the saved game so it can be
@@ -125,6 +126,8 @@ export const currentStep = () => whatNow({
 export function whatNowCard(step = currentStep()) {
   if (!step) return null;
   const card = el("div", { class: "card whatnow" },
+    // The act you are in, as a large faded mark behind the card.
+    el("span", { class: "whatnow-mark" }, icon(PHASE_ICON[step.phase] || "road", { size: 120 })),
     el("div", { class: "whatnow-phase" }, PHASES[step.phase]?.label || step.phase),
     el("strong", {}, step.title),
     el("p", { class: "faint" }, step.blurb));
@@ -133,6 +136,8 @@ export function whatNowCard(step = currentStep()) {
     ...step.actions.map((a) => el("a", { class: "btn" + (a.primary ? " btn-primary" : ""), href: a.href }, a.label))));
   return card;
 }
+
+const PHASE_ICON = { setup: "traveler", open: "road", play: "dice", crisis: "hazard", close: "clock", done: "star" };
 
 const PHASES = {
   setup: { label: "Before you play", n: 0 },

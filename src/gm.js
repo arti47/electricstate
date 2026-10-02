@@ -12,6 +12,9 @@ import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveSt
          advanceCountdown, resolveStop, stopCard } from "./stops.js";
 import { maxHealth, maxHope } from "./derived.js";
 import { showToast, modal, promptModal, explain, spoiler } from "./ui.js";
+import { miniVitals } from "./sheet.js";
+import { icon } from "./icons.js";
+import { archetypeGlyph } from "./graphics.js";
 
 const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
 const d6Pick = (table) => table[d6() - 1];
@@ -61,6 +64,7 @@ function partyCard() {
         el("strong", {}, c.name || "Unnamed"),
         el("span", { class: "mono faint" },
           `H ${c.state?.health ?? "?"}/${maxHealth(c)} · Hp ${c.state?.hope ?? "?"}/${maxHope(c)} · B ${bliss}`)),
+      miniVitals(c),
       el("div", { class: "faint" }, [c.goal && `Goal: ${c.goal}`, c.threat && `Threat: ${c.threat}`].filter(Boolean).join(" · ") || "No Goal or Threat set"),
       lost && bliss > 0 ? el("div", { class: "faint", style: "color:var(--danger)" }, "Lost in the Electric State") : null,
       (c.conditions || []).length ? el("div", { class: "faint" }, (c.conditions || []).map((x) => x.name).join(", ")) : null));
@@ -136,6 +140,13 @@ function threatCard() {
     else {
       const stats = ["strength", "agility", "wits", "empathy", "health", "hull", "armor"]
         .filter((k) => t[k] != null).map((k) => `${k} ${t[k]}`).join(" · ");
+      // The stat block drawn: a silhouette by kind, and the four attributes as die slots.
+      const kind = t.hull != null ? "dronePilot" : ANIMALS.includes(t) ? "animal" : "person";
+      detail.append(el("div", { class: "threat-art" },
+        el("span", { class: "glyph-tile threat-mark" }, kind === "dronePilot" ? archetypeGlyph("dronePilot", 34) : icon(kind, { size: 34 })),
+        el("div", { class: "threat-bars" }, ...["strength", "agility", "wits", "empathy"].filter((k) => t[k] != null).map((k) =>
+          el("div", { class: "attr-row" }, el("span", { class: "faint" }, k),
+            el("span", { class: "attr-bar" }, ...Array.from({ length: 6 }, (_, i) => el("i", { class: i < t[k] ? "on" : "" }))))))));
       detail.append(el("p", { class: "mono" }, stats));
       if (t.talents) detail.append(el("p", {}, `Talents: ${t.talents.join(", ")}`));
       if (t.gear) detail.append(el("p", {}, `Gear: ${t.gear.join(", ")}`));
@@ -170,12 +181,19 @@ function threatCard() {
 }
 
 // ------------------------------------------------------------------ tables
+const TABLE_ICON = { Blocker: "hazard", Need: "pack", Location: "road", Conflict: "fight", "Electric State": "helmet",
+  "'90s": "cassette", Quirk: "mask", Reaction: "chat", Morale: "flag", Neuroscape: "grid", "Countdown step": "clock",
+  Kicker: "bolt", "Why together": "link" };
+
 function tablesCard() {
-  const out = el("div", { class: "faint", "aria-live": "polite", style: "margin-top:8px" });
-  const roll = (label, fn) => el("button", { class: "btn", onclick: () => { out.replaceChildren(el("strong", {}, `${label}: `), fn()); } }, label);
+  const out = el("div", { class: "roll-slip", "aria-live": "polite" });
+  // Each table wears its own mark; the result lands on a slip under the buttons.
+  const roll = (label, fn) => el("button", {
+    class: "chip table-chip", onclick: () => { out.replaceChildren(el("strong", {}, `${label}: `), fn()); out.classList.add("has-result"); }
+  }, icon(TABLE_ICON[label] || "dice", { size: 18 }), label);
 
   const card = el("div", { class: "card" }, el("h3", {}, "Roll a table"),
-    el("div", { class: "btn-row" },
+    el("div", { class: "chip-row" },
       roll("Blocker", () => d66Pick(BLOCKERS)),
       roll("Need", () => d6Pick(NEEDS)),
       roll("Location", () => d66Pick(LOCATIONS)),

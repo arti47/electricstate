@@ -11,7 +11,9 @@ import { whatNowCard } from "./play.js";
 import { resetRoller } from "./roller.js";
 import { resetNeuro } from "./neurocasting.js";
 import { resetWizard, routeCard } from "./wizard.js";
+import { routeStrip } from "./graphics.js";
 import { archetypeGlyph } from "./graphics.js";
+import { miniVitals } from "./sheet.js";
 import { icon } from "./icons.js";
 
 // A mark for each rules subject, so a long accordion has something to find by eye.
@@ -58,6 +60,7 @@ export function homeScreen() {
           el("strong", {}, c.name || "Unnamed"),
           // Named, not a bare "4/3": which number is Health and which is Hope.
           el("span", { class: "faint mono" }, `Health ${c.state?.health ?? "–"} · Hope ${c.state?.hope ?? "–"}`)),
+        miniVitals(c),
         el("div", { class: "faint" }, ARCHETYPES.find((a) => a.id === c.archetype)?.name || "—")))));
     }
     wrap.append(el("div", { class: "card" }, list));
@@ -174,9 +177,23 @@ export function rulesScreen() {
 function glossaryGroup(entries, searching) {
   const group = el("details", { class: "rule-group", open: searching },
     el("summary", {}, groupMark("Words this game uses"), "Words this game uses", el("span", { class: "count" }, `${entries.length}`)));
-  const list = el("div", { style: "padding:0 12px 10px" });
+  const list = el("div", { class: "glossary", style: "padding:0 12px 10px" });
+  // An A–Z strip: the first entry under each letter gets an anchor, the strip jumps to it.
+  const firsts = new Map();
   for (const g of entries) {
-    list.append(el("div", { class: "def" },
+    const letter = g.term[0].toUpperCase();
+    if (!firsts.has(letter)) firsts.set(letter, g.term);
+  }
+  if (firsts.size > 3) {
+    list.append(el("div", { class: "az", role: "group", "aria-label": "Jump to a letter" },
+      ...[...firsts.keys()].sort().map((letter) => el("button", {
+        class: "az-key", "aria-label": `Words starting with ${letter}`,
+        onclick: () => list.querySelector(`[data-letter="${letter}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" })
+      }, letter))));
+  }
+  for (const g of entries) {
+    const letter = g.term[0].toUpperCase();
+    list.append(el("div", { class: "def", "data-letter": firsts.get(letter) === g.term ? letter : null },
       el("span", { class: "def-key" }, g.term),
       el("span", { class: "def-value" }, g.text,
         g.see
@@ -322,15 +339,25 @@ export function rollLogScreen() {
     add(wrap, distributionPanel(all));
     const shown = all.slice(0, visible);
     const list = el("ul", { class: "list" });
-    for (const r of shown) {
-      list.append(el("li", {}, el("div", { class: "row", style: "padding:10px 4px" },
+    // A timeline: a node per roll, lit for a success, rust for a push, and a break with
+    // the time on it wherever half an hour or more passed between rolls.
+    list.classList.add("timeline");
+    shown.forEach((r, i) => {
+      const prev = shown[i - 1];
+      const gap = prev && prev.ts && r.ts && prev.ts - r.ts > 30 * 60000;
+      const hit = (r.dice || []).includes(6);
+      const pushed = /pushed/i.test(r.label || "");
+      list.append(el("li", {
+        class: ["tl", hit ? "is-hit" : "is-miss", pushed && "is-pushed", (i === 0 || gap) && "tl-break"].filter(Boolean).join(" "),
+        "data-when": r.ts ? new Date(r.ts).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) : ""
+      }, el("div", { class: "row", style: "padding:10px 4px" },
         el("div", { class: "card-row" },
           el("strong", {}, r.label || "Roll"),
           logDice(r)),
         el("div", { class: "card-row" },
           el("span", { class: "faint" }, r.outcome || ""),
           el("span", { class: "faint" }, [r.by || "Table", clockTime(r.ts)].filter(Boolean).join(" · "))))));
-    }
+    });
     wrap.append(el("div", { class: "card" }, list));
     if (all.length > shown.length) {
       wrap.append(el("button", {
@@ -346,6 +373,9 @@ export function rollLogScreen() {
   render();
   return host;
 }
+
+const TOGGLE_ICON = { solo: "traveler", gmScreen: "mask", manualDice: "dice", mentalTrauma: "heart",
+  keepAwake: "flashlight", sound: "radio", hideGmContent: "info" };
 
 export function settingsScreen() {
   const wrap = el("div", {}, el("h1", {}, "Settings"));
@@ -374,8 +404,9 @@ export function settingsScreen() {
   for (const t of TOGGLES) {
     const current = t.flag === "mentalTrauma" ? Settings.mentalTrauma() : !!getSetting(t.flag);
     // A label, so the whole row is the target — everywhere else in the app already is one.
-    toggles.append(el("label", { class: "card-row", style: "padding:10px 0" },
-      el("span", {}, el("strong", {}, t.label), el("div", { class: "faint" }, t.blurb)),
+    toggles.append(el("label", { class: "card-row toggle-row", style: "padding:10px 0" },
+      el("span", { class: "toggle-icon" }, icon(TOGGLE_ICON[t.flag] || "settings", { size: 20 })),
+      el("span", { style: "flex:1" }, el("strong", {}, t.label), el("div", { class: "faint" }, t.blurb)),
       el("input", {
         type: "checkbox", checked: current, "aria-label": t.label,
         onchange: (e) => { setSetting(t.flag, e.target.checked); window.dispatchEvent(new CustomEvent("hashchange")); }
@@ -405,7 +436,10 @@ export function settingsScreen() {
         el("button", { class: "btn", onclick: doExportReadable }, "Export as text"),
         el("a", { class: "btn", href: "#/log" }, "Roll log")),
       el("div", { class: "btn-row", style: "margin-top:8px" },
-        el("button", { class: "btn", onclick: doCheckData }, "Check my data"),
+        el("button", { class: "btn", onclick: doCheckData }, "Check my data")),
+      // The one irreversible-feeling action gets its own strip, apart from the safe ones.
+      el("div", { class: "danger-strip" },
+        el("span", { class: "danger-mark" }, icon("hazard", { size: 20 })),
         el("button", { class: "btn btn-danger", onclick: doReset }, "Erase all"))));
 
   wrap.append(el("p", { class: "faint", style: "margin-top:24px" },
@@ -423,7 +457,11 @@ function campaignCard() {
   for (const c of list) {
     const isActive = c.id === activeId;
     const chars = Object.keys(c.characters || {}).length;
-    card.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
+    // Each Journey as a cover: its road so far, then its name and who is on it.
+    const stops = c.journey?.stops || [];
+    card.append(el("div", { class: "journey-cover" + (isActive ? " is-active" : "") },
+      c.journey ? routeStrip({ planned: 0, played: stops.filter((x) => x.resolved).length,
+        current: stops.some((x) => !x.resolved) }) : null,
       el("div", { class: "card-row" },
         el("span", {}, el("strong", {}, c.name), isActive ? el("span", { class: "faint" }, " · in play") : null,
           el("div", { class: "faint" }, `${chars} Traveler${chars === 1 ? "" : "s"}${c.journey?.destination ? ` · ${c.journey.destination}` : ""}`)),

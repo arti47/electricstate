@@ -130,7 +130,7 @@ export function stopCard(stop, { onCountdown, onResolve, compact = false } = {})
   card.append(el("div", { class: "dial-row", style: "margin-top:var(--s4)" },
     ringDial(done, stop.countdown.length, { tone: "danger", size: 52, label: "Countdown" }),
     el("h3", { style: "margin:0" }, `Countdown ${done}/${stop.countdown.length}`)));
-  const list = el("ol", {});
+  const list = el("ol", { class: "countdown-steps" });
   stop.countdown.forEach((step, i) => {
     list.append(el("li", { class: i < done ? "" : "faint", style: i < done ? "color:var(--danger)" : "" },
       i < done ? `${step} — fired` : spoiler(step)));

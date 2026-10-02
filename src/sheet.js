@@ -7,9 +7,11 @@ import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./deriv
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
-import { showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic } from "./ui.js";
+import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic } from "./ui.js";
 import { undoLast } from "./store.js";
 import { helmetGraphic, archetypeGlyph, ringDial } from "./graphics.js";
+import { syncVignette } from "./scene.js";
+import { icon } from "./icons.js";
 import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
 
 // ---------------------------------------------------------------- vitals header
@@ -27,7 +29,7 @@ let lastOpts = {};
 export function renderVitals(ch, { onSwitch = null } = {}) {
   const host = $("#vitals");
   if (!host) return;
-  if (!ch) { host.hidden = true; host.replaceChildren(); host.classList.remove("is-alarm"); lastShown = null; return; }
+  if (!ch) { host.hidden = true; host.replaceChildren(); host.classList.remove("is-alarm"); lastShown = null; syncVignette(""); return; }
   lastOpts = { onSwitch };
 
   const journey = getJourney();
@@ -58,8 +60,8 @@ export function renderVitals(ch, { onSwitch = null } = {}) {
     tiles.push(tile("Bliss", perm ? `${bliss} ⌊${perm}⌋` : String(bliss), lost ? "is-danger" : "is-neuro",
       blissBar(bliss, perm, hope, pMax), "bliss"));
   }
-  if (usesCash(ch)) tiles.push(tile("Cash", `$${ch.inventory?.cash ?? 0}`));
-  if (journey?.vehicle) tiles.push(tile("Fuel", `${journey.fuel ?? 0}g`, (journey.fuel ?? 0) <= 2 ? "is-danger" : ""));
+  if (usesCash(ch)) tiles.push(tile("Cash", `$${ch.inventory?.cash ?? 0}`, "", icon("cash", { size: 16 })));
+  if (journey?.vehicle) tiles.push(tile("Fuel", `${journey.fuel ?? 0}g`, (journey.fuel ?? 0) <= 2 ? "is-danger" : "", icon("fuel", { size: 16 })));
 
   host.replaceChildren(...[switcher(ch, onSwitch), ...tiles].filter(Boolean));
   host.hidden = false;
@@ -78,7 +80,28 @@ export function renderVitals(ch, { onSwitch = null } = {}) {
   }
   lastShown = { id: ch.id, health, hope, bliss };
   host.classList.toggle("is-alarm", health === 0 || hope === 0 || lost);
+  syncVignette(lost ? "lost" : health === 0 ? "incap" : hope === 0 ? "breakdown" : "");
 }
+
+/** Health and Hope as pips and Bliss as its bar, small: for a roster or a party panel. */
+export function miniVitals(ch) {
+  const hMax = maxHealth(ch), pMax = maxHope(ch);
+  const health = ch.state?.health ?? hMax, hope = ch.state?.hope ?? pMax;
+  return el("span", { class: "mini-vitals" },
+    pips(health, hMax, "health", isDronePilot(ch) ? "Hull" : "Health"),
+    pips(hope, pMax, "hope", "Hope"),
+    tracksBliss(ch) ? blissBar(ch.state?.bliss ?? 0, ch.state?.permanentBliss ?? 0, hope, pMax) : null);
+}
+
+/** An item's icon from its name: a gun, a blade, a medical kit, rope, food, tools… */
+const GEAR_ICONS = [
+  [/gun|pistol|rifle|revolver|shotgun|carbine|taser/i, "gun"], [/knife|blade|machete|sword|axe|bayonet/i, "blade"],
+  [/aid|medic|bandage|pill|drug|neurine|syringe|morphine/i, "med"], [/rope|cord|cable/i, "rope"],
+  [/food|ration|can|water|drink|bottle|coffee|cigar/i, "food"], [/tool|wrench|kit|crowbar|hammer|spare/i, "wrench"],
+  [/radio|phone|walkie|computer|camera|tape/i, "radio"], [/light|torch|lamp|flare/i, "flashlight"],
+  [/armor|armour|vest|helmet|jacket|shield/i, "shield"]
+];
+const gearIcon = (name = "") => GEAR_ICONS.find(([re]) => re.test(name))?.[1] || "pack";
 
 /** One segment per point: what is left, and how much there was. */
 function pips(value, max, kind, label) {
@@ -269,10 +292,14 @@ function build(ch, rerender) {
 
   // --- attributes
   const attrGrid = el("div", { class: "card", id: "sec-attributes" }, el("h3", {}, "Attributes"));
+  // Each attribute as six die-shaped slots, the rating lit: 2 is thin, 6 is everything.
   for (const a of ATTRIBUTES) {
-    attrGrid.append(el("div", { class: "card-row", style: "padding:4px 0" },
+    const v = ch.attributes[a.id];
+    attrGrid.append(el("div", { class: "card-row attr-row" },
       el("span", {}, a.label),
-      el("span", { class: "mono", style: "font-size:1.1rem" }, ch.attributes[a.id])));
+      el("span", { class: "attr-bar", role: "meter", "aria-label": a.label, "aria-valuemin": "0", "aria-valuemax": "6", "aria-valuenow": String(v) },
+        ...Array.from({ length: 6 }, (_, i) => el("i", { class: i < v ? "on" : "" }))),
+      el("span", { class: "mono", style: "font-size:1.1rem" }, v)));
   }
   wrap.append(attrGrid);
 
@@ -282,13 +309,16 @@ function build(ch, rerender) {
   for (const id of ch.talents || []) {
     const t = findTalent(id, ch);
     if (!t) continue;
-    talents.append(el("div", { style: "padding:6px 0" },
-      el("strong", {}, t.name), el("div", { class: "faint" }, describeTalent(t))));
+    // A die badge for a talent that adds dice; a book for one that changes a rule.
+    talents.append(el("div", { class: "talent-row" },
+      el("span", { class: "talent-badge" + (t.effect?.bonus ? " is-dice" : "") }, icon(t.effect?.bonus ? "dice" : "book", { size: 18 })),
+      el("div", {}, el("strong", {}, t.name), el("div", { class: "faint" }, describeTalent(t)))));
   }
   wrap.append(talents);
 
   // --- dream, flaw, goal, threat: written at creation, read often, edited rarely
-  wrap.append(el("details", { class: "card phase-fold" },
+  // A dossier: the four things that drive this Traveler, kept in a manila folder.
+  wrap.append(el("details", { class: "card phase-fold dossier" },
     el("summary", {}, "Dream, Flaw, Goal and Threat"),
     field("Dream", ch.dream, (v) => patch((c) => { c.dream = v; })),
     field("Flaw", ch.flaw, (v) => patch((c) => { c.flaw = v; })),
@@ -546,7 +576,8 @@ function inventoryCard(ch, patch, rerender) {
     const busted = item.bonus != null && item.bonus <= 0;
     card.append(el("div", { style: "padding:8px 0;border-top:1px solid var(--line-soft)" },
       el("div", { class: "card-row" },
-        el("span", {}, item.name, busted ? el("span", { class: "faint", style: "color:var(--danger)" }, " · Busted") : null),
+        el("span", { class: "item-name" }, el("span", { class: "item-icon" }, icon(gearIcon(item.name), { size: 20 })),
+          item.name, busted ? el("span", { class: "faint", style: "color:var(--danger)" }, " · Busted") : null),
         el("button", { class: "btn", onclick: () => patch((c) => { c.inventory.items.splice(i, 1); }) }, "Drop")),
       item.bonus != null && item.bonus <= 0
         ? el("button", {
@@ -653,12 +684,13 @@ export function injuryScreen(id) {
   function build() {
     const ch = getCharacter(id);
     if (!ch) return missing();
-    const wrap = el("div", {},
-      el("div", { class: "card-row" }, el("h1", { style: "margin:0" }, "Injury & trauma"),
-        el("a", { class: "btn", href: `#/sheet/${id}` }, "Back")));
+    // No Back button: the tab bar and the back gesture already go there.
+    const wrap = el("div", {}, el("h1", {}, "Injury & trauma"));
 
-    const add = (entry, kind) => {
-      if (!entry || entry.name === "None") { showToast("No lasting harm this time."); return; }
+    // A rolled D66 shows as its two dice, tens then ones, beside what it says.
+    const said = (text, r) => r ? el("span", { class: "toast-dice" }, diceRow({ base: [Math.floor(r / 10), r % 10] }, { mini: true }), text) : text;
+    const add = (entry, kind, r = null) => {
+      if (!entry || entry.name === "None") { showToast(said("No lasting harm this time.", r)); return; }
       const next = structuredClone(ch);
       const heal = entry.heal ? rollNotationSafe(entry.heal) : null;
       next.conditions = [...(next.conditions || []), {
@@ -667,7 +699,7 @@ export function injuryScreen(id) {
         heal, healTotal: heal, surgery: !!entry.surgery
       }];
       saveCharacter(next);
-      showToast(`${entry.name} applied.`);
+      showToast(said(`${entry.name} applied.`, r));
       location.hash = `#/sheet/${id}`;
     };
 
@@ -680,7 +712,7 @@ export function injuryScreen(id) {
       el("h3", {}, "Serious injury"),
       el("p", { class: "faint" }, "Rolled after surviving Incapacitation. A D66 is two dice read as a two-digit number — the first die is the tens. Anything from 11 to 36 means no lasting harm."),
       el("div", { class: "btn-row" },
-        el("button", { class: "btn btn-primary", onclick: () => { const r = d66(); add(rollInjury(r), "injury"); } }, "Roll D66"),
+        el("button", { class: "btn btn-primary", onclick: () => { const r = d66(); add(rollInjury(r), "injury", r); } }, "Roll D66"),
         el("button", { class: "btn", onclick: () => picker(SERIOUS_INJURIES, "injury", add) }, "Choose"))));
 
     if (Settings.mentalTrauma()) {
@@ -688,7 +720,7 @@ export function injuryScreen(id) {
         el("h3", {}, "Mental trauma"),
         el("p", { class: "faint" }, "Rolled after a Breakdown you were rallied from, or after being Incapacitated inside a neuroscape. Roll it, or pick one if the table would rather choose."),
         el("div", { class: "btn-row" },
-          el("button", { class: "btn btn-primary", onclick: () => { const r = d66(); add(rollTrauma(r), "trauma"); } }, "Roll D66"),
+          el("button", { class: "btn", onclick: () => { const r = d66(); add(rollTrauma(r), "trauma", r); } }, "Roll D66"),
           el("button", { class: "btn", onclick: () => picker(MENTAL_TRAUMAS, "trauma", add) }, "Choose"))));
     } else {
       wrap.append(el("div", { class: "card" },

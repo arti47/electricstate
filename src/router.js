@@ -6,8 +6,10 @@ import { getCombat, turnOrder } from "./combat.js";
 import { releaseScrollLock, modal, dismissModal } from "./ui.js";
 import { icon } from "./icons.js";
 import { STORAGE_KEY } from "./core.js";
-import { syncSky, sceneBand } from "./scene.js";
-import { dieIcon } from "./graphics.js";
+import { syncScene, sceneBand } from "./scene.js";
+import { activeStop } from "./stops.js";
+import { dieIcon, shiftDial } from "./graphics.js";
+import { SHIFT_NAMES } from "../data.js";
 import { tracksBliss } from "./derived.js";
 import { getJourney } from "./store.js";
 import { homeScreen, rulesScreen, settingsScreen, rollLogScreen } from "./screens.js";
@@ -187,6 +189,46 @@ function syncStrip(path) {
   strip.hidden = false;
 }
 
+/** The landscape follows the game: Shift, weather, trouble, the vehicle, the network. */
+const sceneNow = (path) => {
+  const journey = getJourney();
+  syncScene({ journey, stop: activeStop(), combat: getCombat(), chars: listCharacters(), route: path });
+  // The game's clock in the header: the Shift as a small dial, and the day.
+  const clock = $("#hclock");
+  if (!clock) return;
+  if (!journey) { clock.hidden = true; return; }
+  const shift = journey.shift || SHIFT_NAMES[0], day = journey.day || 1;
+  const key = `${shift}|${day}`;
+  if (clock.dataset.key !== key) {
+    clock.dataset.key = key;
+    clock.replaceChildren(shiftDial(SHIFT_NAMES, shift, day), el("span", {}, shift, el("small", {}, `Day ${day}`)));
+    clock.setAttribute("aria-label", `${shift}, day ${day} — Time`);
+  }
+  clock.hidden = false;
+};
+
+/**
+ * On a wide screen the tab bar is a rail down the left, and each tab carries its own
+ * section links beneath it. Built once; the router marks where you are.
+ */
+function buildRail() {
+  for (const tab of $$(".tabbar > a[data-tab]")) {
+    if (tab.nextElementSibling?.classList.contains("rail-sub")) continue;
+    const items = SUBNAV[tab.dataset.tab];
+    if (!items) continue;
+    tab.after(el("div", { class: "rail-sub" },
+      ...items.map(([href, label]) => el("a", { class: "rail-link", href, "data-href": href }, label))));
+  }
+}
+function syncRail(here) {
+  buildRail();
+  for (const a of $$(".rail-link")) {
+    const item = Object.values(SUBNAV).flat().find(([h]) => h === a.dataset.href);
+    a.hidden = !!(item?.[2] && !item[2]());
+    a.classList.toggle("is-here", a.dataset.href === here);
+  }
+}
+
 // ---------------------------------------------------------------- title line
 /**
  * Every screen leads with a title, and its own "what this does" note sits at the right
@@ -290,9 +332,11 @@ export function render() {
 
   const screenEl = $("#screen");
   markTabs(route);
+  lastTab = route.tab;
   syncTabs();
   syncStrip(route.path);
-  syncSky(getJourney()?.shift);
+  sceneNow(route.path);
+  syncRail(`#/${route.path}`);
   const trayBtn = $("#trayBtn");
   if (trayBtn) trayBtn.hidden = route.path === "dice";
   $("#settingsBtn")?.toggleAttribute("aria-current", route.path === "settings");
@@ -326,14 +370,34 @@ function markTabs(route) {
   });
 }
 
+// Tab order, for which way a change of tab slides.
+const TAB_ORDER = ["home", "traveler", "dice", "rules"];
+let lastTab = null;
+
+/**
+ * Changing tab slides the screen left or right by tab order. It uses the View Transition
+ * API, which animates snapshots — never a transform on the live screen, which would make
+ * the fixed action bar position against it. Skipped where unsupported, under reduced
+ * motion, and under automation, where a transition would swallow a test's next click.
+ */
+function navigate() {
+  const path = (location.hash || "#/home").replace(/^#\/?/, "").split("/")[0];
+  const tab = (ROUTES.find((r) => r.path === path) || ROUTES[0]).tab;
+  const from = lastTab;
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches || navigator.webdriver;
+  if (!document.startViewTransition || calm || !from || !tab || from === tab) { render(); return; }
+  document.documentElement.dataset.dir = TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(from) ? "fwd" : "back";
+  document.startViewTransition(() => render());
+}
+
 export function startRouter() {
-  window.addEventListener("hashchange", render);
+  window.addEventListener("hashchange", navigate);
   window.addEventListener("settingschange", () => { syncTabs(); render(); });
   window.addEventListener("storechange", () => {
     const path = (location.hash || "").replace(/^#\/?/, "").split("/")[0];
     syncStrip(path);
     syncTabs();
-    syncSky(getJourney()?.shift);
+    sceneNow(path);
     if (trayOpen) return;
     if (path === "home" || path === "log" || path === "") render();
   });

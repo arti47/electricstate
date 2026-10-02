@@ -304,7 +304,7 @@ function build(rerender) {
     const log = el("details", { class: "card phase-fold" },
       el("summary", {}, `The session so far (${state.log.length})`));
     for (const entry of state.log.slice(0, 15)) {
-      log.append(el("div", { class: "faint", style: "padding:6px 0;border-top:1px solid var(--line-soft)" }, entry.text));
+      log.append(el("div", { class: "faint narr", style: "padding:6px 0;border-top:1px solid var(--line-soft)" }, entry.text));
     }
     log.append(el("button", {
       class: "btn", style: "margin-top:8px",
