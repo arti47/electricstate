@@ -749,6 +749,50 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.close();
 }
 
+// ---------------------------------------------------------- the gear link
+// A push's 1s on gear dice damage the item the dice came from. For fifteen passes nothing
+// told the dice screen which item that was, so pushing never damaged anything. Manual dice
+// entry makes the throw exact: no successes, then a push whose gear dice both land on 1.
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.addInitScript(GAME_HELPERS);
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(`${base}/index.html`, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    __game.seed({ schema: 2, activeCampaignId: "c1", campaigns: { c1: { id: "c1", name: "Gear", createdAt: 0,
+      characters: { g1: { id: "g1", name: "Gunner", archetype: "veteran", gender: "male",
+        attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 }, talents: [], conditions: [], tension: {},
+        inventory: { items: [{ name: "Handgun", bonus: 2, maxBonus: 2 }], cash: 0 },
+        state: { health: 3, hope: 3, bliss: 0, permanentBliss: 0 } } },
+      journey: null, rollLog: [], sessionLog: [] } } }, { manualDice: true, theme: "dark" });
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.waitForTimeout(150);
+  await page.selectOption('#screen select[aria-label="Weapon"]', "handgun");
+  await page.waitForTimeout(120);
+  const [nBase, nGear] = (await page.textContent("#screen .actionbar .pool small")).match(/\d+/g).map(Number);
+  check(nGear === 2, `the Handgun should bring its own 2 gear dice, got ${nGear}`);
+  const enter = async (text) => {
+    await page.fill(".modal input", text);
+    await page.click('.modal button:has-text("Save")');
+    await page.waitForTimeout(120);
+  };
+  await page.click('#screen .actionbar button:has-text("Enter dice")');
+  await page.waitForTimeout(120);
+  await enter(Array(nBase).fill(3).join(" "));
+  await enter(Array(nGear).fill(2).join(" "));
+  await page.click('#screen button:has-text("Push")');
+  await page.waitForTimeout(120);
+  await enter(Array(nBase).fill(4).join(" "));
+  await enter(Array(nGear).fill(1).join(" "));
+  const bonus = await page.evaluate(() => __game.read().characters.g1.inventory.items[0].bonus);
+  check(bonus === 0, `two 1s on the Handgun's gear dice should leave it at bonus 0 (Busted), it is ${bonus}`);
+  check(errors.length === 0, `gear link: console errors: ${errors.join(" | ")}`);
+  await page.close();
+}
+
 await browser.close();
 server.close();
 

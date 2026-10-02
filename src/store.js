@@ -1,6 +1,7 @@
 // Local persistence + JSON export/import. Cloud sync arrives in Phase 5 behind the same API.
 import { STORAGE_KEY, uid } from "./core.js";
 import { normalize } from "./derived.js";
+import { repairLinks } from "./integrity.js";
 
 const SCHEMA_VERSION = 2;
 let db = null;
@@ -21,6 +22,7 @@ function load() {
     db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || blank();
   } catch { db = blank(); }
   db = migrate(db);
+  for (const c of Object.values(db.campaigns || {})) repairLinks(c);
   return db;
 }
 
@@ -142,6 +144,10 @@ function migrateJourney(journey) {
 }
 
 function persist() {
+  // Every write passes through here, so every write leaves the game's links whole: a
+  // deleted Traveler leaves no Tension, fight or solo lead behind, a rename reaches the
+  // fight, a removed Stop is no longer active. See src/integrity.js.
+  for (const c of Object.values(db.campaigns || {})) repairLinks(c);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
   window.dispatchEvent(new CustomEvent("storechange"));
 }

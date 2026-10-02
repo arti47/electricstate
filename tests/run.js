@@ -873,6 +873,10 @@ await test("the solo spotlight rotates to whoever has led fewest Stops", () => {
 
 await test("combat orders the list by who actually acts next", () => {
   store.resetAll();
+  // Traveler combatants are real Travelers; a fighter with no Traveler behind it is a
+  // dangling link, and the store's integrity repair removes it.
+  makeChar({ id: "t1", name: "Traveler spent" });
+  makeChar({ id: "t2", name: "Traveler waiting" });
   store.saveJourney({
     combat: {
       active: true, round: 2, startingSide: "enemies",
@@ -1391,6 +1395,63 @@ await test("Play asks for the same setup the home card asks for", () => {
   assert.equal(session.beatFor().id, "no-vehicle");
   store.saveJourney({ destination: "the coast", vehicle: { name: "Van" } });
   assert.equal(session.beatFor().id, "idle", "with a Journey, the session can start");
+});
+
+// ------------------------------------------------------------- links stay whole
+const integrity = await import("../src/integrity.js");
+
+await test("deleting a Traveler leaves nothing pointing at them", () => {
+  store.resetAll();
+  const a = makeChar({ name: "Ana" });
+  const b = makeChar({ name: "Bo" });
+  store.saveCharacter({ ...store.getCharacter(a.id), tension: { [b.id]: 2 } });
+  store.saveJourney({ destination: "x", vehicle: { name: "Van", hull: 6 },
+    solo: { leadId: b.id, ledStops: { [b.id]: 1 }, personalThreats: { [b.id]: { text: "t", step: 0 } } } });
+  combatMod.startCombat("travelers");
+  store.deleteCharacter(b.id);
+  const c = store.activeCampaign();
+  assert.deepEqual(integrity.checkLinks(c), [], "every link is whole after the delete");
+  assert.equal(store.getCharacter(a.id).tension[b.id], undefined, "no Tension toward someone who is gone");
+  assert.ok(!combatMod.getCombat().combatants.some((x) => x.id === b.id), "no fighter who is gone");
+  assert.equal(store.getJourney().solo.leadId, null, "solo does not wait on someone who is gone");
+});
+
+await test("renaming a Traveler reaches the fight", () => {
+  store.resetAll();
+  const a = makeChar({ name: "Ana" });
+  combatMod.startCombat("travelers");
+  store.saveCharacter({ ...store.getCharacter(a.id), name: "Anabel" });
+  assert.equal(combatMod.findCombatant(a.id).name, "Anabel", "the tracker and the strip say the new name");
+});
+
+await test("a removed Stop is no longer active, and Play stops narrating it", () => {
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "x", vehicle: { name: "Van", hull: 6 } });
+  session.resetDirector();
+  const stop = stopsMod.saveStop(stopsMod.makeStop(""), { makeActive: true });
+  session.reconcile();
+  stopsMod.removeStop(stop.id);
+  assert.equal(stopsMod.activeStop(), null);
+  assert.equal(session.director().stopId, null, "the director lets go of a Stop that no longer exists");
+});
+
+await test("Hull damage belongs to the vehicle that took it", () => {
+  store.resetAll();
+  store.saveJourney({ vehicle: { name: "Van", hull: 6 }, hull: 2 });
+  store.saveJourney({ ...store.getJourney(), vehicle: { name: "Bike", hull: 3 }, hull: 5 });
+  assert.equal(store.getJourney().hull, 3, "damage can never exceed the new vehicle's Hull");
+  store.saveJourney({ ...store.getJourney(), vehicle: null });
+  assert.equal(store.getJourney().hull, null, "no vehicle, no Hull");
+});
+
+const coreMod = await import("../src/core.js");
+await test("every campaign switch forgets every screen's working state", () => {
+  const core = coreMod;
+  let forgotten = 0;
+  core.onReset(() => { forgotten += 1; });
+  core.resetTransient();
+  assert.equal(forgotten, 1, "registered resets run");
 });
 
 const failed = results.filter((r) => r[0] === "FAIL");

@@ -438,4 +438,19 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   missing. Two unit tests pin both directions.
 - The bottom **Play** tab opens `#/session` once a Traveler exists (`syncTabs`), and `#/home`
   before that so creation is the first thing seen. The app still launches on `#/home`.
+- **Links between the parts stay whole (see `docs/app/LINKS.md`).** The rule: a screen never
+  keeps its own copy of game state — it derives from the store each render; anything it must
+  remember registers `core.onReset`; any saved id or copied name that points at another
+  record is listed in `src/integrity.js` with its repair. Three guards hold it:
+  - `tests/links.mjs` (in `npm test`, also `npm run links`): fails on a state field that is
+    read and never written, and on a module `let` that neither resets nor is listed view-only.
+    A key that only forwards the same field (`gearRef: pending.gearRef`) is not a write.
+  - `store.persist()` runs `repairLinks()` on every campaign: deleted Travelers leave no
+    Tension, fighter or solo lead; renames reach the fight; removed Stops are not active; Hull
+    belongs to the current vehicle. Test fixtures must therefore be valid data — a traveler
+    combatant needs a real Traveler.
+  - Runtime tests for each repair, Play's sync, and a browser push that must Bust the Handgun.
+  - Fixed with it: push gear damage reaches the item (it never did), Network weapons roll the
+    Network rating, neurocasting can push and wear the caster, ending the Journey sets
+    `ended`, solo arrival sets the Shift.
 

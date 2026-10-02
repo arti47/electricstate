@@ -1,6 +1,6 @@
 // Foundational constants, DOM helpers and raw dice. No imports.
 
-export const CACHE_VERSION = "es-v53";
+export const CACHE_VERSION = "es-v54";
 export const STORAGE_KEY = "electricState.v1";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -60,6 +60,17 @@ export function randomInt(max) {
   do { crypto.getRandomValues(buf); value = buf[0]; } while (value >= limit);
   return value % max;
 }
+
+// ---------------------------------------------------------- transient state
+/**
+ * Screens that keep working state in a module variable (the roll on the table, the open
+ * hazard, the solo phase you picked) register how to forget it. Switching or importing a
+ * campaign calls them all, so nothing from one game leaks into the next. A module variable
+ * that is not registered here must be view-only — tests/links.mjs holds that list.
+ */
+const resets = new Set();
+export const onReset = (fn) => { resets.add(fn); return fn; };
+export const resetTransient = () => resets.forEach((fn) => fn());
 
 /** Uniform choice from an array. */
 export const pick = (list) => list[randomInt(list.length)];

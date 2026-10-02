@@ -1,6 +1,6 @@
 // The dice engine (Phase 3): pools, the push economy, opposed rolls, damage and death.
 // Pure resolution functions live at the top so the harness can test them without a DOM.
-import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6 } from "./core.js";
+import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6, onReset } from "./core.js";
 import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
          BODY_ARMOR, COVER, NEUROCASTERS, NEUROCASTER_DEFAULT_PENALTY, TASER_RULE,
          FULL_AUTO_MAX_BURSTS, TRAUMATIC_EVENTS, RANGES, FIREARM_RULES, TRAUMA_RESIST } from "../data.js";
@@ -139,7 +139,10 @@ function applyRollCosts(ch, { hopeLost = 0, gearDamage = 0, gearRef = null, blis
     caster[gearRef.attr] = Math.max(0, caster[gearRef.attr] - gearDamage);
     next.state.caster = caster;
   } else if (gearDamage && gearRef?.kind === "item") {
-    const item = next.inventory.items[gearRef.index];
+    // By position, checked by name: dropping an item between roll and push shifts the list.
+    const items = next.inventory.items;
+    const at = items[gearRef.index]?.name === gearRef.name ? gearRef.index : items.findIndex((i) => i.name === gearRef.name);
+    const item = items[at];
     if (item && item.bonus != null) item.bonus = Math.max(0, item.bonus - gearDamage);
   }
   saveCharacter(next);
@@ -223,10 +226,15 @@ function build(rerender) {
         })))));
   }
 
+  // Ids held from an earlier render can point at someone who has gone, or at yourself
+  // after the header switched whose pool this is: drop them rather than roll with them.
+  if (pending.opposedId && (pending.opposedId === ch.id || !chars.some((c) => c.id === pending.opposedId))) pending.opposedId = null;
+
   // target: when combat is running, attacks resolve against a real combatant
   const combat = getCombat();
   if (combat?.active) {
     const targets = combat.combatants.filter((c) => c.id !== ch.id);
+    if (pending.targetId && !targets.some((t) => t.id === pending.targetId)) pending.targetId = null;
     wrap.append(el("div", { class: "card-row", style: "margin-bottom:var(--gap)" },
       el("span", { class: "faint" }, `Round ${combat.round} — a fight is running`),
       el("a", { class: "btn", href: "#/combat" }, "Back to combat")));
@@ -301,6 +309,37 @@ function build(rerender) {
   const casterMod = pending.casterOn && casterPenalty ? casterPenalty : 0;
   const drivingMod = pending.driving ? STUNTS.otherActionsWhileDriving : 0;
 
+  // Where the gear dice come from. A push's gear-die 1s damage that item, so the dice
+  // screen has to know which one: the item picked here, or the inventory item that shares
+  // the chosen weapon's name, or the neurocaster for a weapon that runs on its Network.
+  const items = ch.inventory?.items || [];
+  const picked = pending.gearItem != null && items[pending.gearItem]?.name === pending.gearItemName ? pending.gearItem : null;
+  const byWeapon = chosen ? items.findIndex((i) => i.name?.toLowerCase() === chosen.name.toLowerCase()) : -1;
+  const linkedIndex = picked ?? (byWeapon >= 0 ? byWeapon : null);
+  const linked = linkedIndex != null ? items[linkedIndex] : null;
+  const casterModel = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
+  const casterNow = ch.state?.caster || (casterModel ? { processor: casterModel.processor, network: casterModel.network, graphics: casterModel.graphics } : null);
+  const onNetwork = chosen?.gearBonusSource === "neurocasterNetwork";
+  const sourceGear = onNetwork ? (casterNow?.network || 0)
+    : linked ? (linked.bonus || 0)
+      : chosen ? (chosen.bonus || 0) : 0;
+  pending.gearRef = onNetwork && casterNow ? { kind: "caster", attr: "network" }
+    : linked ? { kind: "item", index: linkedIndex, name: linked.name } : null;
+  const gearItems = items.map((it, i) => [it, i]).filter(([it]) => (it.bonus ?? 0) > 0 || it.maxBonus);
+  if (gearItems.length && !onNetwork) {
+    wrap.append(el("div", { class: "field" }, el("label", {}, "Gear"),
+      el("select", {
+        "aria-label": "Gear",
+        onchange: (e) => {
+          const i = e.target.value === "" ? null : Number(e.target.value);
+          pending.gearItem = i; pending.gearItemName = i == null ? null : items[i].name; pending.result = null; rerender();
+        }
+      },
+        el("option", { value: "" }, chosen && byWeapon >= 0 ? `${chosen.name}` : "—"),
+        ...gearItems.map(([it, i]) => el("option", { value: i, selected: picked === i },
+          `${it.name} +${it.bonus ?? 0}${it.bonus === 0 ? " · Busted" : ""}`)))));
+  }
+
   // gear + modifier
   wrap.append(el("div", { class: "card" },
     numberRow("Gear dice", pending.gear, (v) => { pending.gear = Math.max(0, v); pending.result = null; rerender(); }, { min: 0 }),
@@ -320,7 +359,7 @@ function build(rerender) {
   const mods = conditionModifiers(ch, { attr: pending.attr });
   const talentDice = pending.talents.reduce((sum, id) => sum + (findTalent(id, ch)?.effect.bonus || 0), 0);
   const tension = pending.opposedId ? tensionToward(ch, pending.opposedId) : 0;
-  const weaponGear = chosen && chosen.gearBonusSource !== "neurocasterNetwork" ? (chosen.bonus || 0) : 0;
+  const weaponGear = sourceGear;
   const ambushMod = pending.ambush && (pending.range || "engaged") === "engaged"
     ? FIREARM_RULES.ambush.closeCombatModifier : 0;
   const pool = buildPool({
@@ -1184,4 +1223,4 @@ export function setTarget(id) {
   pending.result = null;
 }
 
-export function resetRoller() { pending = null; }
+onReset(() => { pending = null; });

@@ -405,6 +405,10 @@ async function epilogue(rerender) {
       el("div", { class: "faint" }, dice.map((d) => (d >= 5 ? "good fortune" : d >= 3 ? "mixed" : "hard times")).join(" · "))));
   }
   await modal({ title: "The road ends", body, actions: [{ label: "Tell it", value: true, class: "btn-primary" }] });
+  // Ending the Journey closes the campaign as a record. Nothing set this before, so the
+  // home card, Play and Running a session never knew the road had ended.
+  saveJourney({ ...(getJourney() || {}), ended: true, endedAt: Date.now() });
+  noteEvent("journey", "The Journey ended.");
   rerender();
 }
 

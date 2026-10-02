@@ -1,6 +1,6 @@
 // Hazards and vehicle handling (Chapter 4). Everything here rolls the book's own dice
 // and applies the result, rather than leaving the player to work it out.
-import { el, rollDice, countSixes, clamp, d6, d66, fromRangeTable, rollNotation } from "./core.js";
+import { el, rollDice, countSixes, clamp, d6, d66, fromRangeTable, rollNotation, onReset } from "./core.js";
 import { EXPLOSIVES, FIRES, DISEASES, HAZARD_RULES, FIRE_SPREAD_PER_ROUND, VEHICLES } from "../data.js";
 import { STUNTS, ACCIDENTS, RAMMING, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, ACCIDENT_REROLL_MODIFIER } from "../data-vehicles.js";
 import { GEAR, REPAIR } from "../data-tables.js";
@@ -221,6 +221,7 @@ async function applyDisease(ch, virulence, onDone, nurse = null) {
 let driveKind = "stunt";     // which manoeuvre's card is open
 let driveTouched = false;    // the player chose one; stop following the chase
 let driveWho = null;
+onReset(() => { hazardKind = "explosion"; hazardWho = null; driveKind = "stunt"; driveTouched = false; driveWho = null; });
 
 export function vehicleScreen() {
   const host = el("div");

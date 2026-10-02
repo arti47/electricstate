@@ -1,6 +1,6 @@
 // Combat tracker and the generic progress-task tracker (Phase 4).
 // One task component serves neurocasting difficulties, countdowns, healing clocks and diseases.
-import { el, uid, rollDice, countSixes, d6, clamp, randomInt } from "./core.js";
+import { el, uid, rollDice, countSixes, d6, clamp, randomInt, onReset } from "./core.js";
 import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS } from "../data.js";
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
@@ -130,6 +130,7 @@ function tokenLabel(x, all) {
   return (w[0][0] + (w[w.length - 1] || "").slice(0, 2)).toUpperCase();
 }
 let picked = null;   // the token lifted off the map, waiting for a zone to land in
+onReset(() => { picked = null; });
 
 /**
  * The fight as a map: one column per zone, a token per combatant — amber for Travelers,

@@ -60,7 +60,8 @@ function openingLine() {
   const j = getJourney() || {};
   const cast = listCharacters();
   const driver = cast.length ? pick(cast) : null;
-  const shift = j.shift || pick(SHIFT_NAMES);
+  // The Journey's own Shift, so the narration and the clock never disagree.
+  const shift = j.shift || SHIFT_NAMES[0];
   const weather = pick(SETTING.weather).toLowerCase();
   const where = j.start ? `out past ${j.start}` : "somewhere between two places with no names";
   const dest = j.destination ? ` You are still heading for ${j.destination}.` : "";

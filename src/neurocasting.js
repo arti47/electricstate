@@ -1,12 +1,14 @@
 // Neurocasting — this game's "powers" subsystem (Phase 4).
 // Difficulty is a number of successful rolls, each costing a Stretch and each failure a Bliss.
-import { el, rollDice, countSixes, clamp, uid } from "./core.js";
+import { el, rollDice, countSixes, clamp, uid, onReset } from "./core.js";
 import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIRED_BONUS, DRONES } from "../data.js";
-import { maxHope, maxHealth, tracksBliss } from "./derived.js";
+import { maxHope, maxHealth, tracksBliss, pushLegality } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent } from "./rules.js";
 import { showToast, modal, explain, actionBar } from "./ui.js";
 import { renderVitals } from "./sheet.js";
+import { resolvePush } from "./roller.js";
+import { PUSH } from "../data.js";
 import { helmetGraphic, ringDial } from "./graphics.js";
 import { sound } from "./sound.js";
 import { Settings } from "./settings.js";
@@ -184,6 +186,16 @@ function build(rerender) {
         el("span", { class: "mono faint" }, r.dice.join(" ")),
         el("span", {}, r.success ? "success" : "+1 Bliss")));
     }
+    const last = session.last;
+    if (last && last.charId === ch.id && !last.pushed) {
+      const rerollable = [...last.base, ...last.gear].filter((d) => !PUSH.rerollExcludes.includes(d)).length;
+      if (!pushLegality(ch).may) log.append(el("p", { class: "faint" }, "A trauma prevents you from pushing."));
+      else if (rerollable) {
+        log.append(el("button", { class: "btn btn-block", style: "margin-top:8px", onclick: () => pushNeuro(ch, rerender) },
+          `Push ${rerollable} dice`));
+        log.append(el("p", { class: "faint" }, "Each 1 on a base die costs a point of Hope; each 1 on a gear die degrades the gear."));
+      }
+    }
     if (session.progress >= session.difficulty) {
       log.append(el("p", { style: "color:var(--ok)" }, "Task complete."));
       log.append(el("button", { class: "btn", onclick: () => { session.progress = 0; session.rolls = []; rerender(); } }, "New task"));
@@ -288,6 +300,8 @@ function doNeuroRoll(ch, rerender) {
 
   session.rolls.push({ dice: [...result.base, ...result.gear], success: result.success });
   if (result.success) session.progress += 1;
+  // A failure can be pushed, once. The Bliss for failing is already paid, before the push.
+  session.last = result.success ? null : { base: result.base, gear: result.gear, gearAttr: result.spec.gear, label: result.spec.label, charId: ch.id };
 
   logRoll({
     by: ch.name, label: `Neurocasting — ${result.spec.label}`,
@@ -308,4 +322,34 @@ function doNeuroRoll(ch, rerender) {
   rerender();
 }
 
-export function resetNeuro() { session = null; }
+/**
+ * Push the failed neurocasting roll: re-roll everything but 1s and 6s. Base 1s cost Hope,
+ * gear 1s wear down the neurocaster rating the task drew on — the link the dice screen's
+ * cost function always had for a neurocaster and nothing ever reached.
+ */
+function pushNeuro(ch, rerender) {
+  const last = session.last;
+  if (!last) return;
+  const pushed = resolvePush({ base: last.base, gear: last.gear });
+  last.pushed = true;
+  const next = structuredClone(ch);
+  next.state.hope = clamp((next.state.hope ?? 0) - pushed.hopeLost, 0, maxHope(next));
+  if (pushed.gearDamage) {
+    const caster = casterState(next);
+    caster[last.gearAttr] = Math.max(0, caster[last.gearAttr] - pushed.gearDamage);
+    next.state.caster = caster;
+  }
+  saveCharacter(next);
+  const success = countSixes(pushed.base) + countSixes(pushed.gear) > 0;
+  session.rolls[session.rolls.length - 1] = { dice: [...pushed.base, ...pushed.gear], success, pushed: true };
+  if (success) session.progress += 1;
+  logRoll({
+    by: ch.name, label: `Neurocasting — ${last.label} (pushed)`, dice: [...pushed.base, ...pushed.gear],
+    outcome: success ? `success ${session.progress}/${session.difficulty}` : "failed"
+  });
+  renderVitals(next);
+  if (pushed.hopeLost && next.state.hope === 0) showToast("Hope has run out — Breakdown.", "danger");
+  rerender();
+}
+
+onReset(() => { session = null; });

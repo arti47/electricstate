@@ -2,7 +2,7 @@
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
 import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt } from "./graphics.js";
 import { icon } from "./icons.js";
-import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick } from "./core.js";
+import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, onReset } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
          ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
@@ -563,7 +563,7 @@ function instantiatePregen(p, gender = DEFAULT_GENDER) {
   location.hash = "#/home";
 }
 
-export function resetWizard() { draft = null; }
+onReset(() => { draft = null; });
 
 // ============================================================ Journey / vehicle
 // The group entity: one Destination, one vehicle, three shared items (p.62).
@@ -665,7 +665,9 @@ function buildJourney(rerender) {
           const trait = rollTrait();
           save({
             vehicle: { ...base, label: base.name, traits: [trait], ...applyTrait(base, trait) },
-            fuel: Math.round(FUEL.tankGallons * FUEL.startingFraction)
+            fuel: Math.round(FUEL.tankGallons * FUEL.startingFraction),
+            // A new vehicle starts whole: the old one's damage and chase do not carry over.
+            hull: null, chase: null
           });
         }
       }, "Take this one (rolls one trait)"));

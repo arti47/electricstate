@@ -1,5 +1,5 @@
 // Solo play (Phase 6). The deck is the pacing timer: no reshuffle until it runs out.
-import { el, d6, d66, uid, shuffle, fromRangeTable, randomInt, fromD100 } from "./core.js";
+import { el, d6, d66, uid, shuffle, fromRangeTable, randomInt, fromD100, onReset } from "./core.js";
 import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EMOTION,
          NPC_MOTIVE, NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS,
          THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
@@ -240,6 +240,7 @@ export function passTheSpotlight(cast = listCharacters()) {
 
 let soloPhase = null;   // the phase the player opened; null follows the game
 let lastAuto = null;
+onReset(() => { soloPhase = null; lastAuto = null; });
 
 function build(rerender) {
   const s = state();
@@ -400,6 +401,9 @@ function build(rerender) {
         if (!card) { showToast("The deck is spent — reshuffle."); return; }
         const shift = START_SHIFT_BY_SUIT[card.suit];
         write({ deck });
+        // The card says when you arrive, so that is the Shift now — the sky, the header
+        // clock and the Time screen all follow it, rather than disagreeing with the card.
+        saveJourney({ ...(getJourney() || {}), shift });
         logEvent("Arrival", `${shift}`, card); rerender();
         await modal({ title: `Arrive in the ${shift}`, body: el("p", {}, `${card.rank}${SUIT_GLYPH[card.suit]} — you reach the Stop in the ${shift.toLowerCase()}.`), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
       }))));

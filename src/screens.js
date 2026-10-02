@@ -1,5 +1,5 @@
 // Top-level screen renderers. Phase 1-3 screens (wizard, sheet, roller) mount here later.
-import { $, el, add } from "./core.js";
+import { $, el, add, resetTransient } from "./core.js";
 import { Settings, TOGGLES, TEXT_SCALES, set as setSetting, get as getSetting,
          applyTextScale } from "./settings.js";
 import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLogKey,
@@ -8,9 +8,7 @@ import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLog
          canUndo, undoLast, undoLabel } from "./store.js";
 import { searchLibrary, searchGlossary } from "./rules.js";
 import { whatNowCard } from "./play.js";
-import { resetRoller } from "./roller.js";
-import { resetNeuro } from "./neurocasting.js";
-import { resetWizard, routeCard } from "./wizard.js";
+import { routeCard } from "./wizard.js";
 import { routeStrip } from "./graphics.js";
 import { archetypeGlyph, portrait } from "./graphics.js";
 import { miniVitals } from "./sheet.js";
@@ -29,7 +27,7 @@ import { ARCHETYPES } from "../data.js";
  * table, the neurocasting session, the half-built Traveler. None of it belongs to the
  * next campaign, so anything that swaps the game underneath them has to say so.
  */
-function clearTransientScreens() { resetRoller(); resetNeuro(); resetWizard(); }
+function clearTransientScreens() { resetTransient(); }
 import { TRAUMA_CONSENT_NOTE } from "../data-tables.js";
 
 export function homeScreen() {
