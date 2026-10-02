@@ -146,6 +146,12 @@ export function beatFor(state = director()) {
       choices: ladder.actions };
   }
 
+  // The planned Stops are all played: between Stops, say so instead of driving on blind.
+  if (ladder.id === "journey-end" && ["idle", "wrap"].includes(state.beat)) {
+    return { id: ladder.id, heading: ladder.title, now: ladder.blurb, you: null,
+      choices: [ladder.actions[0], { label: "Keep driving", act: "road" }] };
+  }
+
   if (combat?.active) {
     return { id: "fighting", heading: `A fight — round ${combat.round}`,
       now: "Somebody swung first. Nothing else happens until this is over.",

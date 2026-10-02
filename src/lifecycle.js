@@ -251,6 +251,10 @@ export function lifecycleScreen(param) {
   host.append(build(rerender));
   // "End the session" from Play lands here as #/time/debrief: run the debrief at once
   // instead of leaving it folded under Bigger boundaries for someone to find.
+  if (param === "epilogue") {
+    history.replaceState(null, "", "#/time");
+    requestAnimationFrame(() => epilogue(rerender));
+  }
   if (param === "debrief") {
     history.replaceState(null, "", "#/time");
     // …and then back to Play, where the next session starts from the top.

@@ -10,6 +10,7 @@ import { listCharacters, getJourney, getSessionLog } from "./store.js";
 import { activeStop, listStops } from "./stops.js";
 import { getCombat } from "./combat.js";
 import { Settings } from "./settings.js";
+import { JOURNEY_LENGTH } from "../data-gm.js";
 import { explain } from "./ui.js";
 import { icon } from "./icons.js";
 
@@ -67,6 +68,18 @@ export function whatNow({ chars = [], journey = null, stop = null, stops = [], c
       "Keep it as a record. A new Journey starts clean — new Travelers, new road, same app.",
       [{ label: "Start another Journey", href: "#/settings", primary: true },
        { label: "Read the roll log", href: "#/log" }]);
+  }
+
+  // The road has run out: as many Stops played as the Journey was planned for. Ending it
+  // is a choice the table makes, but nobody can make it if nothing ever says so.
+  const planned = JOURNEY_LENGTH.find((l) => l.id === journey.length)?.stops[0] || 0;
+  const played = stops.filter((st) => st.resolved).length;
+  const between = !stop || stop.resolved;
+  if (!combat?.active && planned && played >= planned && between) {
+    return step("journey-end", "close", "The road has run out",
+      `${played} Stop${played === 1 ? "" : "s"} played — as many as this Journey was planned for. End it with an epilogue for each Traveler, or keep driving if the story is not done.`,
+      [{ label: "End the Journey", href: "#/time/epilogue", primary: true },
+       { label: "Keep driving", href: Settings.solo() ? "#/solo" : "#/gm" }]);
   }
 
   // ------------------------------------------------------------- mid-session

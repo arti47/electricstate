@@ -568,3 +568,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   offers a dodge to someone already down.
   `tests/probe-screens.mjs` (in `npm run probe`, alone as `npm run probe:screens`) keeps
   them closed: fourteen screens, a dozen lit-only presses each, from mid-session.
+- **Round 5 — the Journey can end without anyone finding a fold.** `whatNow` returns
+  `journey-end` ("The road has run out") between Stops once as many are resolved as the
+  Journey's length planned (its minimum), never mid-fight; Home, Play (as a beat from idle or
+  wrap, with Keep driving → road) and Solo all show it. **End the Journey** opens
+  `#/time/epilogue`, which runs the epilogue at once. **Roll the rest** sets a missing length
+  to `short` (two to four Stops), so a rolled Journey has an end to reach.

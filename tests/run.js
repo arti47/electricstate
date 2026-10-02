@@ -1248,6 +1248,17 @@ await test("one solo deck: a draw from Play and a draw from Solo come off the sa
   assert.ok(again.shuffled && again.left === 51, "Play reshuffles a spent deck and carries on");
 });
 
+await test("once the planned Stops are played, the app offers to end the Journey", () => {
+  const j = { destination: "x", vehicle: { name: "Van" }, length: "short" };
+  const chars = [{ id: "a", tension: { b: 1 } }, { id: "b", tension: {} }];
+  assert.equal(play.whatNow({ chars, journey: j, stops: [{ id: "s1", resolved: true }] }).id, "on-the-road", "one of two is not the end");
+  const end = play.whatNow({ chars, journey: j, stops: [{ id: "s1", resolved: true }, { id: "s2", resolved: true }] });
+  assert.equal(end.id, "journey-end");
+  assert.equal(end.actions[0].href, "#/time/epilogue");
+  assert.equal(play.whatNow({ chars, journey: j, stops: [{ id: "s1", resolved: true }, { id: "s2", resolved: true }],
+    combat: { active: true, round: 1 } }).id, "in-combat", "never mid-fight");
+});
+
 await test("the app names the next setup step until the group can actually play", () => {
   assert.equal(play.whatNow({ chars: [], journey: null }).id, "no-traveler");
   assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: null }).id, "no-destination");

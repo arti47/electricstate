@@ -742,6 +742,8 @@ function buildJourney(rerender) {
   const rollRest = () => {
     const patch = {};
     if (!j.start) patch.start = fromD100(JOURNEY_PLACES);
+    // No length chosen: a short Journey, two to four Stops — enough to finish one.
+    if (!j.length) patch.length = "short";
     if (!j.destination) patch.destination = `${fromD100(JOURNEY_PLACES)} — ${fromD100(JOURNEY_PURPOSE)}`;
     if (!j.vehicle) {
       const base = pick(VEHICLES);
