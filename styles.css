@@ -1986,3 +1986,12 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .cbt-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .cbt-face { display: inline-flex; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; overflow: hidden; align-items: center; justify-content: center; }
 .cbt-face.is-threat { border: 1px solid var(--danger); color: var(--danger); background: var(--danger-soft); }
+
+/* ---- novice pass, round 1 ---- */
+.mode-tiles { display: grid; gap: 8px; }
+.mode-tile { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; align-items: center; text-align: left;
+  padding: 14px; min-height: 64px; border: 1px solid var(--line); border-radius: var(--radius, 10px); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.mode-tile > .icon { grid-row: 1 / span 2; color: var(--accent); }
+.mode-tile .faint { grid-column: 2; font-size: .88rem; }
+.mode-tile:hover, .mode-tile:focus-visible { border-color: var(--accent); }
+.attr-hint { margin: 6px 2px 0; }

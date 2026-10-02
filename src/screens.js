@@ -53,6 +53,21 @@ export function homeScreen() {
     wrap.append(el("div", { class: "empty card" },
       el("p", {}, "No Travelers yet. The road is long and someone has to drive it."),
       el("a", { class: "btn btn-primary", href: "#/create" }, "Create a Traveler")));
+    // The first question a newcomer cannot answer from the screen: is this for one person
+    // or a table? Each answer switches on the right mode and goes straight to creation.
+    const go = (flag) => () => { if (flag) setSetting(flag, true); location.hash = "#/create"; };
+    wrap.append(el("div", { class: "card mode-pick" },
+      el("h3", {}, "How will you play?"),
+      el("div", { class: "mode-tiles" },
+        el("button", { class: "mode-tile", onclick: go("solo") }, icon("traveler", { size: 28 }),
+          el("strong", {}, "On my own"),
+          el("span", { class: "faint" }, "No GM needed. You make two to four Travelers and the app plays the world.")),
+        el("button", { class: "mode-tile", onclick: go("gmScreen") }, icon("mask", { size: 28 }),
+          el("strong", {}, "With friends — I am the GM"),
+          el("span", { class: "faint" }, "You describe the world; everyone else makes one Traveler.")),
+        el("button", { class: "mode-tile", onclick: go(null) }, icon("chat", { size: 28 }),
+          el("strong", {}, "With friends — someone else is the GM"),
+          el("span", { class: "faint" }, "Make your one Traveler; this app is your character sheet and dice.")))));
   } else {
     const list = el("ul", { class: "list" });
     for (const c of chars) {

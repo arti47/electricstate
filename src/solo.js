@@ -13,6 +13,7 @@ import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
 import { showToast, modal, explain, actionBar, dismissModal, related } from "./ui.js";
+import { currentStep, whatNowCard } from "./play.js";
 import { subj, obj, poss, Subj, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
 import { playingCard, deckStack } from "./graphics.js";
 import { sound } from "./sound.js";
@@ -246,6 +247,11 @@ function build(rerender) {
   const s = state();
   const wrap = el("div", {}, el("h1", {}, "Solo"));
   wrap.append(explain("Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing."));
+
+  // Before the Journey exists there is nothing for a card to answer about. Say what is
+  // missing first, the same step Home and Play show.
+  const setup = currentStep();
+  if (setup.phase === "setup") wrap.append(whatNowCard(setup));
 
   // The deck on the table: how much is left, and the last card turned over with what it
   // said. Running the deck down is the pacing, so it leads the screen.

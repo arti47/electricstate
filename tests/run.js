@@ -1223,6 +1223,16 @@ const atTable = (over = {}) => ({
   stop: null, stops: [], combat: null, sessionLog: [], ...over
 });
 
+await test("solo with a single Traveler is told to make another, once, before the Journey", async () => {
+  const { set: setSetting } = await import("../src/settings.js");
+  setSetting("solo", true);
+  try {
+    assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: null }).id, "solo-party");
+    assert.equal(play.whatNow({ chars: [{ id: "a" }, { id: "b" }], journey: null }).id, "no-destination");
+    assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: { destination: "x" } }).id, "no-vehicle");
+  } finally { setSetting("solo", false); }
+});
+
 await test("the app names the next setup step until the group can actually play", () => {
   assert.equal(play.whatNow({ chars: [], journey: null }).id, "no-traveler");
   assert.equal(play.whatNow({ chars: [{ id: "a" }], journey: null }).id, "no-destination");

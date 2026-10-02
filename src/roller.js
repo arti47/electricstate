@@ -185,7 +185,9 @@ function build(rerender) {
         class: "btn" + (pending.attr === a.id ? " btn-primary" : ""),
         "aria-pressed": pending.attr === a.id ? "true" : "false",
         onclick: () => { haptic(); pending.attr = a.id; pending.talents = []; pending.result = null; rerender(); }
-      }, el("span", { class: "attr-name" }, a.label), " ", el("span", { class: "attr-val" }, ch.attributes[a.id]))))));
+      }, el("span", { class: "attr-name" }, a.label), " ", el("span", { class: "attr-val" }, ch.attributes[a.id])))),
+    // Which one to roll is the first thing a newcomer cannot answer: say what each is for.
+    el("p", { class: "faint attr-hint" }, ATTRIBUTES.find((a) => a.id === pending.attr)?.blurb || "")));
 
   // Talents that swap one attribute for another: Menacing threatens on Strength,
   // Techno babbler argues on Wits, both in place of Empathy.

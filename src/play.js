@@ -31,6 +31,14 @@ export function whatNow({ chars = [], journey = null, stop = null, stops = [], c
       [{ label: "Create a Traveler", href: "#/create", primary: true },
        { label: "How this game works", href: "#/tutorial" }]);
   }
+  // Solo runs two to four Travelers: one alone has nobody to feel Tension toward, and
+  // Tension is the only reliable way Hope comes back. Asked once, before the Journey.
+  if (Settings.solo() && chars.length === 1 && !journey?.destination) {
+    return step("solo-party", "setup", "Solo play wants company",
+      "Playing alone, you run two to four Travelers. With only one, nobody can feel Tension toward anybody, and Tension is how Hope comes back.",
+      [{ label: "Make another Traveler", href: "#/create", primary: true },
+       { label: "Carry on with one", href: "#/journey" }]);
+  }
   if (!journey?.destination) {
     return step("no-destination", "setup", "Where are you going?",
       "The Journey is the campaign. One destination for the whole group, and a reason to be heading there.",

@@ -481,3 +481,11 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   another screen ("on the sheet", "on the Time screen") now carries a `related()` chip to it —
   Neuroscape → sheet, solo procedure → Journey and Time. Not inside modals: a link under an
   open dialog navigates behind it.
+- **Novice pass (six rounds) — round 1.** Empty home asks **How will you play?** (on my own /
+  I am the GM / someone else is the GM); each tile switches on the right mode and opens
+  creation. `whatNow` gains `solo-party`: solo with one Traveler and no destination is told to
+  make a second (skippable via "Carry on with one"). Solo shows the setup step card while
+  setup is incomplete. Dice shows the chosen attribute's blurb under the four tiles.
+- **Stop hook.** `.claude/settings.json` runs `.claude/hooks/verify-on-stop.sh`: a session
+  cannot end its turn while `npm run verify` fails (exit 2 feeds failures back). It skips when
+  HEAD + working tree are unchanged since the last clean run (`.claude/.verified`, ignored).
