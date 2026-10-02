@@ -35,13 +35,21 @@ const snapshot = (page) => page.evaluate(() => ({
   modal: !!document.querySelector(".modal-backdrop"),
   // The dice tray opens over the screen rather than in it.
   tray: !document.getElementById("tray")?.hidden,
-  toast: document.querySelectorAll(".toast").length,
+  // Toasts shown so far, not toasts on screen: an old one expiring while a new one appears
+  // left the on-screen count flat, and the audit called a working Add button a no-op.
+  toast: window.__toastsShown || 0,
   store: localStorage.getItem("electricState.v1") || "",
   settings: localStorage.getItem("electricState.v1.settings") || ""
 }));
 
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await page.addInitScript(GAME_HELPERS);
+await page.addInitScript(() => {
+  window.__toastsShown = 0;
+  new MutationObserver((ms) => {
+    for (const m of ms) for (const n of m.addedNodes) if (n.classList?.contains("toast")) window.__toastsShown++;
+  }).observe(document, { childList: true, subtree: true });
+});
 const errors = [];
 page.on("pageerror", (e) => errors.push(`${e.message}`));
 page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });

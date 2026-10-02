@@ -7,11 +7,12 @@
 // offered the same Roll forever, a fight with nobody on the other side. So the probe fails
 // on any screen with no lit button, on any page error, and on not reaching every act of a
 // session — creation, the Journey, Tension, a scene, the Countdown, a fight with a hit
-// applied, the debrief, and the next session starting — inside its press budget.
+// applied, the debrief, the next session starting, and at last the Journey's own ending
+// and epilogue — inside its press budget.
 import { chromium } from "playwright-core";
 import { serve, CHROMIUM, GAME_HELPERS, SEEDS, seedPage } from "./fixtures.js";
 
-const BUDGET = 320;
+const BUDGET = 800;
 const { base, close } = await serve();
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -41,6 +42,8 @@ for (let i = 0; i < BUDGET; i++) {
       pressure: (j?.journey?.stops || []).some((s) => (s.countdownProgress || 0) > 0),
       fight: (j?.journey?.combat?.combatants || []).some((x) => x.side !== "travelers"),
       hit: (j?.rollLog || []).some((r) => r.label === "Damage"),
+      // The whole campaign: enough Stops played that the Journey offers its ending, taken.
+      ended: !!j?.journey?.ended,
       improved: (j?.rollLog || []).some((r) => r.label === "Improvement"),
       // A new session: the debrief ran and Play is back at its first beat.
       again: (j?.rollLog || []).some((r) => r.label === "Improvement") && location.hash === "#/session"
@@ -68,7 +71,7 @@ for (let i = 0; i < BUDGET; i++) {
   if (step.facts.travelers) reached.add("travelers");
   trail.push(`${step.facts.hash} → ${step.pressed}`);
   if (!step.pressed) { deadEnd = step.facts.hash; break; }
-  if (reached.has("again")) break;
+  if (reached.has("ended")) break;
   await page.click('[data-novice="1"]', { timeout: 3000 }).catch(() => {});
   await page.evaluate(() => document.querySelectorAll("[data-novice]").forEach((e) => e.removeAttribute("data-novice")));
   await page.waitForTimeout(200);
@@ -136,11 +139,11 @@ close();
 const failures = [...modeChecks];
 if (errors.length) failures.push(`page errors: ${errors.join(" | ")}`);
 if (deadEnd) failures.push(`dead end at ${deadEnd}: nothing lit to press`);
-for (const k of ["travelers", "destination", "tension", "scene", "pressure", "fight", "hit", "improved", "again"]) {
+for (const k of ["travelers", "destination", "tension", "scene", "pressure", "fight", "hit", "improved", "again", "ended"]) {
   if (!reached.has(k)) failures.push(`never reached: ${k}`);
 }
 if (failures.length) {
   console.error("novice probe FAILED\n  " + failures.join("\n  ") + "\n  last presses:\n    " + trail.slice(-12).join("\n    "));
   process.exit(1);
 }
-console.log(`novice probe: pressing only the lit button reaches a whole session in ${trail.length} presses`);
+console.log(`novice probe: pressing only the lit button plays a whole Journey to its epilogue in ${trail.length} presses`);

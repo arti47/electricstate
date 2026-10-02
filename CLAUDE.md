@@ -574,3 +574,13 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   wrap, with Keep driving → road) and Solo all show it. **End the Journey** opens
   `#/time/epilogue`, which runs the epilogue at once. **Roll the rest** sets a missing length
   to `short` (two to four Stops), so a rolled Journey has an end to reach.
+- **Round 6 — the whole campaign, lit-only.** `probe-novice` now walks from a cold start to the
+  Journey's epilogue (`journey.ended`) — Travelers, Journey, Tension, scenes, Countdown, a
+  fight, the debrief, the next session, the second Stop, **End the Journey** — budget 800,
+  observed 190–290 presses.
+- **Solo pass 2 closed (six rounds).** Guards: `probe-novice` (cold start → epilogue, GM and
+  player tiles, the Solo screen alone to the debrief), `probe-lit`, `probe-screens`, and the
+  Stop hook on `npm run verify`.
+- `tests/audit.js` counts toasts **shown** (a MutationObserver tally), not toasts on screen: an
+  old toast expiring while a new one appeared left the count flat and once flagged Journey's
+  working **Add** as a no-op.
