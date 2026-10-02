@@ -337,6 +337,7 @@ export function rollLogScreen() {
     const all = filterRollLog(filter);
     add(wrap, distributionPanel(all));
     const shown = all.slice(0, visible);
+    const cast = Object.fromEntries(listCharacters().map((c) => [c.id, c]));
     const list = el("ul", { class: "list" });
     // A timeline: a node per roll, lit for a success, rust for a push, and a break with
     // the time on it wherever half an hour or more passed between rolls.
@@ -355,7 +356,12 @@ export function rollLogScreen() {
           logDice(r)),
         el("div", { class: "card-row" },
           el("span", { class: "faint" }, r.outcome || ""),
-          el("span", { class: "faint" }, [r.by || "Table", clockTime(r.ts)].filter(Boolean).join(" · "))))));
+          (() => {
+            const who = r.byId && cast[r.byId];
+            const meta = el("span", { class: "faint log-who" }, [r.by || "Table", clockTime(r.ts)].filter(Boolean).join(" · "));
+            if (!who) return meta;
+            return el("a", { class: "log-who-link", href: `#/sheet/${who.id}` }, portrait(who, { size: 22, frame: false }), meta);
+          })()))));
     });
     wrap.append(el("div", { class: "card" }, list));
     if (all.length > shown.length) {
@@ -429,13 +435,12 @@ export function settingsScreen() {
   wrap.append(el("h2", {}, "Backup"),
     el("div", { class: "card" },
       el("p", { class: "faint" }, "Everything lives on this device until cloud sync arrives. Export regularly."),
-      el("div", { class: "btn-row" },
-        el("button", { class: "btn", onclick: doExport }, "Export JSON"),
-        el("button", { class: "btn", onclick: doImport }, "Import JSON"),
-        el("button", { class: "btn", onclick: doExportReadable }, "Export as text"),
-        el("a", { class: "btn", href: "#/log" }, "Roll log")),
-      el("div", { class: "btn-row", style: "margin-top:8px" },
-        el("button", { class: "btn", onclick: doCheckData }, "Check my data")),
+      el("div", { class: "btn-grid" },
+        el("button", { class: "btn", onclick: doExport }, icon("pack", { size: 18 }), "Export JSON"),
+        el("button", { class: "btn", onclick: doImport }, icon("pack", { size: 18 }), "Import JSON"),
+        el("button", { class: "btn", onclick: doExportReadable }, icon("book", { size: 18 }), "Export as text"),
+        el("a", { class: "btn", href: "#/log" }, icon("dice", { size: 18 }), "Roll log"),
+        el("button", { class: "btn", onclick: doCheckData }, icon("shield", { size: 18 }), "Check my data")),
       // The one irreversible-feeling action gets its own strip, apart from the safe ones.
       el("div", { class: "danger-strip" },
         el("span", { class: "danger-mark" }, icon("hazard", { size: 20 })),

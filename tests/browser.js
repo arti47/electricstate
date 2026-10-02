@@ -163,8 +163,8 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.click('#screen button:has-text("Next")');
   const allowance = await page.evaluate(() =>
     document.querySelector("#screen p.muted")?.textContent.match(/Choose (\d)/)?.[1]);
-  await page.locator("#screen .card .btn-row .btn").first().click();
-  if (allowance === "2") await page.locator("#screen .card .btn-row .btn").nth(1).click();
+  await page.locator("#screen .talent-tile").first().click();
+  if (allowance === "2") await page.locator("#screen .talent-tile").nth(1).click();
   await page.click('#screen button:has-text("Next")');
   await page.click('#screen button[aria-label="Roll a name"]');
   await page.waitForTimeout(60);

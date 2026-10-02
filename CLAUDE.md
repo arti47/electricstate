@@ -459,4 +459,10 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   outside the Dice tab, tab bar and section rows opens the tray over the current screen;
   combat's Attack opens the tray instead of leaving the fight. GM party rows open sheets. The
   session shows the party (portraits + mini vitals) and the route, each linking out.
+- **Round 2 (audit cycle).** Wizard: rolled attributes render as dice, assigned ones dimmed
+  (`.is-spent`); each attribute shows its die beside the picker (dashed `.die-slot` when empty);
+  point-buy uses `.stepper`; Total/Health/Hope as ring dials. Suggested talents are
+  `.talent-tile`s carrying the D6 pair that picks them (1–2, 3–4, 5–6), neutral dice — a key,
+  not a result. Roll log rows link to the roller's sheet with a portrait; Settings backup
+  actions are a `.btn-grid`.
 

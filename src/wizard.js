@@ -1,6 +1,6 @@
 // Creation wizard (Phase 1). Follows the book's 17-step order, grouped into screens.
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
-import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt } from "./graphics.js";
+import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt, ringDial } from "./graphics.js";
 import { icon } from "./icons.js";
 import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, onReset } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
@@ -16,7 +16,7 @@ import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, getCharacter, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { listStops, activeStop } from "./stops.js";
-import { showToast, modal, confirmModal, explain, actionBar, dismissModal, related } from "./ui.js";
+import { showToast, modal, confirmModal, explain, actionBar, dismissModal, related, dieFace } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 import { GENDERS, DEFAULT_GENDER, splitPairedName, resolvePairedName, genderOf } from "./pronouns.js";
 
@@ -89,24 +89,34 @@ function stepAttributes(rerender) {
         }
       }, "Roll four dice"));
     } else {
-      wrap.append(el("div", { class: "card" },
-        el("div", { class: "card-row" },
-          el("span", { class: "mono", style: "font-size:1.4rem;letter-spacing:.3em" }, draft.rolled.join(" ")),
-          el("button", { class: "btn", onclick: () => { draft.rolled = null; rerender(); } }, "Re-roll"))));
       const used = Object.values(draft.attributes).filter((v) => v != null);
       const pool = [...draft.rolled];
       for (const v of used) { const i = pool.indexOf(v); if (i > -1) pool.splice(i, 1); }
+      // The rolled dice as dice; the ones already assigned sit dimmed.
+      const left = [...pool];
+      const faces = draft.rolled.map((v, i) => {
+        const k = left.indexOf(v);
+        const free = k > -1; if (free) left.splice(k, 1);
+        const f = dieFace(v, { index: i }); if (!free) f.classList.add("is-spent");
+        return f;
+      });
+      wrap.append(el("div", { class: "card rolled-card" },
+        el("div", { class: "card-row" },
+          el("div", { class: "dice" }, ...faces),
+          el("button", { class: "btn", onclick: () => { draft.rolled = null; rerender(); } }, "Re-roll"))));
       for (const attr of ATTRIBUTES) {
         const current = draft.attributes[attr.id];
         const options = [...new Set([...(current != null ? [current] : []), ...pool])].sort((a, b) => b - a);
-        wrap.append(el("div", { class: "field" },
+        wrap.append(el("div", { class: "field attr-assign" + (current != null ? " is-set" : "") },
           el("label", {}, `${attr.label} — ${attr.blurb}`),
-          el("select", {
+          el("div", { class: "attr-slot" },
+            current != null ? dieFace(current) : el("span", { class: "die-slot", "aria-hidden": "true" }),
+            el("select", {
             "aria-label": attr.label,
             onchange: (e) => { draft.attributes[attr.id] = e.target.value ? +e.target.value : null; rerender(); }
           },
             el("option", { value: "", selected: current == null }, "—"),
-            ...options.map((v) => el("option", { value: v, selected: current === v }, v)))));
+            ...options.map((v) => el("option", { value: v, selected: current === v }, v))))));
       }
     }
   } else {
@@ -114,21 +124,26 @@ function stepAttributes(rerender) {
     wrap.append(el("p", { class: "faint" }, `Distribute ${POINT_BUY_TOTAL} points, nothing below ${ATTRIBUTE_MIN} or above ${ATTRIBUTE_MAX}. Spent: ${spent}/${POINT_BUY_TOTAL}.`));
     for (const attr of ATTRIBUTES) {
       const v = draft.attributes[attr.id] ?? ATTRIBUTE_MIN;
-      wrap.append(el("div", { class: "field" },
+      wrap.append(el("div", { class: "field attr-assign is-set" },
         el("label", {}, `${attr.label} — ${attr.blurb}`),
-        el("div", { class: "card-row" },
-          el("button", { class: "btn", "aria-label": `Lower ${attr.label}`, onclick: () => { draft.attributes[attr.id] = clamp(v - 1, ATTRIBUTE_MIN, ATTRIBUTE_MAX); rerender(); } }, "−"),
-          el("span", { class: "mono", style: "font-size:1.2rem" }, v),
-          el("button", { class: "btn", "aria-label": `Raise ${attr.label}`, onclick: () => { draft.attributes[attr.id] = clamp(v + 1, ATTRIBUTE_MIN, ATTRIBUTE_MAX); rerender(); } }, "+"))));
+        el("div", { class: "attr-slot" },
+          dieFace(v),
+          el("span", { class: "stepper" },
+            el("button", { class: "stepper-btn", type: "button", "aria-label": `Lower ${attr.label}`, disabled: v <= ATTRIBUTE_MIN, onclick: () => { draft.attributes[attr.id] = clamp(v - 1, ATTRIBUTE_MIN, ATTRIBUTE_MAX); rerender(); } }, "−"),
+            el("span", { class: "stepper-value mono" }, v),
+            el("button", { class: "stepper-btn", type: "button", "aria-label": `Raise ${attr.label}`, disabled: v >= ATTRIBUTE_MAX, onclick: () => { draft.attributes[attr.id] = clamp(v + 1, ATTRIBUTE_MIN, ATTRIBUTE_MAX); rerender(); } }, "+")))));
     }
   }
 
   const total = attributeTotal({ attributes: filledAttributes() });
   if (Object.values(draft.attributes).every((v) => v != null)) {
-    wrap.append(el("div", { class: "card" },
-      el("div", { class: "card-row" }, el("span", { class: "faint" }, "Total"), el("span", { class: "mono" }, total)),
-      el("div", { class: "card-row" }, el("span", { class: "faint" }, "Health"), el("span", { class: "mono" }, maxHealth({ attributes: filledAttributes(), talents: draft.talents }))),
-      el("div", { class: "card-row" }, el("span", { class: "faint" }, "Hope"), el("span", { class: "mono" }, maxHope({ attributes: filledAttributes(), talents: draft.talents }))),
+    const hp = maxHealth({ attributes: filledAttributes(), talents: draft.talents });
+    const ho = maxHope({ attributes: filledAttributes(), talents: draft.talents });
+    wrap.append(el("div", { class: "card derived-card" },
+      el("div", { class: "derived-dials" },
+        el("div", { class: "derived-dial" }, ringDial(total, 24, { tone: "neutral", size: 64, center: String(total), label: `Total ${total}` }), el("span", { class: "faint" }, "Total")),
+        el("div", { class: "derived-dial" }, ringDial(hp, hp, { tone: "danger", size: 64, center: String(hp), label: `Health ${hp}` }), el("span", { class: "faint" }, "Health")),
+        el("div", { class: "derived-dial" }, ringDial(ho, ho, { tone: "accent", size: 64, center: String(ho), label: `Hope ${ho}` }), el("span", { class: "faint" }, "Hope"))),
       qualifiesForBonusTalent(total)
         ? el("p", { class: "faint", style: "margin-top:8px" }, `Total is ${total} — ${BONUS_TALENT_THRESHOLD} or lower, so you get a second starting talent.`)
         : null));
@@ -151,14 +166,18 @@ function stepTalents(rerender) {
     el("p", { class: "muted" }, `Choose ${allowed} talent${allowed > 1 ? "s" : ""}. Your archetype suggests three, but any talent is legal.`));
 
   const suggested = el("div", { class: "card" }, el("h3", {}, "Suggested"),
-    el("div", { class: "btn-row" },
-      ...(arch?.talents || []).map((id) => {
+    el("div", { class: "talent-tiles" },
+      ...(arch?.talents || []).map((id, i) => {
         const t = findTalent(id);
+        const on = draft.talents.includes(id);
         return el("button", {
-          class: "btn" + (draft.talents.includes(id) ? " btn-primary" : ""),
+          class: "talent-tile" + (on ? " is-on" : ""), "aria-pressed": String(on),
           onclick: () => toggleTalent(id, allowed, rerender)
-        }, t?.name || id);
-      }),
+        }, el("span", { class: "talent-face", "aria-hidden": "true" }, dieFace(i * 2 + 1, { mini: true }), dieFace(i * 2 + 2, { mini: true })),
+           el("strong", {}, t?.name || id),
+           t ? el("span", { class: "faint" }, describeTalent(t)) : null);
+      })),
+    el("div", { class: "btn-row" },
       el("button", {
         class: "btn", onclick: () => {
           const suggested = arch.talents[Math.floor((d6() - 1) / 2)];

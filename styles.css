@@ -1931,3 +1931,28 @@ a.party-row:hover { background: var(--bg-hover); }
 .party-bar .route-card { margin: 0; padding: 0; border: 0; }
 .card.has-band { overflow: hidden; }
 .card.has-band > .scene-band { margin: calc(var(--s4) * -1) calc(var(--s4) * -1) var(--s3); border-radius: var(--r) var(--r) 0 0; }
+
+/* ---- round 2: creation wizard ---- */
+.rolled-card .dice { gap: 10px; }
+.die.is-spent { opacity: .32; filter: grayscale(1); transform: scale(.9); }
+.attr-assign { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius, 10px); background: var(--surface); }
+.attr-assign.is-set { border-color: var(--line-strong); }
+.attr-slot { display: flex; align-items: center; gap: 12px; }
+.attr-slot > .picker, .attr-slot > select { flex: 1 1 auto; min-width: 0; }
+.die-slot { width: 42px; height: 42px; flex: 0 0 auto; border: 1.5px dashed var(--line-strong); border-radius: 7px; }
+.stepper-value { min-width: 2.2ch; text-align: center; font-size: 1.2rem; }
+.derived-dials { display: flex; justify-content: space-around; gap: 8px; text-align: center; }
+.derived-dial { display: grid; justify-items: center; gap: 4px; }
+.tone-neutral .dial-seg.on { stroke: var(--ink-dim); filter: none; }
+.talent-tiles { display: grid; gap: 8px; margin-bottom: 10px; }
+.talent-tile { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; align-items: center; text-align: left;
+  padding: 12px; min-height: 56px; border: 1px solid var(--line); border-radius: var(--radius, 10px); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.talent-tile .talent-face { grid-row: 1 / span 2; display: flex; gap: 3px; }
+.talent-tile .faint { grid-column: 2; font-size: .85rem; }
+.talent-tile.is-on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); background: var(--accent-soft); }
+@media (min-width: 640px) { .talent-tiles { grid-template-columns: repeat(3, 1fr); } .talent-tile { grid-template-columns: 1fr; } .talent-tile .talent-face { grid-row: auto; } .talent-tile .faint { grid-column: 1; } }
+/* the talent pair dice are a lookup key, not a result: no success glow, no rust */
+.talent-face .die.is-six, .talent-face .die.is-one { background: var(--bone); color: var(--bone-ink); box-shadow: none; }
+.log-who-link { display: inline-flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; min-height: 32px; }
+.log-who-link .portrait, .log-who-link svg { border-radius: 50%; }
+.btn-grid > .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
