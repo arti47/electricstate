@@ -42,7 +42,11 @@ export function homeScreen() {
   wrap.append(explain("Everyone you are playing lives here. Tap a Traveler to open that sheet — vitals, talents, gear and conditions. The Journey is shared by the whole group: one destination, one vehicle, three items between you."));
   // The front door. Someone who has read nothing should be able to press one button and
   // have the app start telling them what is happening.
-  if (chars.length) {
+  if (chars.length && Settings.playMode() === "player") {
+    // Someone else runs the story: this device is a sheet and a set of dice.
+    wrap.append(el("a", { class: "btn btn-primary btn-block", href: `#/sheet/${chars[0].id}`, style: "margin-bottom:12px" },
+      chars.length > 1 ? "Open a sheet" : `Open ${chars[0].name || "your Traveler"}`));
+  } else if (chars.length) {
     wrap.append(el("a", { class: "btn btn-primary btn-block", href: "#/session", style: "margin-bottom:12px" },
       "Play — the app runs the session"));
   } else {
@@ -52,17 +56,18 @@ export function homeScreen() {
   if (!chars.length) {
     // The first question a newcomer cannot answer from the screen: is this for one person
     // or a table? Each answer switches on the right mode and goes straight to creation.
-    const go = (flag) => () => { if (flag) setSetting(flag, true); location.hash = "#/create"; };
+    // The GM's first job is a Stop, not a Traveler: everyone else makes those.
+    const go = (flag, mode) => () => { if (flag) setSetting(flag, true); setSetting("playMode", mode); location.hash = mode === "gm" ? "#/gm" : "#/create"; };
     wrap.append(el("div", { class: "card mode-pick" },
       el("h3", {}, "How will you play?"),
       el("div", { class: "mode-tiles" },
-        el("button", { class: "mode-tile", onclick: go("solo") }, icon("traveler", { size: 28 }),
+        el("button", { class: "mode-tile", onclick: go("solo", "solo") }, icon("traveler", { size: 28 }),
           el("strong", {}, "On my own"),
           el("span", { class: "faint" }, "No GM needed. You make two to four Travelers and the app plays the world.")),
-        el("button", { class: "mode-tile", onclick: go("gmScreen") }, icon("mask", { size: 28 }),
+        el("button", { class: "mode-tile", onclick: go("gmScreen", "gm") }, icon("mask", { size: 28 }),
           el("strong", {}, "With friends — I am the GM"),
           el("span", { class: "faint" }, "You describe the world; everyone else makes one Traveler.")),
-        el("button", { class: "mode-tile", onclick: go(null) }, icon("chat", { size: 28 }),
+        el("button", { class: "mode-tile", onclick: go(null, "player") }, icon("chat", { size: 28 }),
           el("strong", {}, "With friends — someone else is the GM"),
           el("span", { class: "faint" }, "Make your one Traveler; this app is your character sheet and dice.")))));
     wrap.append(el("div", { class: "empty card" },
@@ -438,7 +443,23 @@ export function settingsScreen() {
         onchange: (e) => { setSetting(t.flag, e.target.checked); window.dispatchEvent(new CustomEvent("hashchange")); }
       })));
   }
-  wrap.append(el("h2", {}, "Features"), toggles);
+  // The answer to "How will you play?" from the first screen, changeable later.
+  const MODES = [["solo", "On my own"], ["gm", "I am the GM"], ["player", "Someone else is"]];
+  const mode = Settings.playMode();
+  const modeCard = el("div", { class: "card" },
+    el("strong", {}, "How you play"),
+    el("div", { class: "seg mode-seg", role: "group", "aria-label": "How you play" },
+        ...MODES.map(([id, label]) => el("button", {
+          class: "seg-item" + (mode === id ? " is-on" : ""), "aria-pressed": String(mode === id),
+          onclick: () => {
+            setSetting("playMode", id);
+            if (id === "solo") setSetting("solo", true);
+            if (id === "gm") setSetting("gmScreen", true);
+            window.dispatchEvent(new CustomEvent("hashchange"));
+          }
+        }, label))),
+    el("p", { class: "faint" }, "Decides what the home screen leads with: the app running the story, your GM tools, or your own sheet and dice."));
+  wrap.append(el("h2", {}, "Features"), modeCard, toggles);
 
   // The book asks for these before play, not after something has already landed badly.
   wrap.append(el("div", { class: "card" },

@@ -521,3 +521,9 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   with nobody to draw for, the dice screen lit the chosen attribute as well as Roll (it is now
   `.is-picked`), a missing Traveler's Back was unlit, and solo's lead toast read
   "<name> lead this one" with a "They" fallback.
+- **Round 5 — the other two ways to play.** `Settings.playMode()` (`solo` / `gm` / `player`)
+  is set by the empty-home tiles and switchable in Settings ("How you play"). **Player** (someone
+  else is the GM): home lights **Open <Traveler>**, `whatNow` returns `player-ready` ("Your GM runs
+  the story" → sheet, dice) instead of the Journey ladder, and Play shows the same. **GM**: the
+  tile goes straight to `#/gm`, where **Roll up a Stop** is lit. The novice probe also checks both
+  tiles land somewhere with a lit button that does that job.

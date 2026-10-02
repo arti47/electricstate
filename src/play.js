@@ -31,6 +31,14 @@ export function whatNow({ chars = [], journey = null, stop = null, stops = [], c
       [{ label: "Create a Traveler", href: "#/create", primary: true },
        { label: "How this game works", href: "#/tutorial" }]);
   }
+  // Someone else is the GM: the story, the Journey and the Stops are theirs to run. This
+  // device is the player's sheet and dice, so that is the whole of what it asks for.
+  if (Settings.playMode() === "player") {
+    return step("player-ready", "play", "Your GM runs the story",
+      "Keep this open at the table. When the GM asks for a roll, tap Roll dice; when you get hurt, the sheet takes the damage. The rest of the app is there if your group wants it.",
+      [{ label: "Open your sheet", href: `#/sheet/${chars[0].id}`, primary: true },
+       { label: "Roll dice", href: "#/dice" }]);
+  }
   // Solo runs two to four Travelers: one alone has nobody to feel Tension toward, and
   // Tension is the only reliable way Hope comes back. Asked once, before the Journey.
   if (Settings.solo() && chars.length === 1 && !journey?.destination) {

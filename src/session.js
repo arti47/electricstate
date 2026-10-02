@@ -140,7 +140,7 @@ export function beatFor(state = director()) {
   // The Journey has to exist before a session can run on it. The same ladder the home card
   // and Running a session use, so all three always agree on what is missing.
   const ladder = currentStep();
-  if (ladder.phase === "setup" || ladder.phase === "done") {
+  if (ladder.phase === "setup" || ladder.phase === "done" || ladder.id === "player-ready") {
     return { id: ladder.id, heading: ladder.title, now: ladder.blurb, you: ladder.aside || null,
       choices: ladder.actions };
   }

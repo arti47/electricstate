@@ -11,7 +11,7 @@
 import { chromium } from "playwright-core";
 import { serve, CHROMIUM } from "./fixtures.js";
 
-const BUDGET = 260;
+const BUDGET = 320;
 const { base, close } = await serve();
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -73,10 +73,34 @@ for (let i = 0; i < BUDGET; i++) {
   await page.evaluate(() => document.querySelectorAll("[data-novice]").forEach((e) => e.removeAttribute("data-novice")));
   await page.waitForTimeout(200);
 }
+// The other two answers to "How will you play?": each must land somewhere with a lit
+// button that does that job — the GM on a Stop to build, the player on a roll.
+const modeChecks = [];
+for (const [tile, expect] of [[1, /#\/gm$/], [2, /#\/sheet\//]]) {
+  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await c2.addInitScript(() => sessionStorage.setItem("es.splashed", "1"));
+  const p2 = await c2.newPage();
+  p2.on("pageerror", (e) => errors.push(e.message));
+  await p2.goto(base + "/#/home");
+  await p2.waitForTimeout(300);
+  await p2.locator(".mode-tile").nth(tile).click();
+  await p2.waitForTimeout(200);
+  if (tile === 2) {
+    await p2.click('#screen button:has-text("ready-made")');
+    await p2.locator(".modal button.row").first().click();
+    await p2.waitForTimeout(200);
+    await p2.locator("#screen .btn-primary").first().click();
+    await p2.waitForTimeout(200);
+  }
+  const at = await p2.evaluate(() => ({ hash: location.hash,
+    lit: [...document.querySelectorAll("#screen .btn-primary")].filter((e) => !e.disabled && e.getBoundingClientRect().height > 0).map((e) => e.textContent.trim()) }));
+  if (!expect.test(at.hash) || !at.lit.length) modeChecks.push(`tile ${tile} landed on ${at.hash} with lit [${at.lit.join(", ")}]`);
+  await c2.close();
+}
 await browser.close();
 close();
 
-const failures = [];
+const failures = [...modeChecks];
 if (errors.length) failures.push(`page errors: ${errors.join(" | ")}`);
 if (deadEnd) failures.push(`dead end at ${deadEnd}: nothing lit to press`);
 for (const k of ["travelers", "destination", "tension", "scene", "pressure", "fight", "hit", "improved", "again"]) {

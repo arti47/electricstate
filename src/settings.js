@@ -26,7 +26,10 @@ export const Settings = {
   hideGmContent: () => isOn("hideGmContent"),
   sound: () => isOn("sound"),
   theme: () => get("theme") || "system",
-  textScale: () => Number(get("textScale")) || 1
+  textScale: () => Number(get("textScale")) || 1,
+  // How this device is used: "solo", "gm" (running it for others), "player" (someone else
+  // runs it), or unset. Chosen on the empty home screen; changeable in Settings.
+  playMode: () => get("playMode") || null
 };
 
 export const TOGGLES = [

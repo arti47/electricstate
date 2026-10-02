@@ -2001,3 +2001,5 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .attr-pick .btn.is-picked { border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
   box-shadow: inset 0 -3px 0 var(--accent); }
 .attr-pick .btn.is-picked .attr-val { color: var(--ink); }
+.mode-seg { display: flex; margin: 8px 0 4px; }
+.mode-seg .seg-item { flex: 1; }
