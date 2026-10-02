@@ -186,10 +186,15 @@ export function mountScene(host = document.querySelector(".sky")) {
 }
 
 /** Point the sky at the Journey's current Shift. */
+// The browser's own chrome takes the colour of the sky overhead.
+const CHROME = { morning: "#141a24", day: "#1a1f26", evening: "#0b0e13", night: "#04060a" };
+
 function syncSky(shift) {
   const key = shiftKey(shift);
   const root = document.documentElement;
   if (root.dataset.shift !== key) root.dataset.shift = key;
+  const light = root.dataset.theme === "light" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: light)").matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#e2ded6" : CHROME[key]);
 }
 
 /**

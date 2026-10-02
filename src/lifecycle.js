@@ -7,7 +7,8 @@ import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilo
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent,
          getSessionLog, clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
-import { shiftDial, fuelDial } from "./graphics.js";
+import { shiftDial, fuelDial, portrait } from "./graphics.js";
+import { icon } from "./icons.js";
 import { subj, obj, poss, Subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
@@ -229,6 +230,21 @@ export function useHopeItem(ch, item) {
 }
 
 // ==================================================================== UI
+/** Two portraits facing each other, following the two pickers. */
+function talkPair(a, b, chars) {
+  const pair = el("div", { class: "talk-pair", "aria-hidden": "true" });
+  const draw = () => {
+    const one = chars.find((c) => c.id === a.value), two = chars.find((c) => c.id === b.value);
+    pair.replaceChildren(
+      one ? portrait(one, { size: 72 }) : el("span"),
+      el("span", { class: "talk-link" }, icon("chat", { size: 22 })),
+      two ? portrait(two, { size: 72 }) : el("span"));
+  };
+  a.addEventListener("change", draw); b.addEventListener("change", draw);
+  draw();
+  return pair;
+}
+
 export function lifecycleScreen() {
   const host = el("div");
   const rerender = () => host.replaceChildren(build(rerender));
@@ -256,14 +272,18 @@ function build(rerender) {
         el("span", { class: "faint" }, `Fuel ${j.fuel ?? 0} gallons`), fuelDial(j.fuel ?? 0, FUEL.tankGallons)) : null)));
 
   const opts = { resting: true, slept: false, fed: true, travelled: false, nurse: false, neurocastToday: false };
-  const optionRow = (label, key, blurb) => el("label", { class: "card-row", style: "padding:6px 0" },
-    el("span", {}, el("strong", {}, label), blurb ? el("div", { class: "faint" }, blurb) : null),
+  // Each thing that happened is a tile with its mark; the switch is still a real checkbox.
+  const OPTION_ICON = { resting: "bed", nurse: "med", slept: "moon", fed: "food", cold: "snow",
+    extremeCold: "snow", travelled: "car", neurocastToday: "helmet" };
+  const optionRow = (label, key, blurb) => el("label", { class: "card-row toggle-tile" },
+    el("span", { class: "toggle-icon" }, icon(OPTION_ICON[key] || "info", { size: 20 })),
+    el("span", { class: "toggle-text" }, el("strong", {}, label), blurb ? el("div", { class: "faint" }, blurb) : null),
     el("input", {
       type: "checkbox", checked: opts[key],
       onchange: (e) => { opts[key] = e.target.checked; }
     }));
 
-  wrap.append(el("div", { class: "card" }, el("h3", {}, "What happened"),
+  wrap.append(el("div", { class: "card" }, el("h3", {}, "What happened"), el("div", { class: "tile-grid" },
     optionRow("Resting", "resting", "Health returns only if nobody is fighting or marching."),
     optionRow("Under a Nurse's care", "nurse", "2 Health per Shift instead of 1."),
     optionRow("Slept this Shift", "slept"),
@@ -271,7 +291,7 @@ function build(rerender) {
     optionRow("Out in the cold", "cold", "No shelter or warm clothing: a Strength roll each Shift, and no healing until the Traveler is warm."),
     optionRow("Extreme cold", "extremeCold", "Bites every Stretch instead of every Shift."),
     optionRow("Travelled", "travelled", "Burns fuel."),
-    optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast.")));
+    optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast."))));
 
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "Bigger boundaries"),
     el("p", { class: "faint" }, "End of session is the debrief where Travelers improve. A week is the interval mental trauma recovers on. Ending the Journey rolls each Traveler's epilogue and closes the campaign."),
@@ -286,6 +306,8 @@ function build(rerender) {
     const b = el("select", { "aria-label": "Second Traveler" }, ...chars.map((c, i) => el("option", { value: c.id, selected: i === 1 }, c.name)));
     wrap.append(el("div", { class: "card" }, el("h3", {}, "Talk it through"),
       el("p", { class: "faint" }, "A Stretch with no immediate threat. Both sides drop a step of Tension and each regains a point of Hope — the only reliable way Hope comes back."),
+      // The two people at the table, face to face, above the two pickers.
+      talkPair(a, b, chars),
       el("div", { class: "field" }, a), el("div", { class: "field" }, b),
       el("button", {
         class: "btn btn-block", onclick: async () => {

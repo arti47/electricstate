@@ -82,7 +82,12 @@ export function tensionGraph(chars, onSet) {
   chars.forEach((c, i) => {
     const [x, y] = pos[i];
     const initials = String(c.name || "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+    // The node is the Traveler's face, cropped round; initials stay underneath as a fallback.
+    const clip = `tc-${i}-${String(c.id).replace(/[^a-z0-9]/gi, "")}`;
     nodes += `<g class="t-node"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="24"/><text x="${x.toFixed(1)}" y="${(y + 5).toFixed(1)}" text-anchor="middle">${esc(initials)}</text>` +
+      `<clipPath id="${clip}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="23"/></clipPath>` +
+      `<g clip-path="url(#${clip})"><svg x="${(x - 23).toFixed(1)}" y="${(y - 23).toFixed(1)}" width="46" height="46" viewBox="0 0 52 52">${portraitMarkup(c)}</svg></g>` +
+      `<circle class="t-ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="24"/>` +
       `<text class="t-name" x="${x.toFixed(1)}" y="${(y + (y > C ? 40 : -32)).toFixed(1)}" text-anchor="middle">${esc(c.name || "Unnamed")}</text></g>`;
   });
   const heads = [0, 1, 2].map((v) => `<marker id="t-head-${v}" class="t-head t-${v}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="${v === 2 ? 3.4 : 5}" markerHeight="${v === 2 ? 3.4 : 5}" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z"/></marker>`).join("");
@@ -295,4 +300,99 @@ const HAZARD = {
 /** A blast, a flame, a falling figure, a virus. */
 export function hazardArt(kind, size = 44) {
   return html(`hazard-art hz-${kind}`, svg("0 0 64 64", HAZARD[kind] || "", `width="${size}" height="${size}"`), { "aria-hidden": "true" });
+}
+
+// ---------------------------------------------------------------- portraits
+/**
+ * A face for every Traveler, made from nothing but the id: the same person every time,
+ * different from everyone else. A bust against a faded sky — head, hair, collar, muted
+ * tones — with something from the archetype, and the helmet when the neurocaster is on.
+ * Not random dice: a stable hash, so a portrait never changes between visits.
+ */
+function seeded(id = "") {
+  let h = 2166136261;
+  for (const c of String(id)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => {   // mulberry32 on the hash
+    h = (h + 0x6d2b79f5) | 0;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const SKIN = ["#e8c4a0", "#d9a57d", "#c08a62", "#9c6b48", "#7a4f33", "#5c3a26"];
+const HAIR = ["#1e1a17", "#3b2a1e", "#6b4a2c", "#a8743f", "#c9a66b", "#8f8a84"];
+const COAT = ["#3d4a52", "#5a4636", "#4a5240", "#6b3a2c", "#2f3a4a", "#5c5a54"];
+const SKY = [["#2a3240", "#c98a5a"], ["#1f2733", "#8a6a8f"], ["#33404a", "#d9a46a"], ["#232a30", "#6f8a99"]];
+
+const ACCESSORY = {
+  veteran: '<path d="M26 44 L26 50" stroke="#9aa0a6" stroke-width="1"/><rect x="24" y="49" width="4" height="5" rx="1" fill="#b8bec4"/>',
+  doctor: '<path d="M18 44 Q20 52 26 52 Q32 52 34 44" fill="none" stroke="#6f7a80" stroke-width="1.6"/><circle cx="26" cy="52" r="1.6" fill="#b8bec4"/>',
+  dronePilot: '<path d="M14 24 Q14 12 26 12 Q38 12 38 24" fill="none" stroke="#2b2b2b" stroke-width="2"/><rect x="11" y="22" width="5" height="7" rx="2" fill="#2b2b2b"/><path d="M14 29 Q16 34 22 34" fill="none" stroke="#2b2b2b" stroke-width="1.2"/>',
+  scientist: '<circle cx="22" cy="25" r="3.4" fill="none" stroke="#2b2b2b" stroke-width="1.1"/><circle cx="30" cy="25" r="3.4" fill="none" stroke="#2b2b2b" stroke-width="1.1"/><path d="M25.4 25 L26.6 25" stroke="#2b2b2b" stroke-width="1.1"/>',
+  artist: '<path d="M14 18 Q18 9 32 11 Q40 13 38 18 Q26 14 14 18 Z" fill="#7a2e2a"/>',
+  criminal: '<path d="M12 52 Q12 30 26 28 Q40 30 40 52" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="4"/>',
+  devotee: '<path d="M26 44 L26 49" stroke="#c9a66b" stroke-width="1"/><path d="M26 49 l-2 2.5 h4 Z" fill="#c9a66b"/>',
+  investigator: '<path d="M10 17 L42 17 L38 15 Q37 8 26 8 Q15 8 14 15 Z" fill="#3a332c"/>',
+  outsider: '<path d="M16 40 Q26 46 36 40 L37 44 Q26 50 15 44 Z" fill="#8a4a2a"/>',
+  runawayKid: '<path d="M14 18 Q14 10 26 10 Q38 10 38 18 Z" fill="#2f5a7a"/><path d="M36 17 L44 18 L36 19 Z" fill="#2f5a7a"/>'
+};
+
+/** The photo itself, on a 52×52 field; also used inside other drawings. */
+export function portraitMarkup(ch = {}) {
+  const r = seeded(ch.id || ch.name);
+  const pick = (list) => list[Math.floor(r() * list.length)];
+  const [skyTop, skyLow] = pick(SKY);
+  const skin = pick(SKIN), hair = pick(HAIR), coat = pick(COAT);
+  const female = ch.gender === "female";
+  const style = female ? ["long", "bob", "pony", "short"][Math.floor(r() * 4)] : ["short", "buzz", "swept", "long"][Math.floor(r() * 4)];
+  const jaw = 9 + r() * 2;
+  const uid = `p${Math.floor(r() * 1e9)}`;
+  const hairBack = style === "long" ? `<path d="M15 22 Q14 42 18 46 L34 46 Q38 42 37 22 Z" fill="${hair}"/>`
+    : style === "pony" ? `<path d="M36 20 Q44 26 40 38 Q38 30 34 26 Z" fill="${hair}"/>` : "";
+  const hairTop = {
+    short: `<path d="M15.5 22 Q15 11 26 11 Q37 11 36.5 22 Q33 16 26 16 Q19 16 15.5 22 Z" fill="${hair}"/>`,
+    buzz: `<path d="M16.5 20 Q17 12.5 26 12.5 Q35 12.5 35.5 20 Q31 16.5 26 16.5 Q21 16.5 16.5 20 Z" fill="${hair}" opacity=".85"/>`,
+    swept: `<path d="M15 23 Q13 10 27 10 Q39 11 37 21 Q30 14 22 18 Q18 19 15 23 Z" fill="${hair}"/>`,
+    long: `<path d="M15 24 Q14 10 26 10 Q38 10 37 24 Q34 15 26 15 Q18 15 15 24 Z" fill="${hair}"/>`,
+    bob: `<path d="M14.5 30 Q13 10 26 10 Q39 10 37.5 30 Q35 18 26 16 Q17 18 14.5 30 Z" fill="${hair}"/>`,
+    pony: `<path d="M15.5 22 Q15 10.5 26 10.5 Q37 10.5 36.5 22 Q32 15 26 15 Q20 15 15.5 22 Z" fill="${hair}"/>`
+  }[style];
+  const helmet = ch.state?.wearingCaster
+    ? `<path d="M13 26 Q13 8 26 8 Q39 8 39 26 L39 28 L13 28 Z" fill="#1c2226" stroke="#6fc3ce" stroke-width=".8"/><rect x="14" y="21" width="24" height="6" rx="2" fill="#6fc3ce" opacity=".85"/>`
+    : "";
+  return `<defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${skyTop}"/><stop offset="1" stop-color="${skyLow}"/></linearGradient></defs>
+    <rect width="52" height="52" fill="url(#${uid})"/>
+    <path d="M0 40 Q12 37 26 39 T52 38 L52 52 L0 52 Z" fill="rgba(0,0,0,.25)"/>
+    ${hairBack}
+    <path d="M6 52 Q8 40 18 38 L34 38 Q44 40 46 52 Z" fill="${coat}"/>
+    <path d="M21 33 L21 39 Q26 42 31 39 L31 33 Z" fill="${skin}"/>
+    <path d="M20 38 L26 46 L32 38" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="1.2"/>
+    <ellipse cx="26" cy="24" rx="${jaw.toFixed(1)}" ry="11.5" fill="${skin}"/>
+    <path d="M26 35.5 Q${(26 + jaw * .6).toFixed(1)} 33 ${(26 + jaw).toFixed(1)} 26" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="2"/>
+    ${hairTop}
+    ${ACCESSORY[ch.archetype] || ""}
+    ${helmet}
+    <rect width="52" height="52" fill="url(#${uid})" opacity=".12"/>`;
+}
+
+/** A polaroid of a Traveler: the photo in a worn white frame. */
+export function portrait(ch, { size = 64, frame = true } = {}) {
+  const body = frame
+    ? `<rect x="0" y="0" width="60" height="70" rx="2" class="pol-frame"/><g transform="translate(4 4)">${portraitMarkup(ch)}</g>`
+    : portraitMarkup(ch);
+  const vb = frame ? "0 0 60 70" : "0 0 52 52";
+  const h = frame ? Math.round(size * 70 / 60) : size;
+  return html(`portrait${frame ? " is-polaroid" : " is-round"}`, svg(vb, body, `width="${size}" height="${h}"`), { "aria-hidden": "true" });
+}
+
+// ---------------------------------------------------------------- driving
+const DRIVE = {
+  stunt: '<path d="M6 46 L24 46 Q30 46 34 38 L40 26" fill="none" stroke-width="3" stroke-linecap="round"/><g transform="translate(34 12) rotate(-28)"><path d="M0 10 L3 4 Q4 2 6 2 L16 2 Q18 2 19 4 L22 10 Z"/><rect x="-1" y="9" width="24" height="6" rx="2"/><circle class="hz-core" cx="4" cy="16" r="2.6"/><circle class="hz-core" cx="18" cy="16" r="2.6"/></g>',
+  ramming: '<g transform="translate(4 26)"><path d="M0 10 L3 4 Q4 2 6 2 L16 2 Q18 2 19 4 L22 10 Z"/><rect x="-1" y="9" width="24" height="6" rx="2"/></g><g transform="translate(60 26) scale(-1 1)"><path d="M0 10 L3 4 Q4 2 6 2 L16 2 Q18 2 19 4 L22 10 Z"/><rect x="-1" y="9" width="24" height="6" rx="2"/></g><path class="hz-core" d="M32 22 L34 30 L40 28 L35 34 L38 40 L32 36 L27 41 L29 34 L24 30 L30 30 Z"/>',
+  chase: '<g transform="translate(30 30)"><path d="M0 10 L3 4 Q4 2 6 2 L16 2 Q18 2 19 4 L22 10 Z"/><rect x="-1" y="9" width="24" height="6" rx="2"/></g><g transform="translate(6 34) scale(.8)"><path d="M0 10 L3 4 Q4 2 6 2 L16 2 Q18 2 19 4 L22 10 Z"/><rect x="-1" y="9" width="24" height="6" rx="2"/></g><path d="M4 22 L22 22 M10 16 L26 16 M2 28 L14 28" fill="none" stroke-width="2.4" stroke-linecap="round"/>',
+  repairs: '<path d="M38 8a10 10 0 0 0-11.5 13.5L10 38l6.5 6.5L33 28a10 10 0 0 0 13.5-11.5l-6.4 6.4-5.9-1.3-1.3-5.9Z"/>'
+};
+/** A car in the air, two cars meeting, one car after another, a wrench. */
+export function driveArt(kind, size = 44) {
+  return html(`hazard-art dr-${kind}`, svg("0 0 64 64", DRIVE[kind] || "", `width="${size}" height="${size}"`), { "aria-hidden": "true" });
 }

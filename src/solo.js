@@ -238,6 +238,9 @@ export function passTheSpotlight(cast = listCharacters()) {
   return nextUp;
 }
 
+let soloPhase = null;   // the phase the player opened; null follows the game
+let lastAuto = null;
+
 function build(rerender) {
   const s = state();
   const wrap = el("div", {}, el("h1", {}, "Solo"));
@@ -248,7 +251,7 @@ function build(rerender) {
   const last = (s.history || [])[0];
   wrap.append(el("div", { class: "card deck-panel" },
     deckStack(s.deck.length),
-    el("div", { class: "deck-count" }, el("span", { class: "mono" }, String(s.deck.length)), el("small", {}, "cards left")),
+    el("div", { class: "deck-count" }, el("span", { class: "mono" }, String(s.deck.length)), " ", el("small", {}, "cards left")),
     last ? el("div", { class: "deck-last" }, playingCard(last, { flip: false }), el("span", { class: "faint" }, last.note)) : null));
 
   // Someone who has never played solo does not need more tables; they need to be told what
@@ -268,11 +271,13 @@ function build(rerender) {
         el("a", { class: "btn", href: "#/rules" }, "What the words mean"))));
   }
 
+  // Numbered phases carry their number, so the procedure track can show one at a time.
+  const num = (title) => /^(\d) · /.exec(title)?.[1] || null;
   const phase = (title, blurb, ...kids) =>
-    el("div", { class: "card" }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
+    el("div", { class: "card", "data-phase": num(title) }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
   // Prep happens once; it should not sit above the controls you use every scene.
   const foldedPhase = (title, blurb, ...kids) =>
-    el("details", { class: "card phase-fold" }, el("summary", {}, title),
+    el("details", { class: "card phase-fold", "data-phase": num(title) }, el("summary", {}, title),
       blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
   const row = (...kids) => el("div", { class: "btn-row" }, ...kids.filter(Boolean));
   const act = (label, fn, primary = false) =>
@@ -517,6 +522,32 @@ function build(rerender) {
       el("a", { class: "btn", href: "#/time" }, "Time"),
       act(`Reshuffle (${s.deck.length} left)`, () => { write({ deck: freshDeck() }); showToast("Deck reshuffled."); rerender(); }))));
 
+  // ------------------------------------------------------------ procedure track
+  // Six phases, one on screen: the one the game is in, unless the player picked another.
+  // A rail of numbers across the top says where you are in the whole loop.
+  const phases = [...wrap.querySelectorAll("[data-phase]")];
+  const fired = current && current.countdown?.length && (current.countdownProgress || 0) >= current.countdown.length;
+  const auto = !(getJourney()?.destination && getJourney()?.vehicle) ? "1"
+    : !current || current.resolved ? "3" : fired ? "6" : "4";
+  // When the game moves on (a Stop arrives, its Countdown runs out), follow it again.
+  if (auto !== lastAuto) { soloPhase = null; lastAuto = auto; }
+  const shown = soloPhase && phases.some((p) => p.dataset.phase === soloPhase) ? soloPhase : auto;
+  const rail = el("ol", { class: "proc-rail", "aria-label": "Solo procedure" },
+    ...phases.map((p) => {
+      const n = p.dataset.phase;
+      const title = (p.querySelector("h3, summary")?.textContent || "").replace(/^\d · /, "");
+      return el("li", {}, el("button", {
+        class: "proc-step" + (n === shown ? " is-here" : "") + (n === auto ? " is-now" : ""),
+        "aria-label": `${n} · ${title}`, "aria-pressed": n === shown ? "true" : "false", disabled: n === shown,
+        onclick: () => { soloPhase = n; rerender(); }
+      }, el("span", { class: "proc-n" }, n), el("span", { class: "proc-t" }, title)));
+    }));
+  phases[0]?.before(rail);
+  for (const p of phases) {
+    if (p.dataset.phase !== shown) p.remove();
+    else if (p.tagName === "DETAILS") p.open = true;
+  }
+
   // ------------------------------------------------------------------- record
   if ((s.events || []).length) {
     // A record, not a control: it belongs below the phases and out of the way.
@@ -546,7 +577,7 @@ function build(rerender) {
   // The deck is the whole loop, and drawing from it sat six cards of prep down the page.
   // It is pinned now, with what is left of the deck beside it — that count is the pacing.
   wrap.append(...actionBar({
-    lead: el("span", { class: "pool" }, String(s.deck.length), el("small", {}, "cards left")),
+    lead: el("span", { class: "pool" }, String(s.deck.length), " ", el("small", {}, "cards left")),
     children: [
       el("button", { class: "btn btn-primary", onclick: () => draw(rerender) }, "Draw a card"),
       el("button", { class: "btn", onclick: () => tilt(rerender) }, "Tilt")

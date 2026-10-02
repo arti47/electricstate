@@ -8,6 +8,7 @@ import { maxHealth, isDronePilot } from "./derived.js";
 import { showToast, modal, promptModal, confirmModal, explain, moreMenu } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
+import { portrait } from "./graphics.js";
 
 // ------------------------------------------------------------- progress tasks
 /** A task is N successes against an optional opposing count. Used everywhere. */
@@ -160,7 +161,7 @@ function zoneMap(c, ordered, upNext, rerender) {
           x.acted && "is-spent", upNext?.id === x.id && "is-up", picked === x.id && "is-picked"].filter(Boolean).join(" "),
         title: x.name, "aria-label": `${x.name}, zone ${z}${picked === x.id ? " — choose a zone" : " — move"}`,
         onclick: (e) => { e.stopPropagation(); picked = picked === x.id ? null : x.id; rerender(); }
-      }, initials));
+      }, ch ? portrait(ch, { size: 34, frame: false }) : initials));
     }
     map.append(lane);
   }

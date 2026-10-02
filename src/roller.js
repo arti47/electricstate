@@ -416,6 +416,16 @@ async function doRoll(ch, pool, rerender, manual, burst = 1) {
   haptic(countSixes([...pending.result.base, ...pending.result.gear]) ? "success" : "roll");
   writeLog(ch, pool, pending.result, false, burst);
   rerender();
+  showResult();
+}
+
+/** The result lands below seven cards of setup; bring it to where the eyes are. */
+function showResult() {
+  requestAnimationFrame(() => {
+    const card = [...document.querySelectorAll(".result-head")].pop()?.closest(".card");
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    card?.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" });
+  });
 }
 
 /** Manual entry: two stages, so a push charges Hope and degrades gear from the right dice. */
@@ -580,6 +590,7 @@ async function doPush(ch, pool, rerender) {
   renderVitals(updated);
   if (pushed.hopeLost && updated.state.hope === 0) showToast("Hope has run out — Breakdown.", "danger");
   rerender();
+  showResult();
 }
 
 function writeLog(ch, pool, result, pushed, burst = 1) {

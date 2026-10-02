@@ -9,7 +9,7 @@ import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
 import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic } from "./ui.js";
 import { undoLast } from "./store.js";
-import { helmetGraphic, archetypeGlyph, ringDial } from "./graphics.js";
+import { helmetGraphic, archetypeGlyph, ringDial, portrait } from "./graphics.js";
 import { syncVignette } from "./scene.js";
 import { icon } from "./icons.js";
 import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
@@ -171,7 +171,7 @@ function switcher(ch, onSwitch) {
   const all = listCharacters();
   // With one Traveler the header still says whose numbers these are; it just has nowhere
   // to go, so it is a label rather than a button that would do nothing.
-  if (all.length < 2) return el("div", { class: "vital-switch is-static" }, ch.name || "Unnamed");
+  if (all.length < 2) return el("div", { class: "vital-switch is-static" }, portrait(ch, { size: 22, frame: false }), ch.name || "Unnamed");
   return el("button", {
     class: "vital-switch", "aria-label": `Showing ${ch.name || "Unnamed"} — switch Traveler`,
     onclick: async () => {
@@ -187,13 +187,13 @@ function switcher(ch, onSwitch) {
           }
         },
           el("div", { class: "card-row" },
-            el("strong", {}, other.name || "Unnamed"),
+            el("span", { class: "who" }, portrait(other, { size: 36, frame: false }), el("strong", {}, other.name || "Unnamed")),
             el("span", { class: "mono faint" },
               `${other.state?.health ?? "?"}/${maxHealth(other)} · ${other.state?.hope ?? "?"}/${maxHope(other)}`)))));
       }
       await modal({ title: "Which Traveler?", body, actions: [{ label: "Cancel", value: false }] });
     }
-  }, ch.name || "Unnamed");
+  }, portrait(ch, { size: 22, frame: false }), ch.name || "Unnamed");
 }
 
 export function clearVitals() { renderVitals(null); }
@@ -222,6 +222,8 @@ function build(ch, rerender) {
   // name, the favourite song is a cassette label, the three description words are stamped.
   const hero = el("div", { class: "hero" },
     el("span", { class: "hero-mark" }, archetypeGlyph(ch.archetype, 132)),
+    // The polaroid: a face made from the Traveler's id, pinned to the corner of the band.
+    el("span", { class: "hero-photo" }, portrait(ch, { size: 84 })),
     // No Back button: the tab bar and the system's own back gesture already do that.
     // Deleting lives behind ⋯, and is undoable from the toast rather than confirmed first.
     el("div", { class: "titled" },

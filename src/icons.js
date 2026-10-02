@@ -41,6 +41,9 @@ const PATHS = {
   shield: '<path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6Z"/>',
   cash: '<rect x="3" y="7" width="18" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/>',
   fuel: '<path d="M5 20V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v15M4 20h11M5 10h9"/><path d="M14 8h2l2 2v7a1.5 1.5 0 0 0 3 0v-6l-2-2"/>',
+  bed: '<path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="2"/>',
+  moon: '<path d="M19 15A8 8 0 1 1 10 4a6 6 0 0 0 9 11Z"/>',
+  snow: '<path d="M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5"/>',
   person: '<circle cx="12" cy="7" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/>',
   animal: '<path d="M4 15c0-3 2-5 6-5h5l2-3h2l1 3-2 2v6h-2v-3h-7v3H7v-3c-2 0-3-.5-3-1Z"/>'
 };

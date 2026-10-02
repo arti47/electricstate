@@ -3,7 +3,7 @@ import { $, $$, el } from "./core.js";
 import { Settings, set as setSetting } from "./settings.js";
 import { listCharacters } from "./store.js";
 import { getCombat, turnOrder } from "./combat.js";
-import { releaseScrollLock, modal, dismissModal } from "./ui.js";
+import { releaseScrollLock, enhanceSelect, enhanceNumber } from "./ui.js";
 import { icon } from "./icons.js";
 import { STORAGE_KEY } from "./core.js";
 import { syncScene, sceneBand } from "./scene.js";
@@ -80,44 +80,37 @@ const SUBNAV = {
   rules: [["#/play", "Running a session"], ["#/rules", "Rules"], ["#/tutorial", "The app"]]
 };
 
-/**
- * A section with more siblings than fit beside a large title keeps the busiest ones in
- * the row and folds the rest under "More". The order here is how often a table reaches
- * for them, not how they are listed.
- */
-const SHOWN = 4;
-const PRIORITY = ["#/session", "#/time", "#/solo", "#/gm", "#/home", "#/journey", "#/tension"];
+// A mark for every section, so the pill row reads at a glance.
+const SECTION_ICON = {
+  "#/home": "traveler", "#/session": "play", "#/solo": "star", "#/gm": "mask", "#/journey": "road",
+  "#/time": "clock", "#/tension": "link", "#/dice": "dice", "#/combat": "fight", "#/neuro": "helmet",
+  "#/hazards": "hazard", "#/driving": "car", "#/log": "book", "#/play": "play", "#/rules": "book", "#/tutorial": "info"
+};
 
+/**
+ * Two lines: the screen's title, large, on a line of its own (the ⓘ sits at its end), and
+ * under it every sibling as a pill with its mark, in a row that scrolls inside itself.
+ * The title used to share a line with the pills, which clipped them and pushed a "More"
+ * pill out of sight.
+ */
 function subnav(route) {
-  let items = (SUBNAV[route.tab] || []).filter(([, , when]) => !when || when());
+  const items = (SUBNAV[route.tab] || []).filter(([, , when]) => !when || when());
   if (items.length < 2) return null;
   const here = `#/${route.path}`;
-  let folded = [];
-  if (items.length > SHOWN + 2) {
-    const rank = (h) => (h === here ? -1 : PRIORITY.indexOf(h) === -1 ? 99 : PRIORITY.indexOf(h));
-    const keep = new Set([...items].sort((a, b) => rank(a[0]) - rank(b[0])).slice(0, SHOWN + 1).map((i) => i[0]));
-    folded = items.filter((i) => !keep.has(i[0]));
-    items = items.filter((i) => keep.has(i[0]));
-  }
+  const current = items.find(([h]) => h === here);
   const nav = el("nav", { class: "subnav", "aria-label": "Section" });
   for (const [href, label, , badge] of items) {
     const mark = badge ? badge() : null;
     nav.append(el("a", {
       href, class: "subnav-item" + (href === here ? " is-here" : "") + (mark ? " is-live" : ""),
       ...(href === here ? { "aria-current": "page" } : {})
-    }, label, mark ? el("span", { class: "subnav-badge" }, mark) : null));
+    }, icon(SECTION_ICON[href] || "chevron", { size: 16 }), label, mark ? el("span", { class: "subnav-badge" }, mark) : null));
   }
-  if (folded.length) {
-    nav.append(el("button", {
-      class: "subnav-item subnav-more", "aria-label": "More sections",
-      onclick: async () => {
-        const list = el("ul", { class: "menu-list" }, ...folded.map(([href, label]) => el("li", {},
-          el("button", { onclick: () => { dismissModal(); location.hash = href; } }, label))));
-        await modal({ title: "More", body: list });
-      }
-    }, "More ▾"));
-  }
-  return nav;
+  const title = current
+    ? el("div", { class: "section-title", "aria-hidden": "true" }, current[1],
+        current[3]?.() ? el("span", { class: "subnav-badge" }, current[3]()) : null)
+    : null;
+  return el("div", { class: "section-head" }, title, nav);
 }
 
 function notYet(what, phase) {
@@ -242,6 +235,18 @@ function syncRail(here) {
 const SEEN = STORAGE_KEY + ".seenIntro";
 function seenIntros() { try { return JSON.parse(localStorage.getItem(SEEN) || "[]"); } catch { return []; } }
 
+// The mark each kind of card wears beside its heading.
+const CARD_ICON = {
+  attributes: "dice", talents: "star", "injuries & trauma": "heart", neurocaster: "helmet", gear: "pack",
+  tension: "link", weapon: "gun", circumstances: "hazard", "what happened": "clock", "talk it through": "chat",
+  "the party": "traveler", stops: "road", threats: "person", "roll a table": "dice", vehicle: "car",
+  "shared items": "pack", journeys: "road", "before you play": "heart", "progress tasks": "clock",
+  task: "helmet", "this task": "book", "cold, hunger and sleep": "snow", "hull and repairs": "wrench",
+  stunt: "car", ramming: "car", chase: "car", explosion: "hazard", fire: "hazard", falling: "hazard", disease: "hazard",
+  "whose stop is this?": "traveler", "never done this before?": "info", "serious injury": "heart", "mental trauma": "heart",
+  "the vehicle": "car", "talents": "star"
+};
+
 // Which picture an empty screen gets.
 const EMPTY_SCENE = { combat: "crisis", tension: "close", log: "road", dice: "road", neuro: "close", home: "open" };
 
@@ -252,12 +257,21 @@ function decorate(screenEl, path) {
     b.dataset.die = m ? m[1] : "";
     if (m) b.prepend(dieIcon(m[1]));
   }
+  // Selects open as sheets; number fields gain − and +.
+  screenEl.querySelectorAll("select:not([data-picker])").forEach(enhanceSelect);
+  screenEl.querySelectorAll('input[type="number"]:not([data-stepper])').forEach(enhanceNumber);
+  // Card headings wear the mark of what the card holds.
+  for (const h of screenEl.querySelectorAll(".card > h3:first-child:not([data-mark])")) {
+    h.dataset.mark = "1";
+    const mark = CARD_ICON[h.textContent.trim().toLowerCase().replace(/\s*\(.*\)$/, "")];
+    if (mark) h.prepend(icon(mark, { size: 18 }));
+  }
   // An empty state gets a small scene of the road instead of a bare emblem.
   for (const e of screenEl.querySelectorAll(".empty:not(.has-scene)")) {
     e.classList.add("has-scene");
     e.prepend(sceneBand(EMPTY_SCENE[path] || "road"));
   }
-  const nav = screenEl.querySelector(":scope > .subnav .subnav-item.is-here");
+  const nav = screenEl.querySelector(":scope > .section-head .subnav-item.is-here");
   const h1 = screenEl.querySelector("h1");
   if (h1) h1.classList.toggle("sr-only", !!nav);
   const lead = screenEl.querySelector("details.explain");
@@ -355,9 +369,15 @@ export function render() {
   watchScreen(screenEl, route.path);
   // The section you are in may be scrolled out of its own nav; bring it into view.
   screenEl.querySelector(".subnav-item.is-here")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  // Cards arrive one after another, 30ms apart. Opacity only — see the action bar rule.
+  [...screenEl.querySelectorAll(".card")].slice(0, 12).forEach((c, k) => c.style.setProperty("--i", k));
+  document.documentElement.dataset.route = route.path;
   screenEl.classList.remove("is-entering");
   void screenEl.offsetWidth;
   screenEl.classList.add("is-entering");
+  // Only the arrival animates; a screen re-drawing itself after a tap must not fade again.
+  clearTimeout(enterTimer);
+  enterTimer = setTimeout(() => screenEl.classList.remove("is-entering"), 700);
   screenEl.focus({ preventScroll: true });
   window.scrollTo(0, 0);
   syncStrip(route.path);
@@ -369,6 +389,8 @@ function markTabs(route) {
     else a.removeAttribute("aria-current");
   });
 }
+
+let enterTimer = null;
 
 // Tab order, for which way a change of tab slides.
 const TAB_ORDER = ["home", "traveler", "dice", "rules"];

@@ -245,3 +245,74 @@ export function actionBar({ lead = null, children = [] } = {}) {
     el("div", { class: "actionbar-inner" }, lead, ...children.filter(Boolean)));
   return [el("div", { class: "actionbar-spacer" }), bar];
 }
+
+
+// ------------------------------------------------------------- select picker
+/**
+ * Every <select> wears a face — the chosen option, large, with a chevron — and opens as a
+ * sheet of choices instead of the platform's list. The real select stays exactly where it
+ * was, transparent over the face, so keyboard use, form semantics, screen readers and the
+ * tests all keep talking to it.
+ */
+export function enhanceSelect(select) {
+  if (select.dataset.picker || select.closest(".picker") || select.multiple) return;
+  select.dataset.picker = "1";
+  // The face takes the tap (a tap, not a touchstart, so scrolling past it never opens it);
+  // the select underneath takes the keyboard and the screen reader.
+  const face = el("button", { type: "button", class: "picker-face", tabindex: "-1", "aria-hidden": "true" });
+  const wrap = el("span", { class: "picker" });
+  select.replaceWith(wrap);
+  wrap.append(select, face);
+  const sync = () => {
+    const opt = select.options[select.selectedIndex];
+    face.replaceChildren(el("span", { class: "picker-text" }, opt ? opt.textContent : ""), icon("chevron", { size: 16 }));
+    wrap.classList.toggle("is-empty", !opt || opt.value === "");
+  };
+  sync();
+  select.addEventListener("change", sync);
+  face.addEventListener("click", async () => {
+    const list = el("ul", { class: "menu-list picker-list" });
+    let group = null;
+    [...select.options].forEach((o, i) => {
+      if (o.parentElement.tagName === "OPTGROUP" && o.parentElement !== group) {
+        group = o.parentElement;
+        list.append(el("li", { class: "picker-group" }, group.label));
+      }
+      list.append(el("li", {}, el("button", {
+        class: i === select.selectedIndex ? "is-here" : "", disabled: o.disabled,
+        onclick: () => dismissModal(i)
+      }, o.textContent)));
+    });
+    const label = select.getAttribute("aria-label") || select.closest(".field")?.querySelector("label")?.textContent || "Choose";
+    const picked = await modal({ title: label, body: list });
+    if (typeof picked === "number" && picked !== select.selectedIndex) {
+      select.selectedIndex = picked;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    select.focus({ preventScroll: true });
+  });
+}
+
+// ------------------------------------------------------------ number stepper
+/** A number field with − and + either side, one bordered control like every stepper. */
+export function enhanceNumber(input) {
+  if (input.dataset.stepper || input.closest(".num-stepper")) return;
+  input.dataset.stepper = "1";
+  const wrap = el("span", { class: "stepper num-stepper" });
+  input.replaceWith(wrap);
+  const min = input.min !== "" ? Number(input.min) : -Infinity;
+  const max = input.max !== "" ? Number(input.max) : Infinity;
+  const label = input.getAttribute("aria-label") || "value";
+  const step = (d) => {
+    const v = Math.min(max, Math.max(min, (Number(input.value) || 0) + d));
+    input.value = String(v);
+    input.setAttribute("value", String(v));   // so the change is visible in the markup too
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    haptic();
+  };
+  wrap.append(
+    el("button", { class: "stepper-btn", type: "button", "aria-label": `Lower ${label}`, onclick: () => step(-1) }, "−"),
+    input,
+    el("button", { class: "stepper-btn", type: "button", "aria-label": `Raise ${label}`, onclick: () => step(1) }, "+"));
+}

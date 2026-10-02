@@ -411,4 +411,21 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   - A selected picker tile is `disabled` rather than a button that does nothing, which the
     click audit would rightly flag as a no-op.
   - Every new token scope (dossier, paper) was checked to AA: re-check when touching them.
+- **Fifteenth pass — faces and one thing at a time (no copy changed).** See `docs/app/UX-OVERHAUL.md`.
+  - `graphics.portrait(ch, {size, frame})` and `portraitMarkup(ch)` draw a seeded bust from
+    the Traveler's id (a stable hash, not dice — `Math.random` is still banned). Gender picks
+    the hair styles, archetype adds gear, `state.wearingCaster` adds the helmet.
+  - The router's decorate pass now also: wraps every `<select>` with `ui.enhanceSelect` (a
+    face button over a `pointer-events: none` select; the select stays visible, so
+    Playwright's `selectOption` still works) and every number input with `ui.enhanceNumber`
+    (its buttons set the `value` attribute too, so the click audit sees the change), and
+    prepends `CARD_ICON` marks to card headings.
+  - Section chrome is `.section-head` = `.section-title` (visual, aria-hidden) + `.subnav`
+    pills with icons. The H1 stays `.sr-only` beneath; tests still find `.subnav-item`.
+  - Solo phases carry `data-phase`; the build removes all but one and puts `.proc-rail` above
+    it. Tests reach phase 5 with `.proc-step[aria-label^="5"]`.
+  - Driving and Hazards share the picker pattern: tiles, the open one `disabled`, one card.
+  - `html[data-route]` is set on every render; the Neuroscape skin keys off it.
+  - Text nodes between a number and its `<small>` label need a real space (`" "`): tests and
+    screen readers read `textContent`, where `52` + `cards left` ran together as `52cards left`.
 

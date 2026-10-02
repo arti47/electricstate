@@ -12,7 +12,7 @@ import { resetRoller } from "./roller.js";
 import { resetNeuro } from "./neurocasting.js";
 import { resetWizard, routeCard } from "./wizard.js";
 import { routeStrip } from "./graphics.js";
-import { archetypeGlyph } from "./graphics.js";
+import { archetypeGlyph, portrait } from "./graphics.js";
 import { miniVitals } from "./sheet.js";
 import { icon } from "./icons.js";
 
@@ -54,7 +54,8 @@ export function homeScreen() {
     const list = el("ul", { class: "list" });
     for (const c of chars) {
       list.append(el("li", {}, el("a", { href: `#/sheet/${c.id}`, class: "roster-row" },
-        el("span", { class: "glyph-tile" }, archetypeGlyph(c.archetype)),
+        el("span", { class: "roster-face" }, portrait(c, { size: 48, frame: false }),
+          el("span", { class: "roster-badge" }, archetypeGlyph(c.archetype, 16))),
         el("div", { class: "roster-body" },
         el("div", { class: "card-row" },
           el("strong", {}, c.name || "Unnamed"),

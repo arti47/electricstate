@@ -9,7 +9,7 @@ import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJ
 import { showToast, modal, explain } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { forfeitNextTurn } from "./combat.js";
-import { vehicleArt, hazardArt } from "./graphics.js";
+import { vehicleArt, hazardArt, driveArt } from "./graphics.js";
 
 // ------------------------------------------------------------------- hazards
 /** Blast Power, Fire Intensity and disease Virulence all roll dice the target cannot push. */
@@ -218,6 +218,10 @@ async function applyDisease(ch, virulence, onDone, nurse = null) {
 }
 
 // ------------------------------------------------------------------ vehicles
+let driveKind = "stunt";     // which manoeuvre's card is open
+let driveTouched = false;    // the player chose one; stop following the chase
+let driveWho = null;
+
 export function vehicleScreen() {
   const host = el("div");
   const rerender = () => host.replaceChildren(buildVehicle(rerender));
@@ -239,14 +243,16 @@ function buildVehicle(rerender) {
     return wrap;
   }
 
-  wrap.append(el("div", { class: "card" },
+  // The vehicle is reference; it sits under the manoeuvre you are making, not above it.
+  const vehicleCard = (el("div", { class: "card" },
     el("div", { class: "art-row" }, vehicleArt(v, { hull: j.hull ?? v.hull, max: v.hull }),
       el("div", { class: "card-row" }, el("strong", {}, v.label || v.name),
         el("span", { class: "mono faint" }, `Hull ${j.hull ?? v.hull}/${v.hull}`))),
     el("div", { class: "faint" }, `Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability} · Speed ${v.speed} · Armor ${v.armor}`),
     (j.hull ?? v.hull) <= 0 ? el("p", { style: "color:var(--danger)" }, "Wrecked — it needs repairs and a spare part before it moves again.") : null));
 
-  const driver = el("select", { "aria-label": "Driver" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")));
+  const driver = el("select", { "aria-label": "Driver", onchange: (e) => { driveWho = e.target.value; } },
+    ...chars.map((c) => el("option", { value: c.id, selected: c.id === driveWho }, c.name || "Unnamed")));
   wrap.append(el("div", { class: "field" }, el("label", {}, "Driving"), driver));
 
   const terrain = el("select", { "aria-label": "Terrain" },
@@ -254,21 +260,32 @@ function buildVehicle(rerender) {
     el("option", { value: "boat" }, "On water"),
     el("option", { value: "air" }, "In the air"));
 
-  wrap.append(el("div", { class: "card" }, el("h3", {}, "Stunt"),
-    el("p", { class: "faint" }, "Jumping, hard terrain, breaking through something. Uses your action; failure means an accident."),
-    el("div", { class: "field" }, terrain),
-    el("div", { class: "btn-row" },
-      el("button", { class: "btn btn-primary", onclick: () => stunt(getCharacter(driver.value), v, terrain.value, rerender) }, "Roll stunt"),
-      el("button", { class: "btn", onclick: () => accident(terrain.value, rerender) }, "Accident only"))));
-
-  wrap.append(el("div", { class: "card" }, el("h3", {}, "Ramming"),
-    el("p", { class: "faint" }, `Only at Engaged range. You deal half your starting Hull (${Math.ceil(v.hull / 2)}) and take half the other vehicle's.`),
-    el("div", { class: "btn-row" },
-      el("button", { class: "btn btn-primary", onclick: () => ram(v, rerender) }, "Ram something"))));
-
-  wrap.append(chaseCard(j, v, chars, driver, rerender));
-  // Damage and repairs are between-scene work, so they sit under the rolls you make in one.
-  wrap.append(hullCard(j, v, chars, rerender));
+  const cards = {
+    stunt: () => el("div", { class: "card" }, el("h3", {}, "Stunt"),
+      el("p", { class: "faint" }, "Jumping, hard terrain, breaking through something. Uses your action; failure means an accident."),
+      el("div", { class: "field" }, terrain),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn btn-primary", onclick: () => stunt(getCharacter(driver.value), v, terrain.value, rerender) }, "Roll stunt"),
+        el("button", { class: "btn", onclick: () => accident(terrain.value, rerender) }, "Accident only"))),
+    ramming: () => el("div", { class: "card" }, el("h3", {}, "Ramming"),
+      el("p", { class: "faint" }, `Only at Engaged range. You deal half your starting Hull (${Math.ceil(v.hull / 2)}) and take half the other vehicle's.`),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn btn-primary", onclick: () => ram(v, rerender) }, "Ram something"))),
+    chase: () => chaseCard(j, v, chars, driver, rerender),
+    // Damage and repairs are between-scene work, so they come last.
+    repairs: () => hullCard(j, v, chars, rerender)
+  };
+  // A chase in progress is the thing on screen until it ends.
+  if (j.chase && driveKind !== "chase" && !driveTouched) driveKind = "chase";
+  const titles = { stunt: "Stunt", ramming: "Ramming", chase: "Chase", repairs: "Hull and repairs" };
+  wrap.append(el("div", { class: "haz-pick", role: "group", "aria-label": "Manoeuvre" },
+    ...Object.keys(cards).map((k) => el("button", {
+      class: "haz-tile drive-tile" + (driveKind === k ? " is-on" : ""), "aria-pressed": driveKind === k ? "true" : "false",
+      disabled: driveKind === k,
+      onclick: () => { driveKind = k; driveTouched = true; rerender(); }
+    }, driveArt(k), el("span", {}, titles[k])))));
+  wrap.append(cards[driveKind]());
+  wrap.append(vehicleCard);
 
   return wrap;
 }

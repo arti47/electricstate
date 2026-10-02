@@ -1,15 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Electric State">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0b0e13"/><stop offset=".6" stop-color="#131823"/><stop offset="1" stop-color="#2a2019"/>
+      <stop offset="0" stop-color="#0b0e13"/><stop offset=".55" stop-color="#1a1f2b"/><stop offset=".78" stop-color="#5a3a24"/><stop offset="1" stop-color="#0a0c10"/>
     </linearGradient>
-    <radialGradient id="glow" cx=".5" cy="1.05" r=".6">
-      <stop offset="0" stop-color="#d99654" stop-opacity=".45"/><stop offset="1" stop-color="#d99654" stop-opacity="0"/>
+    <radialGradient id="glow" cx=".5" cy=".74" r=".42">
+      <stop offset="0" stop-color="#ebae6f" stop-opacity=".75"/><stop offset="1" stop-color="#d99654" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="192" height="192" fill="url(#sky)"/>
   <rect width="192" height="192" fill="url(#glow)"/>
-  <circle cx="96" cy="84" r="34" fill="none" stroke="#d99654" stroke-width="8"/>
-  <path d="M96 118v34M70 152h52" stroke="#6fc3ce" stroke-width="8" stroke-linecap="round"/>
-  <path d="M62 84h68" stroke="#6fc3ce" stroke-width="6" stroke-linecap="round"/>
+  <path d="M0 138 Q40 124 96 132 T192 128 L192 192 L0 192 Z" fill="#141820"/>
+  <path d="M90 140 L102 140 L150 192 L42 192 Z" fill="#1d2129"/>
+  <path d="M96 150 L96 156 M96 166 L96 176" stroke="#d99654" stroke-width="2.5" stroke-linecap="round"/>
+  <g stroke="#0b0e13" stroke-width="2.4" fill="none" stroke-linejoin="round">
+    <path d="M30 140 L40 74 L46 74 L56 140"/><path d="M26 86 L60 86 M31 100 L55 100 M36 115 L50 115 M34 125 L52 103 M52 125 L34 103"/>
+    <path d="M60 86 Q96 110 150 94" stroke-width="1.2"/>
+  </g>
+  <circle cx="43" cy="71" r="2.4" fill="#ef5d44"/>
+  <circle cx="122" cy="96" r="20" fill="none" stroke="#d99654" stroke-width="5.5"/>
+  <path d="M106 96 H138" stroke="#6fc3ce" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M122 116 V132 M112 132 H132" stroke="#6fc3ce" stroke-width="4.5" stroke-linecap="round"/>
 </svg>

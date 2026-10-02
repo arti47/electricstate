@@ -99,3 +99,24 @@ A third audit covered 18 route/state/width combinations. No game text changed.
 | G19 | Cash and Fuel tiles had no visual. | Banknote and fuel-pump marks. |
 | G20 | The debrief had no celebration. | The attribute's old value, an arrow, and the new value stamped in amber with a burst and a buzz. |
 | — | The What-now card had no art. | The phase's icon as a large faded mark. |
+
+# Fifteenth pass: faces, one thing at a time, and real controls
+
+A fourth audit covered 16 route/state/width combinations. No game text changed.
+
+| # | Finding | Fix |
+|---|---|---|
+| H1 | Driving had 3 primaries. | A manoeuvre picker (Stunt, Ramming, Chase, Hull and repairs) with art. One card shows at a time; a running chase opens on Chase. The vehicle card moved below the manoeuvre, and the driver is remembered. |
+| H2 | Solo ran 4+ screens. | A six-step procedure track shows one phase. It follows the game (no Journey → 1, no Stop → 3, a Stop → 4, Countdown spent → 6) until the player picks a step, and follows again when the game moves on. |
+| H3 | Time had long toggle rows; Talk it through was two bare selects. | A two-column grid of icon toggle tiles. The two portraits face each other above the pickers. |
+| H4 | The section row clipped beside the large title. | A two-line head: the title alone, then every sibling as an icon pill in a scrolling row. The More pill is gone. |
+| H5 | People had no face. | Seeded polaroid portraits (`graphics.portrait`) from the Traveler's id, with archetype gear and the helmet when worn. Shown on the sheet hero (taped on), roster, header switcher, combat tokens, Tension nodes and Talk it through. |
+| H6 | Native selects everywhere. | `ui.enhanceSelect`: a tappable face opens a bottom-sheet list (optgroups as headers, current item ticked). The real select stays underneath for keyboard, screen readers and tests. |
+| H7 | Numbers were bare fields. | `ui.enhanceNumber`: − and + around the real number input. |
+| H8 | Card headers were identical slabs. | An icon beside each card heading (`CARD_ICON` in `router.js`). |
+| H9 | The neuroscape had no identity. | `html[data-route="neuro"]` gives it a teal-on-black, mono skin with a grid floor, a scan sweep and a teal Roll. |
+| H10 | Long faint paragraphs were hard to read. | Faint text at .92rem/1.6, paragraphs capped at 62ch. |
+| H11 | Cards appeared all at once. | Cards fade in 30ms apart on arrival only (opacity), never on in-place re-renders. |
+| H12 | The app icon and browser chrome were static. | A new icon (the road at dusk, a pylon, the helmet on the horizon). `theme-color` follows the Shift. |
+| H14 | Roll results landed below the fold. | The result card scrolls to centre after a roll or push. |
+| Bug | `.tgraph svg` sized every nested svg. | Scoped to `.tgraph > svg`. |
