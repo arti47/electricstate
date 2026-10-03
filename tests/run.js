@@ -369,6 +369,13 @@ await test("the solo Stop Countdown never returns the unassigned 61-66 band", ()
   }
 });
 
+await test("initiative uses the best Wits among the Threats in the fight", () => {
+  const fight = (ids) => ({ combatants: ids.map((threatId, i) => ({ id: "t" + i, kind: "threat", side: "enemies", threatId })) });
+  assert.equal(combatMod.bestWitsBySide(fight(["lawEnforcement", "businessLeader"])).theirs, 5);
+  assert.equal(combatMod.bestWitsBySide(fight(["robot"])).theirs, 3, "no Wits printed: an ordinary opponent");
+  assert.equal(combatMod.bestWitsBySide(fight([])).theirs, 3);
+});
+
 await test("solo generators return complete Stops and Threats", () => {
   const stop = stopsMod.makeStop();
   for (const key of ["terrain", "population", "communications", "size", "prosperity", "weather"]) {

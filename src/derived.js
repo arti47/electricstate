@@ -1,6 +1,6 @@
 // Character-derived calculations. Pure functions over a character object.
 import { ceilHalf, clamp } from "./core.js";
-import { TALENTS, DERIVED, ATTRIBUTE_MIN, ATTRIBUTE_MAX, DRONE_PILOT_RULES, BODY_ARMOR } from "../data.js";
+import { TALENTS, DERIVED, DRONE_PILOT_RULES, BODY_ARMOR } from "../data.js";
 import { genderOf } from "./pronouns.js";
 
 const talentEffect = (id) => TALENTS.find((t) => t.id === id)?.effect;

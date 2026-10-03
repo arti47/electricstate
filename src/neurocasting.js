@@ -1,7 +1,7 @@
 // Neurocasting — this game's "powers" subsystem (Phase 4).
 // Difficulty is a number of successful rolls, each costing a Stretch and each failure a Bliss.
-import { el, rollDice, countSixes, clamp, uid, onReset } from "./core.js";
-import { NEURO_TASKS, INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIRED_BONUS, DRONES } from "../data.js";
+import { el, rollDice, countSixes, clamp, onReset } from "./core.js";
+import { INFO_DIFFICULTY, HACK_DIFFICULTY, NEUROCASTERS, BLISS, WIRED_BONUS, DRONES, NEURO_TASKS } from "../data.js";
 import { maxHope, maxHealth, tracksBliss, pushLegality } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent } from "./rules.js";
@@ -11,14 +11,17 @@ import { resolvePush } from "./roller.js";
 import { PUSH } from "../data.js";
 import { helmetGraphic, ringDial } from "./graphics.js";
 import { sound } from "./sound.js";
-import { Settings } from "./settings.js";
 
+
+// Attribute, gear and talent come from NEURO_TASKS; this adds the label and difficulty table.
+const fromRules = (id, extra) => ({ id, ...NEURO_TASKS[id], ...extra });
 const TASK_KINDS = [
-  { id: "findInformation", label: "Find information", table: INFO_DIFFICULTY, gear: "processor", attr: "wits", talent: "dataMiner" },
-  { id: "hackSystem", label: "Hack a system", table: HACK_DIFFICULTY, gear: "network", attr: "wits", talent: "hacker" },
-  { id: "avatarSocial", label: "Persuade an avatar", table: null, gear: "graphics", attr: "empathy", talent: "gamer" },
-  { id: "avatarCombat", label: "Fight an avatar", table: null, gear: "graphics", attr: "wits", talent: "gamer" },
-  { id: "avatarManipulation", label: "Rewrite what an avatar believes", table: null, gear: "graphics", attr: "empathy", talent: "gamer", difficultyRange: [2, 4], perRoll: "shift" },
+  fromRules("findInformation", { label: "Find information", table: INFO_DIFFICULTY }),
+  fromRules("hackSystem", { label: "Hack a system", table: HACK_DIFFICULTY }),
+  fromRules("avatarSocial", { label: "Persuade an avatar", table: null }),
+  fromRules("avatarCombat", { label: "Fight an avatar", table: null }),
+  // The rule gives no gear or talent here; an avatar is graphics, so the app uses those.
+  fromRules("avatarManipulation", { label: "Rewrite what an avatar believes", table: null, gear: "graphics", talent: "gamer" }),
   { id: "droneControl", label: "Pilot a drone", table: null, gear: "network", attr: "wits", talent: "droneOperator", drone: true }
 ];
 

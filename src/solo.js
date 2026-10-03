@@ -1,20 +1,17 @@
 // Solo play (Phase 6). The deck is the pacing timer: no reshuffle until it runs out.
-import { el, d6, d66, uid, shuffle, fromRangeTable, randomInt, fromD100, onReset } from "./core.js";
-import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EMOTION,
-         NPC_MOTIVE, NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS,
-         THREAT_TYPES, THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, STOP_COUNTDOWN_UNASSIGNED,
-         PERSONAL_THREAT_COUNTDOWN, START_SHIFT_BY_SUIT, DESTINATIONS, SOLO_PERSONAL_THREATS,
-         NINETIES_VEHICLES, SOLO_UNSTICK, SOLO_PREP_STEPS, SOLO_ARCHETYPE_HOOKS,
-         SOLO_PRINCIPLES, INTERNAL_THREATS_ALLOWED } from "../data-solo.js";
-import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
-         ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, D66_ORDER } from "../data-gm.js";
+import { el, d6, d66, uid, shuffle, fromRangeTable, randomInt, fromD100, onReset, d66Pick } from "./core.js";
+import { SUITS, RANKS, FACE_RANKS, EVENT_TRIGGERS, TILT, NPC_PERSONALITY, NPC_EMOTION, NPC_MOTIVE,
+         NPC_METHOD, MINOR_ENCOUNTERS, CONVERSATION_SUBJECTS, TRAVELER_EVENTS, THREAT_TYPES,
+         THREAT_SUBTYPES, STOP_THREAT_COUNTDOWN, PERSONAL_THREAT_COUNTDOWN, START_SHIFT_BY_SUIT,
+         DESTINATIONS, SOLO_PERSONAL_THREATS, NINETIES_VEHICLES, SOLO_UNSTICK, SOLO_PREP_STEPS,
+         SOLO_ARCHETYPE_HOOKS, SOLO_PRINCIPLES, INTERNAL_THREATS_ALLOWED, STOP_COUNTDOWN_UNASSIGNED } from "../data-solo.js";
+import { LOCATIONS, NPC_QUIRKS } from "../data-gm.js";
 import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.js";
-import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
-         resolveStop, stopCard as sharedStopCard } from "./stops.js";
+import { makeStop, saveStop, activeStop, advanceCountdown, attachThreat, resolveStop, stopCard as sharedStopCard } from "./stops.js";
 import { showToast, modal, explain, actionBar, dismissModal } from "./ui.js";
 import { currentStep } from "./play.js";
-import { subj, obj, poss, Subj, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
+import { subj, poss, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
 import { playingCard, deckStack } from "./graphics.js";
 import { sound } from "./sound.js";
 
@@ -61,17 +58,15 @@ function tiltMeaning(read) {
 
 export const eventFor = (card) => (isFace(card) ? EVENT_TRIGGERS[card.suit] : null);
 
-const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
-const d6Pick = (table) => table[d6() - 1];
 
 /** The printed Stop Countdown table stops at 56; 61-66 re-roll (house aid). */
+/** The table leaves 61–66 unassigned; the book's house rule is to re-roll them. */
 export function rollStopCountdown() {
-  for (let i = 0; i < 20; i++) {
-    const roll = d66();
-    const hit = fromRangeTable(STOP_THREAT_COUNTDOWN, roll);
-    if (hit) return { roll, ...hit };
-  }
-  return { roll: null, event: STOP_THREAT_COUNTDOWN[0].event };
+  const { from, to } = STOP_COUNTDOWN_UNASSIGNED;
+  let roll;
+  do { roll = d66(); } while (roll >= from && roll <= to);
+  const hit = fromRangeTable(STOP_THREAT_COUNTDOWN, roll);
+  return hit ? { roll, ...hit } : { roll: null, event: STOP_THREAT_COUNTDOWN[0].event };
 }
 
 export function generateThreat() {

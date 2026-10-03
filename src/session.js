@@ -8,11 +8,10 @@
 // It is not a separate game. Every beat writes to the same Journey, the same Stop record
 // and the same roll log the manual screens use, so you can drop out of it at any point and
 // carry on by hand, or come back and it picks up where the game actually is.
-import { el, d6, pick, randomInt } from "./core.js";
-import { SETTING, BLOCKERS, LOCATIONS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS,
-         NPC_QUIRKS, NPC_REACTIONS, D66_ORDER } from "../data-gm.js";
-import { MINOR_ENCOUNTERS, TRAVELER_EVENTS, CONVERSATION_SUBJECTS, NPC_PERSONALITY,
-         NPC_EMOTION, NPC_MOTIVE, NPC_METHOD } from "../data-solo.js";
+import { el, d6, pick, randomInt, d66Pick } from "./core.js";
+import { SETTING, LOCATIONS, NPC_QUIRKS, NPC_REACTIONS } from "../data-gm.js";
+import { MINOR_ENCOUNTERS, TRAVELER_EVENTS, CONVERSATION_SUBJECTS, NPC_PERSONALITY, NPC_EMOTION,
+         NPC_MOTIVE, NPC_METHOD } from "../data-solo.js";
 import { ROUTE_FEATURES } from "../data-journey.js";
 import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { SHIFT_NAMES } from "../data.js";
@@ -21,7 +20,7 @@ import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolv
 import { currentStep } from "./play.js";
 import { Settings } from "./settings.js";
 import { getCombat } from "./combat.js";
-import { rollGender, splitPairedName, subj, obj, poss, Subj } from "./pronouns.js";
+import { rollGender, splitPairedName, subj, Subj } from "./pronouns.js";
 import { showToast, explain, modal } from "./ui.js";
 import { sceneBand } from "./scene.js";
 import { portrait, playingCard } from "./graphics.js";
@@ -33,7 +32,6 @@ const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop"
   pressure: "crisis", crisis: "crisis", fighting: "crisis", wrap: "close", "no-one": "open",
   "no-destination": "open", "no-vehicle": "open", "no-tension": "open", "journey-over": "close" };
 
-const d66Pick = (table) => table[D66_ORDER.indexOf(d6() * 10 + d6())];
 const someone = () => {
   const gender = rollGender(randomInt);
   return { gender, name: `${splitPairedName(pick(FIRST_NAMES), gender)} ${pick(SURNAMES)}` };

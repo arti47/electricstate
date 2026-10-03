@@ -3,20 +3,18 @@
 import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt, ringDial, portrait } from "./graphics.js";
 import { icon, gearIcon } from "./icons.js";
 import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, shuffle, onReset } from "./core.js";
-import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL,
-         ATTRIBUTE_MIN, ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
+import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL, ATTRIBUTE_MIN,
+         ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
 import { SHARED_ITEMS } from "../data-tables.js";
-import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURNEY_ROLLS,
-         KICKERS } from "../data-journey.js";
+import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURNEY_ROLLS, KICKERS } from "../data-journey.js";
 import { DESTINATIONS as SOLO_DESTINATIONS } from "../data-solo.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
-import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES,
-         GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS, ANYTHING_WORDS } from "../data-names.js";
+import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES, GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS } from "../data-names.js";
 import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
 import { listCharacters, getCharacter, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { listStops, activeStop } from "./stops.js";
-import { showToast, modal, confirmModal, explain, actionBar, dismissModal, related, dieFace, haptic } from "./ui.js";
+import { showToast, modal, explain, actionBar, dismissModal, related, dieFace, haptic } from "./ui.js";
 import { talent as findTalent } from "./rules.js";
 import { GENDERS, DEFAULT_GENDER, splitPairedName, resolvePairedName, genderOf } from "./pronouns.js";
 

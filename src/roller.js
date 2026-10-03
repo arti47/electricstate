@@ -1,9 +1,9 @@
 // The dice engine (Phase 3): pools, the push economy, opposed rolls, damage and death.
 // Pure resolution functions live at the top so the harness can test them without a DOM.
-import { el, $, rollDice, countSixes, countOnes, clamp, uid, d6, onReset } from "./core.js";
-import { ATTRIBUTES, TALENTS, PUSH, OPPOSED, COMBAT_REACTIONS, TENSION, DEATH, WEAPONS,
-         BODY_ARMOR, COVER, NEUROCASTERS, NEUROCASTER_DEFAULT_PENALTY, TASER_RULE,
-         FULL_AUTO_MAX_BURSTS, TRAUMATIC_EVENTS, RANGES, FIREARM_RULES, TRAUMA_RESIST } from "../data.js";
+import { el, $, rollDice, countSixes, countOnes, clamp, d6, onReset } from "./core.js";
+import { ATTRIBUTES, TALENTS, PUSH, COMBAT_REACTIONS, OPPOSED, TENSION, DEATH, WEAPONS, BODY_ARMOR,
+         COVER, NEUROCASTERS, NEUROCASTER_DEFAULT_PENALTY, TASER_RULE, FULL_AUTO_MAX_BURSTS,
+         TRAUMATIC_EVENTS, RANGES, FIREARM_RULES, TRAUMA_RESIST } from "../data.js";
 import { STUNTS } from "../data-vehicles.js";
 import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss, isDronePilot } from "./derived.js";
 import { SURGERY } from "../data-tables.js";
@@ -13,7 +13,7 @@ import { Settings } from "./settings.js";
 import { showToast, modal, confirmModal, explain, diceRow, dieFace, haptic } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { successSeal, failureStatic, poolPreview } from "./graphics.js";
-import { refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
+import { refer, obj, poss, Subj } from "./pronouns.js";
 import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn, markActed } from "./combat.js";
 
 // ============================================================ pure resolution
@@ -361,7 +361,8 @@ function build(rerender) {
   // pool preview
   const mods = conditionModifiers(ch, { attr: pending.attr });
   const talentDice = pending.talents.reduce((sum, id) => sum + (findTalent(id, ch)?.effect.bonus || 0), 0);
-  const tension = pending.opposedId ? tensionToward(ch, pending.opposedId) : 0;
+  // Traveler against Traveler: each side adds Tension toward the other (OPPOSED).
+  const tension = pending.opposedId && OPPOSED.travelerVsTraveler.bothAddTension ? tensionToward(ch, pending.opposedId) : 0;
   const weaponGear = sourceGear;
   const ambushMod = pending.ambush && (pending.range || "engaged") === "engaged"
     ? FIREARM_RULES.ambush.closeCombatModifier : 0;
@@ -955,7 +956,6 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
   // A Drone Pilot takes damage as a drone: Hull zero disconnects the operator and the
   // drone is unusable until repaired. No death rolls, and no flesh injuries either.
   if (isDronePilot(next) && next.state.health === 0) {
-    next.state.disconnected = true;
     next.state.death = null;
     saveCharacter(next);
     renderVitals(next);
@@ -1238,7 +1238,6 @@ export async function repairDroneBody(ch, onDone) {
   const next = structuredClone(getCharacter(ch.id));
   if (restored) {
     next.state.health = clamp(next.state.health + restored, 0, maxHealth(next));
-    if (next.state.health > 0) next.state.disconnected = false;
     saveCharacter(next);
     renderVitals(next);
   }

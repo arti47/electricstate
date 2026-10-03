@@ -1,15 +1,13 @@
 // One Stop record, shared by the GM screen and solo play.
 // A Stop is the game's adventure: a Setting, a Blocker that holds the Travelers there,
 // a Situation, a Countdown that escalates while they stay, Locations and Threats.
-import { el, uid, d6, d66, randomInt } from "./core.js";
-import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
-         ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, COUNTDOWN_ELEMENTS, D66_ORDER } from "../data-gm.js";
+import { el, uid, randomInt, d66Pick, d6Pick } from "./core.js";
+import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS, ELECTRIC_STATE_ELEMENTS,
+         NINETIES_NOSTALGIA, COUNTDOWN_ELEMENTS } from "../data-gm.js";
 import { getJourney, saveJourney } from "./store.js";
 import { spoiler } from "./ui.js";
 import { ringDial } from "./graphics.js";
 
-const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
-const d6Pick = (table) => table[d6() - 1];
 
 export const COUNTDOWN_STEPS = 3;
 

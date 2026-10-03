@@ -619,3 +619,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   it. `director()` now always merges onto `blank()`, so a partial record from any screen is whole
   when Play reads it (this also repairs saves already in that state), and the Journey screen only
   touches a director that exists. Unit test pins it.
+- **Redundancy and linking pass.** `d66Pick` / `d6Pick` live once in `core.js` (four modules
+  each had a copy); unused imports removed across `src/`. Seven rule tables that the engine
+  had re-typed as literals are now read from data: `HAZARD_RULES` (falling, cold, sleep),
+  `RAMMING` (a ram is now an Agility + Maneuverability roll — miss on no 6, +1 damage per
+  extra 6), `INITIATIVE` (`bestWitsBySide()` — the other side's best Wits comes from the
+  bestiary instead of a hardcoded 3), `NEURO_TASKS` (neurocasting's task list derives
+  attribute/gear/talent from it), `STOP_COUNTDOWN_UNASSIGNED` (the 61–66 re-roll),
+  `ACTION_ECONOMY` (free actions in the combat note), `OPPOSED` (Tension in PvP).
+  `state.disconnected` was written and never read — Hull 0 on a Drone Pilot already says it.

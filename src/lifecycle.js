@@ -2,15 +2,15 @@
 // The app owns the boundaries: each one fires a bundle, shows what it did, and can be undone once.
 import { el, d6, uid, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
-         ARCHETYPES, TALENTS, TENSION, FUEL } from "../data.js";
-import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilot } from "./derived.js";
-import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent,
-         getSessionLog, clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
+         ARCHETYPES, TALENTS, TENSION, FUEL, HAZARD_RULES } from "../data.js";
+import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting } from "./derived.js";
+import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent, getSessionLog,
+         clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
 import { activeStop, setActiveStop } from "./stops.js";
 import { shiftDial, fuelDial, portrait } from "./graphics.js";
 import { icon } from "./icons.js";
-import { subj, obj, poss, Subj } from "./pronouns.js";
+import { subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar, haptic, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
@@ -29,7 +29,7 @@ export { undoLast, canUndo } from "./store.js";
  */
 function exposure(ch, hMax, name) {
   const notes = [];
-  const dice = rollDice(Math.max(1, ch.attributes.strength));
+  const dice = rollDice(Math.max(1, ch.attributes[HAZARD_RULES.cold.attr]));
   const ok = countSixes(dice) > 0;
   logRoll({ by: name, label: "Cold", dice, outcome: ok ? "endured" : "1 damage" });
   if (!ok) {
@@ -88,7 +88,7 @@ export function advanceTime(unit, options = {}) {
       if (options.slept) {
         ch.state.flags.shiftsAwake = 0;
         ch.state.flags.sleepDeprived = false;
-      } else if (ch.state.flags.shiftsAwake >= SHIFTS_PER_DAY && !ch.state.flags.sleepDeprived) {
+      } else if (ch.state.flags.shiftsAwake >= HAZARD_RULES.sleep.shiftsBeforeDeprived && !ch.state.flags.sleepDeprived) {
         ch.state.flags.sleepDeprived = true;
         notes.push(`${name} is sleep deprived — no Hope recovery until a Shift is slept.`);
       }

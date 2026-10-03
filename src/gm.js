@@ -1,23 +1,19 @@
 // GM screen (Phase 6): Stop builder, threat reference and every rollable table.
-import { el, d6, d66, roll2d6, uid, pick, fromRangeTable } from "./core.js";
-import { SETTING, BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS,
-         ELECTRIC_STATE_ELEMENTS, NINETIES_NOSTALGIA, NPC_QUIRKS, COUNTDOWN_ELEMENTS,
-         COUNTDOWN_PRINCIPLE, NEUROSCAPE, NPC_REACTIONS, COMBAT_MORALE, JOURNEY_LENGTH,
-         KICKER_EXAMPLES, WHY_STICK_TOGETHER, MINOR_NPC_BASELINE, MECHANICAL_QUIRKS,
-         SESSIONS_PER_STOP, D66_ORDER } from "../data-gm.js";
-import { THREATS, ANIMALS, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES, THREAT_ANATOMY,
-         THREAT_GOAL_KINDS } from "../data-npcs.js";
+import { el, roll2d6, pick, fromRangeTable, d66Pick, d6Pick } from "./core.js";
+import { BLOCKERS, NEEDS, CONFLICT_PARTIES, CONFLICT_SUBJECTS, LOCATIONS, ELECTRIC_STATE_ELEMENTS,
+         NINETIES_NOSTALGIA, NPC_QUIRKS, COUNTDOWN_ELEMENTS, COUNTDOWN_PRINCIPLE, NEUROSCAPE,
+         NPC_REACTIONS, COMBAT_MORALE, KICKER_EXAMPLES, WHY_STICK_TOGETHER, MINOR_NPC_BASELINE,
+         MECHANICAL_QUIRKS, SESSIONS_PER_STOP } from "../data-gm.js";
+import { THREATS, ANIMALS, SPECIAL_ABILITIES, PERSONAL_THREAT_RULES, THREAT_ANATOMY, THREAT_GOAL_KINDS } from "../data-npcs.js";
 import { listCharacters, getJourney, saveJourney } from "./store.js";
 import { makeStop, saveStop, listStops as sharedStops, activeStopId, setActiveStop, removeStop,
          advanceCountdown, resolveStop, stopCard } from "./stops.js";
 import { maxHealth, maxHope } from "./derived.js";
-import { showToast, modal, promptModal, explain, spoiler, actionBar } from "./ui.js";
+import { modal, promptModal, explain, spoiler, actionBar } from "./ui.js";
 import { miniVitals } from "./sheet.js";
 import { icon } from "./icons.js";
 import { archetypeGlyph, portrait } from "./graphics.js";
 
-const d66Pick = (table) => table[D66_ORDER.indexOf(d66())];
-const d6Pick = (table) => table[d6() - 1];
 
 export function gmScreen() {
   const host = el("div");

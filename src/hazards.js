@@ -1,8 +1,8 @@
 // Hazards and vehicle handling (Chapter 4). Everything here rolls the book's own dice
 // and applies the result, rather than leaving the player to work it out.
-import { el, rollDice, countSixes, clamp, d6, d66, fromRangeTable, rollNotation, onReset } from "./core.js";
-import { EXPLOSIVES, FIRES, DISEASES, HAZARD_RULES, FIRE_SPREAD_PER_ROUND, VEHICLES } from "../data.js";
-import { STUNTS, ACCIDENTS, RAMMING, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, ACCIDENT_REROLL_MODIFIER } from "../data-vehicles.js";
+import { el, rollDice, countSixes, clamp, d6, d66, fromRangeTable, onReset } from "./core.js";
+import { EXPLOSIVES, FIRES, DISEASES, FIRE_SPREAD_PER_ROUND, HAZARD_RULES } from "../data.js";
+import { ACCIDENTS, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, ACCIDENT_REROLL_MODIFIER, RAMMING } from "../data-vehicles.js";
 import { GEAR, REPAIR } from "../data-tables.js";
 import { maxHealth } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJourney } from "./store.js";
@@ -24,7 +24,7 @@ export function mitigate(damage, dice) {
   return { stopped, damage: Math.max(0, damage - stopped) };
 }
 
-export const fallingDamage = (metres) => Math.floor(metres / 2);
+export const fallingDamage = (metres) => Math.floor(metres * HAZARD_RULES.falling.damagePerMetre);
 
 export function hazardScreen() {
   const host = el("div");
@@ -271,9 +271,9 @@ function buildVehicle(rerender) {
         el("button", { class: "btn btn-primary", onclick: () => stunt(getCharacter(driver.value), v, terrain.value, rerender) }, "Roll stunt"),
         el("button", { class: "btn", onclick: () => accident(terrain.value, rerender) }, "Accident only"))),
     ramming: () => el("div", { class: "card" }, el("h3", {}, "Ramming"),
-      el("p", { class: "faint" }, `Only at Engaged range. You deal half your starting Hull (${Math.ceil(v.hull / 2)}) and take half the other vehicle's.`),
+      el("p", { class: "faint" }, `Only at Engaged range. Roll Agility with Maneuverability as gear dice; a hit deals half your starting Hull (${Math.ceil(v.hull / 2)}), +1 per extra 6, and you take half the other vehicle's.`),
       el("div", { class: "btn-row" },
-        el("button", { class: "btn btn-primary", onclick: () => ram(v, rerender) }, "Ram something"))),
+        el("button", { class: "btn btn-primary", onclick: () => ram(getCharacter(driver.value), v, rerender) }, "Ram something"))),
     chase: () => chaseCard(j, v, chars, driver, rerender),
     // Damage and repairs are between-scene work, so they come last.
     repairs: () => hullCard(j, v, chars, rerender)
@@ -417,20 +417,39 @@ async function repairVehicle({ who, vehicle, hull, tools, part, setHull }) {
   });
 }
 
-async function ram(vehicle, onDone) {
+async function ram(ch, vehicle, onDone) {
+  if (!ch) { showToast("No driver selected."); return; }
   const targetHull = await promptHull();
   if (targetHull == null) return;
-  const dealt = Math.ceil(vehicle.hull / 2);
+  // A ram is an attack: Agility plus Maneuverability as gear dice (RAMMING).
+  const dice = rollDice(Math.max(1, ch.attributes[RAMMING.attr]));
+  const gear = rollDice(Math.max(0, vehicle[RAMMING.gear] || 0));
+  const sixes = countSixes(dice) + countSixes(gear);
+  const all = [...dice, ...gear];
+  if (!sixes) {
+    logRoll({ by: ch.name, label: "Ramming", dice: all, outcome: "missed" });
+    await modal({
+      title: "Missed",
+      body: el("div", {}, el("p", { class: "mono faint" }, all.join(" ")),
+        el("p", {}, "No successes — the ram does not connect.")),
+      actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    });
+    onDone?.();
+    return;
+  }
+  const dealt = Math.ceil(vehicle.hull / 2) + (sixes - 1);
   const taken = Math.ceil(targetHull / 2);
+  const soaked = RAMMING.armorApplies ? (vehicle.armor || 0) : 0;
   const j = getJourney() || {};
-  const hull = Math.max(0, (j.hull ?? vehicle.hull) - Math.max(0, taken - (vehicle.armor || 0)));
+  const hull = Math.max(0, (j.hull ?? vehicle.hull) - Math.max(0, taken - soaked));
   saveJourney({ ...j, hull });
-  logRoll({ label: "Ramming", dice: [], outcome: `dealt ${dealt}, took ${taken}` });
+  logRoll({ by: ch.name, label: "Ramming", dice: all, outcome: `dealt ${dealt}, took ${taken}` });
   await modal({
     title: `Dealt ${dealt}, took ${taken}`,
     body: el("div", {},
-      el("p", {}, `Your armor stops ${vehicle.armor || 0} of it. Hull is now ${hull}.`),
-      el("p", { class: "faint" }, "Your movement ends immediately.")),
+      el("p", { class: "mono faint" }, all.join(" ")),
+      el("p", {}, `The target may still stand tall or dodge. Your armor stops ${soaked} of it. Hull is now ${hull}.`),
+      RAMMING.movementEndsAfter ? el("p", { class: "faint" }, "Your movement ends immediately.") : null),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
   onDone?.();

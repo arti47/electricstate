@@ -1,10 +1,10 @@
 // The live character sheet and the persistent vitals header (Phase 2).
 import { $, el, clamp, die } from "./core.js";
-import { ATTRIBUTES, ARCHETYPES, NEUROCASTERS, TENSION, FUEL, DRONE_PILOT_RULES } from "../data.js";
+import { ATTRIBUTES, ARCHETYPES, NEUROCASTERS, TENSION } from "../data.js";
 import { GEAR, SURGERY } from "../data-tables.js";
 import { BODY_ARMOR } from "../data.js";
 import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./derived.js";
-import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney, saveJourney } from "./store.js";
+import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney } from "./store.js";
 import { talent as findTalent, rule } from "./rules.js";
 import { describeTalent } from "./wizard.js";
 import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic, related } from "./ui.js";
@@ -12,7 +12,7 @@ import { undoLast } from "./store.js";
 import { helmetGraphic, archetypeGlyph, ringDial, portrait } from "./graphics.js";
 import { syncVignette } from "./scene.js";
 import { icon, gearIcon } from "./icons.js";
-import { GENDERS, genderOf, subj, obj, poss, Subj, Poss } from "./pronouns.js";
+import { GENDERS, genderOf, subj, obj, poss } from "./pronouns.js";
 
 // ---------------------------------------------------------------- vitals header
 /**

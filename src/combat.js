@@ -1,14 +1,14 @@
 // Combat tracker and the generic progress-task tracker (Phase 4).
 // One task component serves neurocasting difficulties, countdowns, healing clocks and diseases.
 import { el, uid, rollDice, countSixes, d6, clamp, randomInt, onReset } from "./core.js";
-import { INITIATIVE, ACTION_ECONOMY, RANGES, COMBAT_REACTIONS, WEAPONS } from "../data.js";
+import { RANGES, WEAPONS, INITIATIVE, ACTION_ECONOMY } from "../data.js";
 import { weapon as findWeapon, rangePenalty } from "./rules.js";
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
 import { maxHealth, isDronePilot } from "./derived.js";
 import { showToast, modal, promptModal, confirmModal, explain, moreMenu } from "./ui.js";
-import { renderVitals } from "./sheet.js";
-import { rollGender, refer, subj, obj, poss, Subj, Poss } from "./pronouns.js";
+
+import { rollGender, subj, poss } from "./pronouns.js";
 import { portrait } from "./graphics.js";
 import { sceneBand } from "./scene.js";
 import { icon } from "./icons.js";
@@ -121,13 +121,28 @@ export function nextRound(c = getCombat()) {
   return next;
 }
 
+/**
+ * Side-based initiative (INITIATIVE): each side rolls a d6 plus the best Wits on that side,
+ * re-rolling ties. Sides come from the fight in progress; a Threat's Wits from the bestiary.
+ */
+export function bestWitsBySide(c = getCombat()) {
+  const fighters = c?.combatants || [];
+  const travelerIds = fighters.filter((x) => x.kind === "traveler").map((x) => x.id);
+  const travelers = travelerIds.length ? travelerIds.map(getCharacter).filter(Boolean) : listCharacters();
+  const theirs = fighters.filter((x) => x.side === "enemies")
+    .map((x) => bestiaryEntry(x.threatId)?.[INITIATIVE.tieBreaker.addAttribute]).filter((n) => n != null);
+  return {
+    mine: travelers.length ? Math.max(...travelers.map((ch) => ch.attributes[INITIATIVE.tieBreaker.addAttribute] || 0)) : 0,
+    // Nobody added yet: assume an ordinary opponent.
+    theirs: theirs.length ? Math.max(...theirs) : 3
+  };
+}
+
 export function rollInitiative() {
-  const a = d6(), b = d6();
-  const travelers = listCharacters();
-  const bestWits = travelers.length ? Math.max(...travelers.map((c) => c.attributes.wits)) : 0;
-  const enemyWits = 3;
-  const mine = a + bestWits, theirs = b + enemyWits;
-  if (mine === theirs) return rollInitiative();
+  const wits = bestWitsBySide();
+  let a, b;
+  do { a = d6(); b = d6(); } while (INITIATIVE.tieBreaker.rerollTies && a + wits.mine === b + wits.theirs);
+  const mine = a + wits.mine, theirs = b + wits.theirs;
   logRoll({ label: "Initiative", dice: [a, b], outcome: mine > theirs ? "Travelers act first" : "The other side acts first" });
   return { mine, theirs, side: mine > theirs ? "travelers" : "enemies" };
 }
@@ -207,7 +222,7 @@ export function combatScreen() {
 function build(rerender) {
   const c = combat();
   const wrap = el("div", {}, el("h1", {}, "Combat"));
-  wrap.append(explain('Zones rather than a grid. The side that starts the fight acts first, everyone gets a move and an action, and a reaction costs your next turn. Anyone wearing a neurocaster picks a realm each round and is inert in the other one.'));
+  wrap.append(explain(`Zones rather than a grid. The side that starts the fight acts first, everyone gets a move and an action (or two moves), and a reaction costs your next turn. Free, no action needed: ${ACTION_ECONOMY.freeActions.join(", ")}. Anyone wearing a neurocaster picks a realm each round and is inert in the other one.`));
 
   if (!c && !listCharacters().length) {
     wrap.append(el("div", { class: "empty card" },
