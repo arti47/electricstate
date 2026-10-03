@@ -1233,6 +1233,25 @@ await test("solo with a single Traveler is told to make another, once, before th
   } finally { setSetting("solo", false); }
 });
 
+await test("the road rolled on the Journey screen is the road Play drives", async () => {
+  const session = await import("../src/session.js");
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "x", vehicle: { name: "Van" }, routeFeatures: ["a dry riverbed", "a toll booth"], vehicleDetails: ["smells of pine"] });
+  session.resetDirector();
+  const seen = [];
+  for (let i = 0; i < 40 && seen.length < 2; i++) {
+    session.advance("road");
+    const now = store.getJourney().director.now;
+    if (/Ahead of you/.test(now)) seen.push(now);
+  }
+  assert.deepEqual(seen, ["Ahead of you: a dry riverbed.", "Ahead of you: a toll booth."], "rolled features, in order");
+  session.resetDirector();
+  assert.equal(store.getJourney().director.routeSeen, 2, "a new session keeps its place on the road");
+  session.advance("open");
+  assert.match(store.getJourney().director.now, /smells of pine/, "the opening names the rolled vehicle detail");
+});
+
 await test("one solo deck: a draw from Play and a draw from Solo come off the same cards", async () => {
   store.resetAll();
   makeChar({ name: "Driver" });

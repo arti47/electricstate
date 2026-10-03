@@ -55,7 +55,9 @@ function say(text, kind = "") {
   noteEvent("scene", text);
 }
 
-export function resetDirector() { write(blank()); }
+// A new session is a new evening, not a new road: how far along the rolled route the group
+// has got carries over.
+export function resetDirector() { write({ ...blank(), routeSeen: director().routeSeen || 0 }); }
 
 // -------------------------------------------------------------- the narration
 // Concrete sentences built from the book's own tables, so a beat is something that has
@@ -70,13 +72,25 @@ function openingLine() {
   const weather = pick(SETTING.weather).toLowerCase();
   const where = j.start ? `out past ${j.start}` : "somewhere between two places with no names";
   const dest = j.destination ? ` You are still heading for ${j.destination}.` : "";
+  // What the group rolled and wrote on the Journey screen is the road this scene is on.
+  const route = j.route ? ` Route: ${j.route}.` : "";
+  const car = (j.vehicleDetails || []).length ? ` The ${j.vehicle?.label || j.vehicle?.name || "car"}: ${pick(j.vehicleDetails)}.` : "";
   return driver
-    ? `${shift}. ${weather.charAt(0).toUpperCase()}${weather.slice(1)}. ${driver.name} is driving, ${where}.${dest}`
-    : `${shift}. ${weather}. The road runs ${where}.${dest}`;
+    ? `${shift}. ${weather.charAt(0).toUpperCase()}${weather.slice(1)}. ${driver.name} is driving, ${where}.${dest}${route}${car}`
+    : `${shift}. ${weather}. The road runs ${where}.${dest}${route}${car}`;
 }
 
 function roadLine() {
   if (d6() > 3) {
+    // The route features rolled for this Journey come first, in order, so the road you
+    // rolled is the road you drive; once they are all passed, the table supplies more.
+    const j = getJourney() || {};
+    const rolled = j.routeFeatures || [];
+    const seen = director().routeSeen || 0;
+    if (seen < rolled.length) {
+      write({ routeSeen: seen + 1 });
+      return { text: `Ahead of you: ${rolled[seen]}.`, stop: false };
+    }
     return { text: `Ahead of you: ${pick(ROUTE_FEATURES)}.`, stop: false };
   }
   const encounter = MINOR_ENCOUNTERS[d6() + 1] || pick(Object.values(MINOR_ENCOUNTERS));

@@ -971,6 +971,10 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
   }
 
   if (isInstantKill(soaked.damage, hMax)) {
+    // Killed outright is dead: the record says so, the same as three failed death rolls.
+    next.state.dead = true;
+    next.state.death = null;
+    saveCharacter(next);
     await modal({
       title: "Killed outright",
       body: el("p", {}, `${soaked.damage} damage is twice the maximum Health of ${hMax}. No death rolls — time to make a new Traveler.`),

@@ -605,3 +605,12 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   and a finished debrief clears a resolved active Stop so the next session starts on the road
   instead of offering the same debrief again (the walk found that loop). `describeTalent`
   tolerates an unknown id — the debrief's picker could hand it `undefined`.
+- **Rolled Journey details are used, not just shown.** The route's **Roll 3** results
+  (`journey.routeFeatures`) are what Play's road beats pass, in order (`director.routeSeen`,
+  kept across sessions by `resetDirector`, reset when the route is re-rolled), before the table
+  supplies more; **Route notes** and a rolled vehicle detail (`journey.vehicleDetails`) go into
+  each session's opening line. Both rolls list their results in a `.rolled-list` on the Journey
+  screen saying where they are used, and the button becomes **Roll again**.
+- Death frees the archetype: `takenArchetypes()` counts only living Travelers, and **Killed
+  outright** now sets `state.dead` like three failed death rolls did. The walk found it — after a
+  few deaths every ready-made Traveler read "Already in the group" and creation dead-ended.

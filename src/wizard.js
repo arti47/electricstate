@@ -36,7 +36,9 @@ function blankDraft() {
   };
 }
 
-const takenArchetypes = () => new Set(listCharacters().map((c) => c.archetype));
+// One archetype per group — of the living. A dead Traveler's archetype is free for the
+// replacement the book tells you to make.
+const takenArchetypes = () => new Set(listCharacters().filter((c) => !c.state?.dead).map((c) => c.archetype));
 const knownTalents = (d) => new Set(d.talents);
 
 // ---------------------------------------------------------------- step: archetype
@@ -655,10 +657,18 @@ function buildJourney(rerender) {
     el("div", { class: "field" }, el("label", {}, "Route notes"),
       el("input", { value: j.route || "", onchange: (e) => save({ route: e.target.value }) }),
       el("div", { class: "card-row", style: "margin-top:6px" },
-        el("span", { class: "faint" }, (j.routeFeatures || []).join(" · ") || "What lies between the Stops"),
+        el("span", { class: "faint" }, "What lies between the Stops"),
         el("button", {
-          class: "btn", onclick: () => save({ routeFeatures: pickDistinct(ROUTE_FEATURES, JOURNEY_ROLLS.routeFeatures) })
-        }, "Roll 3")))));
+          // A new road starts from its first feature.
+          class: "btn", onclick: () => save({ routeFeatures: pickDistinct(ROUTE_FEATURES, JOURNEY_ROLLS.routeFeatures), director: { ...(j.director || {}), routeSeen: 0 } })
+        }, (j.routeFeatures || []).length ? "Roll again" : "Roll 3")),
+      // The rolled road, listed where it was rolled, and said plainly where it goes next:
+      // Play's road scenes pass these, in this order, before drawing any others.
+      (j.routeFeatures || []).length
+        ? el("div", { class: "rolled-list" },
+            el("ol", {}, ...j.routeFeatures.map((f) => el("li", {}, f))),
+            el("p", { class: "faint" }, "Play drives you past these, in this order, when you are on the road."))
+        : null)));
 
   // vehicle
   const vehicleCard = el("div", { class: "card" }, el("h3", {}, "Vehicle"));
@@ -671,10 +681,15 @@ function buildJourney(rerender) {
       el("div", { class: "faint" }, `Passengers ${v.passengers ?? "—"} · Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability ?? "—"} · Speed ${v.speed} · Armor ${v.armor}`),
       v.traits?.length ? el("p", { class: "faint" }, "Traits: " + v.traits.map((t) => t.name).join(", ")) : null,
       el("div", { class: "card-row", style: "margin-top:6px" },
-        el("span", { class: "faint" }, (j.vehicleDetails || []).join(" · ") || "What it looks like, how it smells inside"),
+        el("span", { class: "faint" }, "What it looks like, how it smells inside"),
         el("button", {
           class: "btn", onclick: () => save({ vehicleDetails: pickDistinct(VEHICLE_DETAILS, JOURNEY_ROLLS.vehicleDetails) })
-        }, "Roll 3")),
+        }, (j.vehicleDetails || []).length ? "Roll again" : "Roll 3")),
+      (j.vehicleDetails || []).length
+        ? el("div", { class: "rolled-list" },
+            el("ul", {}, ...j.vehicleDetails.map((f) => el("li", {}, f))),
+            el("p", { class: "faint" }, "Play opens each session with one of these."))
+        : null,
       el("div", { class: "card-row", style: "margin-top:8px" },
         el("span", { class: "faint" }, `Fuel ${j.fuel ?? Math.round(FUEL.tankGallons * FUEL.startingFraction)} / ${FUEL.tankGallons} gal`),
         el("button", { class: "btn", onclick: () => save({ vehicle: null }) }, "Change")),

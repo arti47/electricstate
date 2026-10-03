@@ -2022,3 +2022,9 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .dicepad-key .die { --size: 34px; }
 .dicepad-shown { min-height: 46px; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 @media (max-width: 380px) { .dicepad { grid-template-columns: repeat(4, 1fr); } }
+
+/* rolled Journey details, listed where they were rolled */
+.rolled-list { margin-top: 8px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--bg-sunk); border-radius: 6px; }
+.rolled-list ol, .rolled-list ul { margin: 0 0 6px; padding-left: 20px; }
+.rolled-list li { margin: 2px 0; }
+.rolled-list p { margin: 0; }
