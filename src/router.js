@@ -59,14 +59,17 @@ const ROUTES = [
  * wherever you are, at the top, always.
  */
 const SUBNAV = {
+  // Play first: it is the one place that says what to do next. The tool screens come last
+  // and say so in their names — they are how you do one step by hand, not a second way to
+  // run the session.
   home: [
-    ["#/home", "Travelers"],
     ["#/session", "Play"],
-    ["#/solo", "Solo", () => Settings.solo()],
-    ["#/gm", "GM", () => Settings.gmScreen()],
+    ["#/home", "Travelers"],
     ["#/journey", "Journey"],
     ["#/time", "Time"],
-    ["#/tension", "Tension", () => listCharacters().length > 1]
+    ["#/tension", "Tension", () => listCharacters().length > 1],
+    ["#/solo", "Solo tools", () => Settings.solo()],
+    ["#/gm", "GM tools", () => Settings.gmScreen()]
   ],
   dice: [
     ["#/dice", "Dice"],
@@ -443,6 +446,7 @@ export function startRouter() {
     openTray();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && trayOpen && !document.querySelector(".modal-backdrop")) closeTray(); });
-  if (!location.hash) location.hash = "#/home";
+  // One front door: once anyone exists, the app opens on Play.
+  if (!location.hash) location.hash = listCharacters().length ? "#/session" : "#/home";
   render();
 }

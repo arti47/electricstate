@@ -590,3 +590,18 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   Damage + extra 6s, and the target's take-it / fight back / dodge opposed reaction that
   forfeits the next turn. Everything else added since the twelfth pass checked faithful or
   rules-neutral.
+- **One front door.** Three screens used to answer "what now" (Travelers' card and Play
+  button, Play, Solo's step card and numbered phases), plus Reference's procedure page. Now:
+  **Play** (`#/session`) is the only place that says what to do next — first in the section
+  row, and where the app opens once a Traveler exists. **Travelers** is the roster with one lit
+  **Continue in Play**. **Solo tools** / **GM tools** (renamed in the section row, listed last)
+  are toolboxes: Solo's groups are named (Setting out, On the road, Stops, Scenes, Pressure,
+  Wrapping up — keys stay "1"–"6" internally), no numbered procedure, and a single
+  **Continue in Play** that lights when Play holds the next step. Play links back with
+  **Do it by hand: Solo/GM tools**. Reference's *Running a session* names the act you are in
+  ("Right now: …", `.whatnow-ref`) and hands you to Play. `whatNowCard` is gone; `whatNow`
+  still feeds Play's setup beats.
+  With it: Play picks up a Stop resolved in the tools ("That is the Stop" → **End the session**),
+  and a finished debrief clears a resolved active Stop so the next session starts on the road
+  instead of offering the same debrief again (the walk found that loop). `describeTalent`
+  tolerates an unknown id — the debrief's picker could hand it `undefined`.

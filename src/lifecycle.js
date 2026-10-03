@@ -7,6 +7,7 @@ import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, isDronePilo
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent,
          getSessionLog, clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
+import { activeStop, setActiveStop } from "./stops.js";
 import { shiftDial, fuelDial, portrait } from "./graphics.js";
 import { icon } from "./icons.js";
 import { subj, obj, poss, Subj } from "./pronouns.js";
@@ -463,6 +464,10 @@ async function debrief(rerender) {
     await debriefOne(ch);
   }
   clearSessionLog();   // the record covers one session; the next one starts empty
+  // A Stop resolved this session is behind the group now: the next session starts on the
+  // road, not back at "That is the Stop" asking for another debrief.
+  const done = activeStop();
+  if (done?.resolved) setActiveStop(null);
   rerender();
   return true;
 }

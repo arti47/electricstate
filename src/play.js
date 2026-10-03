@@ -12,7 +12,6 @@ import { getCombat } from "./combat.js";
 import { Settings } from "./settings.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
 import { explain } from "./ui.js";
-import { icon } from "./icons.js";
 
 /**
  * Where this group is in the loop, as a pure function of the saved game so it can be
@@ -151,24 +150,6 @@ export const currentStep = () => whatNow({
   sessionLog: getSessionLog()
 });
 
-/** The card the home screen shows: where you are, and the one thing to do next. */
-export function whatNowCard(step = currentStep(), { here = null } = {}) {
-  if (!step) return null;
-  // A link to the screen you are already on is a button that does nothing.
-  if (here) step = { ...step, actions: step.actions.filter((a) => a.href !== here) };
-  const card = el("div", { class: "card whatnow" },
-    // The act you are in, as a large faded mark behind the card.
-    el("span", { class: "whatnow-mark" }, icon(PHASE_ICON[step.phase] || "road", { size: 120 })),
-    el("div", { class: "whatnow-phase" }, PHASES[step.phase]?.label || step.phase),
-    el("strong", {}, step.title),
-    el("p", { class: "faint" }, step.blurb));
-  if (step.aside) card.append(el("p", { class: "faint" }, step.aside));
-  card.append(el("div", { class: "btn-grid" },
-    ...step.actions.map((a) => el("a", { class: "btn" + (a.primary ? " btn-primary" : ""), href: a.href }, a.label))));
-  return card;
-}
-
-const PHASE_ICON = { setup: "traveler", open: "road", play: "dice", crisis: "hazard", close: "clock", done: "star" };
 
 const PHASES = {
   setup: { label: "Before you play", n: 0 },
@@ -183,9 +164,12 @@ const PHASES = {
 export function playScreen() {
   const step = currentStep();
   const wrap = el("div", { class: "manual" }, el("h1", {}, "Running a session"));
-  wrap.append(explain("Not what the buttons do — what happens at the table. Three acts: getting started, keeping it going, and stopping well. The card at the top always says which one you are in right now."));
+  wrap.append(explain("Not what the buttons do — what happens at the table. Three acts: getting started, keeping it going, and stopping well. The act you are in opens by itself. This page only explains; Play is where the game tells you the next thing to do."));
 
-  wrap.append(whatNowCard(step));
+  // Reference, not a second "what now": it names the act and hands you back to Play.
+  wrap.append(el("div", { class: "card whatnow-ref" },
+    el("div", { class: "whatnow-phase" }, `Right now: ${PHASES[step.phase]?.label || step.phase}`),
+    el("a", { class: "btn btn-primary", href: "#/session" }, "Continue in Play")));
 
   wrap.append(act("Getting started", step.phase === "setup" || step.phase === "open", [
     ["Sit down and agree the shape of it",

@@ -143,7 +143,7 @@ for (const k of ["travelers", "destination", "tension", "scene", "pressure", "fi
   if (!reached.has(k)) failures.push(`never reached: ${k}`);
 }
 if (failures.length) {
-  console.error("novice probe FAILED\n  " + failures.join("\n  ") + "\n  last presses:\n    " + trail.slice(-12).join("\n    "));
+  console.error("novice probe FAILED\n  " + failures.join("\n  ") + "\n  last presses:\n    " + trail.slice(-40).join("\n    "));
   process.exit(1);
 }
 console.log(`novice probe: pressing only the lit button plays a whole Journey to its epilogue in ${trail.length} presses`);

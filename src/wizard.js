@@ -242,7 +242,7 @@ export function rollDescriptorSet(tables = DESCRIPTOR_TABLES) {
 }
 
 export function describeTalent(t) {
-  const e = t.effect || {};
+  const e = t?.effect || {};   // an id the book does not list still renders
   if (e.kind === "dice") return `+${e.bonus} dice${e.attr ? ` to ${e.attr}` : ""}${e.when ? ` when ${e.when}` : ""}.`;
   if (e.kind === "stat") return `Maximum ${e.stat === "hopeMax" ? "Hope" : "Health"} +${e.value}.`;
   return "Changes how a rule works — see the rules library.";

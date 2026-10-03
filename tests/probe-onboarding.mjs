@@ -120,7 +120,7 @@ const guide = await page.evaluate(() => {
     starting: /Getting started/.test(t),
     sustaining: /Keeping it going/.test(t),
     ending: /Stopping well/.test(t),
-    saysWhereYouAre: !!document.querySelector("#screen .whatnow"),
+    saysWhereYouAre: !!document.querySelector("#screen .whatnow-ref") && /Right now:/.test(t),
     stuck: /going badly/i.test(t)
   };
 });

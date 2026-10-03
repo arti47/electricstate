@@ -146,6 +146,15 @@ export function beatFor(state = director()) {
       choices: ladder.actions };
   }
 
+  // A Stop resolved somewhere else (the Solo or GM tools) while Play sat idle: Play picks
+  // the story up at its end, not at "Ready when you are".
+  if (ladder.id === "stop-resolved" && state.beat === "idle") {
+    return { id: "wrap", heading: "That is the Stop", now: RESOLVED_LINE,
+      you: "Good place to stop for the night. The debrief is where Travelers improve, and it wants the memory fresh.",
+      choices: [{ label: "End the session", href: "#/time/debrief", primary: true },
+                { label: "Keep driving", act: "road" }] };
+  }
+
   // The planned Stops are all played: between Stops, say so instead of driving on blind.
   if (ladder.id === "journey-end" && ["idle", "wrap"].includes(state.beat)) {
     return { id: ladder.id, heading: ladder.title, now: ladder.blurb, you: null,
@@ -441,7 +450,12 @@ function build(rerender) {
     wrap.append(log);
   }
 
+  // The tool screens are how you do one step yourself; Play is still where the story is.
+  const tools = Settings.playMode() === "gm" && Settings.gmScreen() ? ["#/gm", "Do it by hand: GM tools"]
+    : Settings.solo() ? ["#/solo", "Do it by hand: Solo tools"]
+    : Settings.gmScreen() ? ["#/gm", "Do it by hand: GM tools"] : null;
   wrap.append(el("div", { class: "btn-grid" },
+    tools ? el("a", { class: "btn", href: tools[0] }, tools[1]) : null,
     el("a", { class: "btn", href: "#/play" }, "How a session works"),
     el("a", { class: "btn", href: "#/rules" }, "What the words mean")));
   return wrap;

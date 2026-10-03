@@ -76,7 +76,7 @@ function build(rerender) {
   wrap.append(el("div", { class: "card" },
     p("The book has full solo rules and the app implements the lot. You run two to four Travelers and let cards answer the questions a GM would."),
     Settings.solo()
-      ? el("div", { class: "btn-row" }, go("#/solo", "Solo"))
+      ? el("div", { class: "btn-row" }, go("#/solo", "Solo tools"))
       : el("button", { class: "btn btn-primary", onclick: () => { setSetting("solo", true); rerender(); } }, "Turn on Solo mode")));
 
   wrap.append(step("S1 · Prepare less than you think", [

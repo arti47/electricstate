@@ -12,8 +12,8 @@ import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { getJourney, saveJourney, listCharacters, saveCharacter } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, attachThreat,
          resolveStop, stopCard as sharedStopCard } from "./stops.js";
-import { showToast, modal, explain, actionBar, dismissModal, related } from "./ui.js";
-import { currentStep, whatNowCard } from "./play.js";
+import { showToast, modal, explain, actionBar, dismissModal } from "./ui.js";
+import { currentStep } from "./play.js";
 import { subj, obj, poss, Subj, Poss, rollGender, splitPairedName, genderLabel } from "./pronouns.js";
 import { playingCard, deckStack } from "./graphics.js";
 import { sound } from "./sound.js";
@@ -262,16 +262,19 @@ onReset(() => { soloPhase = null; lastAuto = null; });
 
 function build(rerender) {
   const s = state();
-  const wrap = el("div", {}, el("h1", {}, "Solo"));
-  wrap.append(explain("Playing without a GM. The deck answers the questions a GM would: face cards fire events by suit, Tilts say whether something helps or hurts and how much, and five cards build an NPC. Do not reshuffle until the deck is spent — running it down is the pacing."));
+  const wrap = el("div", {}, el("h1", {}, "Solo tools"));
+  wrap.append(explain("The solo toolbox: the deck, Tilts, NPCs, the Stop and Threat generators and the Countdown, to use by hand. Play uses these same tools for you and tells you what to do next — come here when you want to do one step yourself. Do not reshuffle until the deck is spent; running it down is the pacing."));
 
-  // Before the Journey exists there is nothing for a card to answer about. Say what is
-  // missing first, the same step Home and Play show.
-  // Before the Journey exists, and once a Stop is behind you, the deck is not the next
-  // thing: say what is, the same step Home and Play show.
+  // A toolbox, not a second way to run the session. When the game is waiting on something
+  // only Play walks you through — setting up, ending a Stop, ending the Journey — the way
+  // back to it is the lit button; otherwise it is a quiet link.
   const setup = currentStep();
   const steering = ["setup", "close", "done"].includes(setup.phase);
-  if (steering) wrap.append(whatNowCard(setup, { here: "#/solo" }));
+  wrap.append(el("div", { class: "card toolbox-intro" },
+    el("p", { class: "faint" }, steering
+      ? `Play has the next step: ${setup.title}.`
+      : "Draw a card when you need an answer; Tilt when you only need to know whether it helps or hurts. Play does both for you if you would rather be walked through."),
+    el("a", { class: "btn" + (steering ? " btn-primary" : ""), href: "#/session" }, "Continue in Play")));
 
   // The deck on the table: how much is left, and the last card turned over with what it
   // said. Running the deck down is the pacing, so it leads the screen.
@@ -281,26 +284,10 @@ function build(rerender) {
     el("div", { class: "deck-count" }, el("span", { class: "mono" }, String(s.deck.length)), " ", el("small", {}, "cards left")),
     last ? el("div", { class: "deck-last" }, playingCard(last, { flip: false }), el("span", { class: "faint" }, last.note)) : null));
 
-  // Someone who has never played solo does not need more tables; they need to be told what
-  // the loop is. It stays until the first card is drawn, then never appears again.
-  if (!(s.events || []).length) {
-    wrap.append(el("div", { class: "card" },
-      el("h3", {}, "Never done this before?"),
-      el("p", { class: "faint" }, "There is no GM and no script. You ask a question out loud, draw a card, and read the answer into the fiction — that is the entire game."),
-      el("ol", { class: "playsteps" },
-        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Set out: below, roll a destination and a vehicle. Do not plan the Stops.")),
-        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Arrive somewhere: Generate a Stop. It hands you a Blocker — the reason you cannot drive on.")),
-        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Play it out. Whenever you do not know what happens next, Draw a card. Whenever you want to know if something is good or bad, Tilt.")),
-        el("li", {}, el("div", { class: "faint", style: "padding:3px 0" }, "Deal with the Blocker, end the Stop, drive on. Time passes on the Time screen."))),
-      related([["#/journey", "Journey", "road"], ["#/time", "Time", "clock"]]),
-      el("p", { class: "faint" }, "Nothing you roll is binding. If a card contradicts something you have already decided, throw it out."),
-      el("div", { class: "btn-row" },
-        el("a", { class: "btn", href: "#/tutorial" }, "The longer walkthrough"),
-        el("a", { class: "btn", href: "#/rules" }, "What the words mean"))));
-  }
 
-  // Numbered phases carry their number, so the procedure track can show one at a time.
-  const num = (title) => /^(\d) · /.exec(title)?.[1] || null;
+  // Each tool group carries a key, so the tool row can show one group at a time.
+  const KEYS = { "Setting out": "1", "On the road": "2", "Stops": "3", "Scenes": "4", "Pressure": "5", "Wrapping up": "6" };
+  const num = (title) => KEYS[title] || null;
   const phase = (title, blurb, ...kids) =>
     el("div", { class: "card", "data-phase": num(title) }, el("h3", {}, title), blurb ? el("p", { class: "faint" }, blurb) : null, ...kids);
   // Prep happens once; it should not sit above the controls you use every scene.
@@ -339,7 +326,7 @@ function build(rerender) {
   }
 
   // ---------------------------------------------------------------- 1 prepare
-  wrap.append(foldedPhase("1 · Before you set out",
+  wrap.append(foldedPhase("Setting out",
     "Start, destination, route and vehicle. Leave the Stops unplanned — you generate each one as you arrive.",
     row(
       el("a", { class: "btn", href: "#/journey" }, "The Journey"),
@@ -419,7 +406,7 @@ function build(rerender) {
 
   // ------------------------------------------------------------- 2 on the road
   // Between Stops, not during one: folded like prep, so the Stop you are in stays on top.
-  wrap.append(foldedPhase("2 · On the road",
+  wrap.append(foldedPhase("On the road",
     "Between Stops. An encounter can be driven past — it is mood, not obligation.",
     row(
       act("Minor encounter", () => encounter(rerender)),
@@ -436,7 +423,7 @@ function build(rerender) {
       }))));
 
   // ---------------------------------------------------------------- 3 the Stop
-  wrap.append(phase("3 · Arriving at a Stop",
+  wrap.append(phase("Stops",
     "Roll the setting, the Blocker and the conflict, then the Threat behind it.",
     row(
       act("Generate a Stop", () => {
@@ -470,7 +457,7 @@ function build(rerender) {
   }
 
   // ------------------------------------------------------------------- 4 play
-  wrap.append(phase("4 · Playing the Stop",
+  wrap.append(phase("Scenes",
     `Draw when you need input. Face cards fire events by suit. ${s.deck.length} cards left — do not reshuffle until it is spent.`,
     row(
       act("Draw a card", () => draw(rerender)),
@@ -510,7 +497,7 @@ function build(rerender) {
       el("a", { class: "btn", href: "#/dice" }, "Roll for it"))));
 
   // -------------------------------------------------------------- 5 escalate
-  wrap.append(phase("5 · Turning the screw",
+  wrap.append(phase("Pressure",
     "When the players stall, or a face card tells you to, move a Countdown forward.",
     row(
       act("Stop Countdown", async () => {
@@ -547,7 +534,7 @@ function build(rerender) {
       }))));
 
   // ------------------------------------------------------------ 6 the session
-  wrap.append(foldedPhase("6 · Ending the Stop",
+  wrap.append(foldedPhase("Wrapping up",
     "Time passes on the Time screen — Shifts, Days and the session debrief run the same as at a table.",
     row(
       el("a", { class: "btn", href: "#/time" }, "Time"),
@@ -563,15 +550,17 @@ function build(rerender) {
   // When the game moves on (a Stop arrives, its Countdown runs out), follow it again.
   if (auto !== lastAuto) { soloPhase = null; lastAuto = auto; }
   const shown = soloPhase && phases.some((p) => p.dataset.phase === soloPhase) ? soloPhase : auto;
-  const rail = el("ol", { class: "proc-rail", "aria-label": "Solo procedure" },
+  // Tool groups by name, not numbered steps: numbers read as a procedure to follow, and
+  // the procedure is Play's job.
+  const rail = el("ol", { class: "proc-rail is-tools", "aria-label": "Solo tools" },
     ...phases.map((p) => {
       const n = p.dataset.phase;
-      const title = (p.querySelector("h3, summary")?.textContent || "").replace(/^\d · /, "");
+      const title = p.querySelector("h3, summary")?.textContent || "";
       return el("li", {}, el("button", {
         class: "proc-step" + (n === shown ? " is-here" : "") + (n === auto ? " is-now" : ""),
-        "aria-label": `${n} · ${title}`, "aria-pressed": n === shown ? "true" : "false", disabled: n === shown,
+        "aria-label": title, "aria-pressed": n === shown ? "true" : "false", disabled: n === shown,
         onclick: () => { soloPhase = n; rerender(); }
-      }, el("span", { class: "proc-n" }, n), el("span", { class: "proc-t" }, title)));
+      }, el("span", { class: "proc-t" }, title)));
     }));
   phases[0]?.before(rail);
   for (const p of phases) {

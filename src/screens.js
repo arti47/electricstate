@@ -7,7 +7,6 @@ import { listCharacters, getJourney, exportJSON, importJSON, getRollLog, rollLog
          createCampaign, switchCampaign, renameCampaign, deleteCampaign, checkData,
          canUndo, undoLast, undoLabel } from "./store.js";
 import { searchLibrary, searchGlossary } from "./rules.js";
-import { whatNowCard } from "./play.js";
 import { routeCard } from "./wizard.js";
 import { routeStrip } from "./graphics.js";
 import { archetypeGlyph, portrait } from "./graphics.js";
@@ -47,8 +46,9 @@ export function homeScreen() {
     wrap.append(el("a", { class: "btn btn-primary btn-block", href: `#/sheet/${chars[0].id}`, style: "margin-bottom:12px" },
       chars.length > 1 ? "Open a sheet" : `Open ${chars[0].name || "your Traveler"}`));
   } else if (chars.length) {
+    // This is the roster. What to do next lives in one place, Play, and this only points there.
     wrap.append(el("a", { class: "btn btn-primary btn-block", href: "#/session", style: "margin-bottom:12px" },
-      "Play — the app runs the session"));
+      "Continue in Play"));
   } else {
     wrap.append(el("a", { class: "btn btn-block", href: "#/tutorial", style: "margin-bottom:12px" }, "First time? Start here"));
   }
@@ -91,7 +91,6 @@ export function homeScreen() {
     // Where the group has got to on the road, once there is a road.
     const j = getJourney();
     if (j?.destination || j?.start) wrap.append(el("a", { class: "card route-link", href: "#/journey", "aria-label": "The Journey" }, routeCard(j)));
-    add(wrap, nextStep(chars));
     // Journey, Time and Tension are one tap away in the section nav above.
     wrap.append(el("div", { class: "btn-row" },
       el("a", { class: "btn", href: "#/create" }, "New Traveler")));
@@ -118,18 +117,6 @@ export function homeScreen() {
 
   return wrap;
 }
-
-/**
- * Creation ends at step 12; the book's own steps 13-16 are the Journey, the vehicle, the
- * shared items and the Tension between everyone. Nothing prompted any of it, so a party
- * could sit here finished-looking with no destination and no Tension to spend.
- */
-/**
- * The home screen used to name the next setup step and then fall silent the moment setup
- * was done — which is the moment play begins. It now shows where the group is in a
- * session, all the way through to ending the Journey. See src/play.js.
- */
-const nextStep = () => whatNowCard();
 
 export function rulesScreen() {
   const wrap = el("div", { class: "manual" });

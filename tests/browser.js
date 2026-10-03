@@ -487,7 +487,7 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
 
   // a Countdown event must land on the screen, not just in a modal that closes. Solo shows
   // one phase at a time on its procedure track; Turning the screw is phase 5.
-  await page.click('#screen .proc-step[aria-label^="5"]');
+  await page.click('#screen .proc-step[aria-label="Pressure"]');
   await page.waitForTimeout(80);
   await page.click('#screen button:has-text("Stop Countdown")');
   await page.waitForTimeout(100);
