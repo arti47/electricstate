@@ -1233,6 +1233,16 @@ await test("solo with a single Traveler is told to make another, once, before th
   } finally { setSetting("solo", false); }
 });
 
+await test("Play opens on a director record some other screen half-wrote", async () => {
+  const session = await import("../src/session.js");
+  store.resetAll();
+  makeChar({ name: "Driver" });
+  store.saveJourney({ destination: "x", vehicle: { name: "Van" }, director: { routeSeen: 0 } });
+  const d = session.director();
+  assert.ok(Array.isArray(d.log) && d.beat === "idle", "missing fields come from the blank record");
+  assert.doesNotThrow(() => session.beatFor());
+});
+
 await test("the road rolled on the Journey screen is the road Play drives", async () => {
   const session = await import("../src/session.js");
   store.resetAll();

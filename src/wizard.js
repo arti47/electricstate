@@ -660,7 +660,7 @@ function buildJourney(rerender) {
         el("span", { class: "faint" }, "What lies between the Stops"),
         el("button", {
           // A new road starts from its first feature.
-          class: "btn", onclick: () => save({ routeFeatures: pickDistinct(ROUTE_FEATURES, JOURNEY_ROLLS.routeFeatures), director: { ...(j.director || {}), routeSeen: 0 } })
+          class: "btn", onclick: () => save({ routeFeatures: pickDistinct(ROUTE_FEATURES, JOURNEY_ROLLS.routeFeatures), ...(j.director ? { director: { ...j.director, routeSeen: 0 } } : {}) })
         }, (j.routeFeatures || []).length ? "Roll again" : "Roll 3")),
       // The rolled road, listed where it was rolled, and said plainly where it goes next:
       // Play's road scenes pass these, in this order, before drawing any others.

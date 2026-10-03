@@ -41,7 +41,9 @@ const someone = () => {
 
 // ------------------------------------------------------------------ the state
 const blank = () => ({ beat: "idle", log: [], scenes: 0, stopId: null });
-export const director = () => getJourney()?.director || blank();
+// Always whole: any screen that writes one field of the director (the Journey screen resets
+// `routeSeen`) must not leave Play reading a record with no log.
+export const director = () => ({ ...blank(), ...(getJourney()?.director || {}) });
 const write = (patch) => {
   const j = getJourney() || {};
   saveJourney({ ...j, director: { ...director(), ...patch } });

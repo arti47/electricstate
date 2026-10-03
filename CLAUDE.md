@@ -614,3 +614,8 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
 - Death frees the archetype: `takenArchetypes()` counts only living Travelers, and **Killed
   outright** now sets `state.dead` like three failed death rolls did. The walk found it — after a
   few deaths every ready-made Traveler read "Already in the group" and creation dead-ended.
+- **Play would not open after re-rolling the route.** The Journey screen wrote
+  `director: { routeSeen: 0 }` into a save with no director, and Play read `state.log.length` off
+  it. `director()` now always merges onto `blank()`, so a partial record from any screen is whole
+  when Play reads it (this also repairs saves already in that state), and the Journey screen only
+  touches a director that exists. Unit test pins it.
