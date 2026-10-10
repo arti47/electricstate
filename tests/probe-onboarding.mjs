@@ -149,7 +149,7 @@ await seedPage(page, base, SEEDS.fresh, "home");
 let taps = 0;
 if (await tap('#screen a[href="#/create"]', "start creation")) taps++;
 if (await tap('#screen button:has-text("ready-made")', "open the ready-made Travelers")) taps++;
-if (await tap('.modal .btn-row button', "take one")) taps++;
+if (await tap('.modal .pregen-pick button', "take one")) taps++;
 const madeOne = await page.evaluate(() => __game.characters().length);
 if (!madeOne) firstMinutes.push("a ready-made Traveler cannot be taken without making decisions");
 else if (taps > 3) firstMinutes.push(`a ready-made Traveler took ${taps} taps`);

@@ -90,7 +90,7 @@ for (const [tile, expect] of [[1, /#\/gm$/], [2, /#\/sheet\//]]) {
   await p2.waitForTimeout(200);
   if (tile === 2) {
     await p2.click('#screen button:has-text("ready-made")');
-    await p2.locator(".modal button.row").first().click();
+    await p2.locator(".modal .pregen-pick button").first().click();
     await p2.waitForTimeout(200);
     await p2.locator("#screen .btn-primary").first().click();
     await p2.waitForTimeout(200);

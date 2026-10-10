@@ -702,3 +702,8 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
     hands it on. The Driving screen's driver select reads and writes the same field (its module
     `driveWho` is gone) and the session's opening line names the same person. `integrity.js`
     clears a `driverId` whose Traveler is gone.
+- **Ready-made Traveler picker.** Each pregen is a plain card (name, blurb, ♥Health ✦Hope) with
+  two buttons, **Play Cade · he** / **Play Courtney · she**, in the order the book names the
+  pair. The card used to be a third button that silently picked the male half. Dialogs no longer
+  focus their first button on open (a text field still gets the cursor; otherwise the dialog
+  box takes focus) — on a phone that drew a focus ring that read as "already chosen".

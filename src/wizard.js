@@ -566,20 +566,21 @@ async function choosePregen() {
   for (const p of order) {
     const erratum = PREGEN_ERRATA.find((e) => e.id === p.id);
     const used = taken.has(p.archetype);
-    body.append(el("li", {}, el("button", {
-      class: "row", disabled: used,
-      onclick: () => { instantiatePregen(p, DEFAULT_GENDER); dismissModal(false); }
-    },
+    // The book prints each one with a paired name — either half can play it. The card is
+    // just the person; the two buttons are the choice, in the order the book names them,
+    // and the choice also fixes every pronoun the app will write.
+    const first = (p.name.split("/")[0] || "").trim().split(" ")[0];
+    const halves = [...GENDERS].sort((a, b) =>
+      (pregenName(p, b.id).startsWith(first) ? 1 : 0) - (pregenName(p, a.id).startsWith(first) ? 1 : 0));
+    body.append(el("li", { class: "pregen" + (used ? " is-used" : "") },
       el("div", { class: "card-row" }, el("strong", {}, p.name),
-        el("span", { class: "faint mono" }, used ? "Already in the group" : `${p.health}/${p.hope}`)),
+        el("span", { class: "faint mono", title: "Health / Hope" }, used ? "Already in the group" : `♥${p.health} ✦${p.hope}`)),
       el("div", { class: "faint" }, p.blurb),
-      erratum ? el("div", { class: "faint" }, `Note: the printed sheet shows Hope ${erratum.printed}; the formula gives ${erratum.computed}, which is what this app uses.`) : null)));
-    // The book prints each pregen with a paired name so either half can play it. Both
-    // halves are offered, because the choice also fixes every pronoun the app will write.
-    body.append(el("div", { class: "btn-row", style: "padding:0 4px 10px" },
-      ...GENDERS.map((g) => el("button", {
-        class: "btn", disabled: used, onclick: () => { instantiatePregen(p, g.id); dismissModal(false); }
-      }, pregenName(p, g.id)))));
+      erratum ? el("div", { class: "faint" }, `The printed sheet says Hope ${erratum.printed}; the rules give ${erratum.computed}, which is what the app uses.`) : null,
+      el("div", { class: "btn-grid pregen-pick" },
+        ...halves.map((g) => el("button", {
+          class: "btn", disabled: used, onclick: () => { instantiatePregen(p, g.id); dismissModal(false); }
+        }, `Play ${pregenName(p, g.id).replace(/ \S+$/, "")}`, el("small", {}, ` · ${g.id === "male" ? "he" : "she"}`))))));
   }
   await modal({ title: "Pre-made Travelers", body, actions: [{ label: "Cancel", value: false }] });
 }

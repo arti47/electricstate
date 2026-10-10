@@ -82,7 +82,12 @@ export function modal({ title, body, actions = [], dismissible = true, tone = ""
     $("#modalRoot").append(backdrop);
     openModals++;
     document.body.style.overflow = "hidden";
-    (box.querySelector("input, button") || box).focus();
+    // A text field gets the cursor. Otherwise the dialog itself takes focus, not its first
+    // button: on a phone that drew a focus ring round whatever happened to come first, which
+    // read as "this one is already chosen".
+    const field = box.querySelector("input:not([type=checkbox]):not([type=radio]), textarea");
+    if (field) field.focus();
+    else { box.tabIndex = -1; box.focus({ preventScroll: true }); }
   });
 }
 

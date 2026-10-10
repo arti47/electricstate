@@ -2478,3 +2478,9 @@ html[data-shift="night"] .windshield:not(.is-neuro)::after {     /* headlights o
 .fight-shield { min-height: 0; }
 .fight-glass { padding: 16px 12% 10px; }
 .fight-shield .zone-n { font-size: .7rem; }
+.modal:focus { outline: none; }
+.pregen { padding: 12px 4px 14px; border-top: 1px solid var(--line-soft); }
+.pregen:first-child { border-top: 0; }
+.pregen.is-used { opacity: .5; }
+.pregen-pick { margin-top: 10px; }
+.pregen-pick small { font-weight: 400; color: var(--ink-faint); }
