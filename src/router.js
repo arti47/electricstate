@@ -83,39 +83,6 @@ const SUBNAV = {
   rules: [["#/play", "Running a session"], ["#/rules", "Rules"], ["#/tutorial", "The app"]]
 };
 
-// A mark for every section, so the pill row reads at a glance.
-const SECTION_ICON = {
-  "#/home": "traveler", "#/session": "play", "#/solo": "star", "#/gm": "mask", "#/journey": "road",
-  "#/time": "clock", "#/tension": "link", "#/dice": "dice", "#/combat": "fight", "#/neuro": "helmet",
-  "#/hazards": "hazard", "#/driving": "car", "#/log": "book", "#/play": "play", "#/rules": "book", "#/tutorial": "info"
-};
-
-/**
- * Two lines: the screen's title, large, on a line of its own (the ⓘ sits at its end), and
- * under it every sibling as a pill with its mark, in a row that scrolls inside itself.
- * The title used to share a line with the pills, which clipped them and pushed a "More"
- * pill out of sight.
- */
-function subnav(route) {
-  const items = (SUBNAV[route.tab] || []).filter(([, , when]) => !when || when());
-  if (items.length < 2) return null;
-  const here = `#/${route.path}`;
-  const current = items.find(([h]) => h === here);
-  const nav = el("nav", { class: "subnav", "aria-label": "Section" });
-  for (const [href, label, , badge] of items) {
-    const mark = badge ? badge() : null;
-    nav.append(el("a", {
-      href, class: "subnav-item" + (href === here ? " is-here" : "") + (mark ? " is-live" : ""),
-      ...(href === here ? { "aria-current": "page" } : {})
-    }, icon(SECTION_ICON[href] || "chevron", { size: 16 }), label, mark ? el("span", { class: "subnav-badge" }, mark) : null));
-  }
-  const title = current
-    ? el("div", { class: "section-title", "aria-hidden": "true" }, current[1],
-        current[3]?.() ? el("span", { class: "subnav-badge" }, current[3]()) : null)
-    : null;
-  return el("div", { class: "section-head" }, title, nav);
-}
-
 function notYet(what, phase) {
   return el("div", {}, el("h1", {}, what),
     el("div", { class: "empty card" }, el("p", {}, `${what} arrives in ${phase}.`),
@@ -277,22 +244,42 @@ function decorate(screenEl, path) {
     e.classList.add("has-scene");
     e.prepend(sceneBand(EMPTY_SCENE[path] || "road"));
   }
-  const nav = screenEl.querySelector(":scope > .section-head .subnav-item.is-here");
+  // The screen's H1 is the header's title; on screen it would only say the same word twice.
   const h1 = screenEl.querySelector("h1");
-  if (h1) h1.classList.toggle("sr-only", !!nav);
+  if (h1) {
+    h1.classList.add("sr-only");
+    const title = $("#hdrTitle");
+    if (title && title.textContent !== h1.textContent) title.textContent = h1.textContent;
+  }
   const lead = screenEl.querySelector("details.explain");
   if (lead && !lead.classList.contains("is-lead")) {
     screenEl.querySelectorAll("details.explain.is-lead").forEach((d) => { if (d !== lead) d.classList.remove("is-lead"); });
     lead.classList.add("is-lead");
-    // The first time a screen is seen its note opens in place, once; after that it waits
-    // behind the ⓘ.
+    // Never opened by itself: a first visit used to open a paragraph over every screen,
+    // which is exactly the wall of words a new player meets first. The ⓘ glows instead,
+    // once, until it has been opened.
     const seen = seenIntros();
     if (!seen.includes(path)) {
-      lead.open = true;
-      lead.classList.add("is-intro");
-      try { localStorage.setItem(SEEN, JSON.stringify([...seen, path])); } catch { /* private mode */ }
+      lead.classList.add("is-new");
+      lead.addEventListener("toggle", () => {
+        if (!lead.open) return;
+        lead.classList.remove("is-new");
+        const now = seenIntros();
+        if (!now.includes(path)) try { localStorage.setItem(SEEN, JSON.stringify([...now, path])); } catch { /* private mode */ }
+      }, { once: true });
     }
   }
+}
+
+/** One header line: back to the road from any panel, and the panel's name. */
+function syncHeader(path) {
+  const hub = listCharacters().length ? "#/session" : "#/home";
+  const back = $("#hdrBack");
+  const atHub = `#/${path}` === hub || path === "session";
+  if (back) { back.hidden = atHub; back.setAttribute("href", hub); }
+  document.documentElement.toggleAttribute("data-hub", atHub);
+  const title = $("#hdrTitle");
+  if (title) title.textContent = "";
 }
 
 let observer = null;
@@ -367,19 +354,18 @@ export function render() {
   $("#settingsBtn")?.toggleAttribute("aria-current", route.path === "settings");
 
   if (route.gate && !route.gate()) {
-    screenEl.replaceChildren(...[subnav(route), gatedOff(route)].filter(Boolean));
+    screenEl.replaceChildren(gatedOff(route));
     watchScreen(screenEl, route.path);
     return;
   }
 
   if (path === "sheet" && param) { try { localStorage.setItem(LAST_SHEET, param); } catch { /* private mode */ } }
   if (path !== "sheet" && path !== "injury") clearVitals();
-  // The wizard and the sheet are places you go into, not siblings to flick between.
-  const chrome = ["create", "sheet", "injury"].includes(path) ? null : subnav(route);
-  screenEl.replaceChildren(...[chrome, route.render(param)].filter(Boolean));
+  // No section row: the dashboard is the hub, and every other screen is a panel with one
+  // header line — back to the road, its title, its ⓘ.
+  screenEl.replaceChildren(route.render(param));
+  syncHeader(route.path);
   watchScreen(screenEl, route.path);
-  // The section you are in may be scrolled out of its own nav; bring it into view.
-  screenEl.querySelector(".subnav-item.is-here")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   // Cards arrive one after another, 30ms apart. Opacity only — see the action bar rule.
   [...screenEl.querySelectorAll(".card")].slice(0, 12).forEach((c, k) => c.style.setProperty("--i", k));
   document.documentElement.dataset.route = route.path;

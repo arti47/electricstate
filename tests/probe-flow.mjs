@@ -12,7 +12,7 @@ import { serve, CHROMIUM, GAME_HELPERS, MID_SESSION, seedPage } from "./fixtures
 const REPORT_ONLY = process.argv.includes("--report");
 
 /**
- * Each journey is a list of taps from the home screen and one assertion about where it
+ * Each journey is a list of taps from the dashboard and one assertion about where it
  * lands. `budget` is the tap count the surface is allowed — raise it deliberately, never
  * by accident. Taps are Playwright selectors; `wait` is a settle after the tap.
  */
@@ -26,37 +26,37 @@ const JOURNEYS = [
   {
     name: "open a Traveler's sheet",
     budget: 1,
-    taps: ["#screen .list a"],
-    arrive: async (page) => /Attributes/.test(await page.textContent("#screen"))
+    taps: ["#screen .instrument >> nth=0"],
+    arrive: async (page) => /Strength/.test(await page.textContent("#screen"))
   },
   {
     name: "damage a Traveler",
     budget: 2,
-    taps: ["#screen .list a", '#screen button:has-text("Take damage")'],
+    taps: ["#screen .instrument >> nth=0", '#screen button:has-text("Take damage")'],
     arrive: async (page) => !!(await page.$(".modal"))
   },
   {
     name: "switch which Traveler the header is about",
     budget: 2,
-    taps: ["#screen .list a", "#vitals .vital-switch"],
+    taps: ['.tabbar [data-tab="dice"]', "#vitals .vital-switch"],
     arrive: async (page) => (await page.$$(".modal .list button")).length >= 2
   },
   {
     name: "end a Shift",
     budget: 2,
-    taps: ['#screen .subnav-item[href="#/time"]', '#screen .actionbar button:has-text("Shift")'],
+    taps: ['#screen .knob[href="#/time"]', '#screen .actionbar button:has-text("Shift")'],
     arrive: async (page) => !!(await page.$(".modal"))
   },
   {
     name: "start a fight",
-    budget: 3,
-    taps: ['.tabbar [data-tab="dice"]', '#screen .subnav-item[href="#/combat"]', '#screen button:has-text("Start combat")'],
+    budget: 2,
+    taps: ['#screen .lamp[href="#/combat"]', '#screen button:has-text("Start combat")'],
     arrive: async (page) => /Round 1/.test(await page.textContent("#screen"))
   },
   {
     name: "put a Threat in front of the party",
-    budget: 4,
-    taps: ['.tabbar [data-tab="dice"]', '#screen .subnav-item[href="#/combat"]',
+    budget: 3,
+    taps: ['#screen .lamp[href="#/combat"]',
            '#screen button:has-text("Start combat")', '#screen button:has-text("Add threat")'],
     arrive: async (page) => !!(await page.$(".modal"))
   },
@@ -68,14 +68,14 @@ const JOURNEYS = [
   },
   {
     name: "read the roll log",
-    budget: 2,
-    taps: ['.tabbar [data-tab="dice"]', '#screen .subnav-item[href="#/log"]'],
+    budget: 1,
+    taps: ['#screen .mirror'],
     arrive: async (page) => /Roll log|No rolls/.test(await page.textContent("#screen"))
   },
   {
     name: "draw the next solo card",
     budget: 2,
-    taps: ['#screen .subnav-item[href="#/solo"]', '#screen button:has-text("Draw a card")'],
+    taps: ['#screen .knob[href="#/solo"]', '#screen button:has-text("Draw a card")'],
     arrive: async (page) => !!(await page.$(".modal"))
   }
 ];
@@ -93,7 +93,8 @@ const rows = [];
 const failures = [];
 
 for (const journey of JOURNEYS) {
-  await seedPage(page, base, MID_SESSION, "home");
+  // Every journey starts where the app opens once anyone exists: the dashboard.
+  await seedPage(page, base, MID_SESSION, "session");
   const before = errors.length;
   let taps = 0;
   let broke = null;

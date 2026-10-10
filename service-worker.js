@@ -1,5 +1,5 @@
 // Network-first for the app shell so updates land fast; cache is the offline fallback.
-const CACHE_VERSION = "es-v80";
+const CACHE_VERSION = "es-v81";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.json", "./icon.svg",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png",

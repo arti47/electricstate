@@ -14,18 +14,18 @@ import { MINOR_ENCOUNTERS, TRAVELER_EVENTS, CONVERSATION_SUBJECTS, NPC_PERSONALI
          NPC_MOTIVE, NPC_METHOD } from "../data-solo.js";
 import { ROUTE_FEATURES } from "../data-journey.js";
 import { FIRST_NAMES, SURNAMES } from "../data-names.js";
-import { SHIFT_NAMES } from "../data.js";
+import { SHIFT_NAMES, FUEL } from "../data.js";
 import { listCharacters, getJourney, saveJourney, noteEvent, getRollLog } from "./store.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolveStop, listStops } from "./stops.js";
 import { currentStep } from "./play.js";
 import { Settings } from "./settings.js";
 import { getCombat } from "./combat.js";
 import { rollGender, splitPairedName, subj, Subj } from "./pronouns.js";
-import { showToast, explain, modal } from "./ui.js";
+import { showToast, explain, modal, diceRow } from "./ui.js";
 import { sceneBand } from "./scene.js";
-import { portrait, playingCard } from "./graphics.js";
-import { miniVitals } from "./sheet.js";
-import { routeCard } from "./wizard.js";
+import { portrait, playingCard, gauge, windshieldFrame, fuelDial } from "./graphics.js";
+import { maxHealth, maxHope, tracksBliss, isDronePilot } from "./derived.js";
+import { icon } from "./icons.js";
 
 /** Which picture each beat gets: the road at first light, a stop, trouble, nightfall. */
 const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop", scene: "stop",
@@ -389,41 +389,43 @@ function build(rerender) {
   reconcile();
   const state = director();
   const beat = beatFor(state);
-  const wrap = el("div", {}, el("h1", {}, "Play"));
-  wrap.append(explain("The app runs the session. Each screen is one thing happening and two or three things you can do about it. Press one and the next thing happens. Everything it does is written into the same Journey the other screens use, so you can take over by hand whenever you want."));
+  const j = getJourney();
+  const wrap = el("div", { class: "dash" }, el("h1", {}, "Play"));
+  wrap.append(explain("You are in the driver's seat. The road ahead tells you what is happening; press the lit button to see what happens next. Tap a gauge to open that Traveler. The lights on the dash open the tools for a fight, a hazard, the network or the wheel — a light glows when you need that tool."));
 
-  wrap.append(el("div", { class: "beat has-scene" },
+  // ------------------------------------------------------------- windshield
+  const lastRoll = getRollLog()[0];
+  const showCard = state.card && beat.id === "scene";
+  wrap.append(el("section", { class: `windshield shield-${SCENE_FOR[beat.id] || "road"}`, "aria-label": "The road ahead" },
     sceneBand(SCENE_FOR[beat.id] || "road"),
-    el("div", { class: "beat-heading" }, beat.heading),
-    el("p", { class: "beat-now" }, beat.now || "—"),
-    // The card solo play turned for this beat, face up beside what it means.
-    state.card && beat.id === "scene"
-      ? el("div", { class: "beat-card" }, playingCard(state.card, { flip: false }),
-          el("div", {}, el("p", {}, state.card.line),
-            el("p", { class: "faint" }, `${state.card.left} cards left${state.card.shuffled ? " — the deck was spent and has been reshuffled" : ""}.`)))
-      : null,
-    beat.you ? el("p", { class: "faint" }, beat.you) : null));
+    windshieldFrame(),
+    // The rear-view mirror shows the last roll; tapping it opens the whole log.
+    el("a", { class: "mirror", href: "#/log", "aria-label": "Roll log" },
+      lastRoll?.dice?.some((v) => v <= 6) ? diceRow({ base: lastRoll.dice.filter((v) => v <= 6).slice(0, 5) }, { mini: true }) : icon("book", { size: 16 })),
+    showCard ? el("div", { class: "shield-card", title: `${state.card.left} cards left` }, playingCard(state.card, { flip: false })) : null,
+    el("div", { class: "beat glass" },
+      el("div", { class: "beat-heading" }, beat.heading),
+      el("p", { class: "beat-now" }, beat.now || "—"),
+      showCard ? el("p", { class: "beat-card-line" }, state.card.line) : null)));
 
+  // ------------------------------------------------------------- the dash
   // Back from the dice with a result: the roll was the thing to do, so the next press is
   // whatever happens because of it — not the same Roll button again.
-  const lastRoll = getRollLog()[0];
   const rolled = lastRoll && state.at && lastRoll.ts > state.at;
   let choices = beat.choices;
   // Back from the fight the crisis sent you to: settling it is the next thing, not another fight.
-  const fought = state.at && (getJourney()?.fightEndedAt || 0) > state.at;
+  const fought = state.at && (j?.fightEndedAt || 0) > state.at;
   if (beat.id === "crisis" && fought) {
     choices = choices.map((c) => ({ ...c, primary: c.act === "resolve" }));
   }
+  let echo = null;
   if (!fought && rolled && choices.some((c) => c.primary && c.href === "#/dice") && choices.some((c) => c.act)) {
     const next = choices.find((c) => c.act === beat.after)
       || choices.find((c) => c.act && c.act !== "resolve" && c.act !== "leave") || choices.find((c) => c.act);
     choices = choices.map((c) => ({ ...c, primary: c === next }));
-    wrap.append(el("div", { class: "card roll-echo" },
-      el("strong", {}, lastRoll.label || "Roll"), " ",
-      el("span", { class: "faint" }, lastRoll.outcome || ""),
-      el("p", { class: "faint" }, "Say what that means for the scene, then press on.")));
+    echo = el("p", { class: "roll-echo" }, el("strong", {}, lastRoll.label || "Roll"), " ", lastRoll.outcome || "", " — say what it means, then press on.");
   }
-  const actions = el("div", { class: "btn-grid" });
+  const actions = el("div", { class: "btn-grid dash-choices" });
   for (const c of choices) {
     actions.append(c.href
       ? el("a", { class: "btn" + (c.primary ? " btn-primary" : ""), href: c.href }, c.label)
@@ -432,45 +434,78 @@ function build(rerender) {
           onclick: async () => { advance(c.act); if (c.act === "scene") await soloCard(); rerender(); }
         }, c.label));
   }
-  wrap.append(actions);
+  const dash = el("section", { class: "dashboard", "aria-label": "Dashboard" },
+    beat.you ? el("p", { class: "beat-you" }, beat.you) : null, echo, actions);
 
-  // Who is in the car and where the road has got to: the session sits on both, so both are
-  // here, and each opens its own screen.
+  // Instruments: one gauge per Traveler, then the fuel. Tapping a gauge opens the sheet.
   const cast = listCharacters();
-  if (cast.length && getJourney()) {
-    wrap.append(el("div", { class: "card party-bar" },
-      el("div", { class: "party-faces" }, ...cast.map((c) => el("a", { href: `#/sheet/${c.id}`, class: "party-face", title: c.name || "Unnamed", "aria-label": c.name || "Unnamed" },
-        portrait(c, { size: 44, frame: false }), miniVitals(c)))),
-      el("a", { class: "route-link", href: "#/journey", "aria-label": "The Journey" }, routeCard(getJourney()))));
-  }
-
-  if (state.log.length) {
-    const log = el("details", { class: "card phase-fold" },
-      el("summary", {}, `The session so far (${state.log.length})`));
-    for (const entry of state.log.slice(0, 15)) {
-      log.append(el("div", { class: "faint narr", style: "padding:6px 0;border-top:1px solid var(--line-soft)" }, entry.text));
+  if (cast.length) {
+    const cluster = el("div", { class: "cluster" });
+    for (const c of cast) {
+      const hMax = maxHealth(c), pMax = maxHope(c);
+      const health = c.state?.health ?? hMax, hope = c.state?.hope ?? pMax;
+      cluster.append(el("a", { class: "instrument" + (c.state?.dead ? " is-dead" : ""), href: `#/sheet/${c.id}`,
+        "aria-label": `${c.name || "Unnamed"}: ${isDronePilot(c) ? "Hull" : "Health"} ${health} of ${hMax}, Hope ${hope} of ${pMax}${tracksBliss(c) ? `, Bliss ${c.state?.bliss ?? 0}` : ""}` },
+        el("span", { class: "instrument-face" },
+          gauge({ health, hMax, hope, pMax, bliss: tracksBliss(c) ? (c.state?.bliss ?? 0) : null }),
+          portrait(c, { size: 40, frame: false })),
+        el("span", { class: "instrument-name" }, (c.name || "Unnamed").split(" ")[0])));
     }
-    log.append(el("button", {
-      class: "btn", style: "margin-top:8px",
-      onclick: async () => {
-        const ok = await modal({
-          title: "Start a fresh session?",
-          body: el("p", { class: "faint" }, "Clears what this screen remembers. Your Travelers, the Journey and the Stop all stay exactly as before."),
-          actions: [{ label: "Start fresh", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
-        });
-        if (ok) { resetDirector(); showToast("Ready when you are."); rerender(); }
-      }
-    }, "Start a fresh session"));
-    wrap.append(log);
+    if (j?.vehicle) {
+      cluster.append(el("a", { class: "instrument is-fuel", href: "#/journey", "aria-label": `Fuel ${j.fuel ?? 0} gallons` },
+        el("span", { class: "instrument-face" }, fuelDial(j.fuel ?? 0, FUEL.tankGallons)),
+        el("span", { class: "instrument-name" }, "Fuel")));
+    }
+    dash.append(cluster);
   }
 
-  // The tool screens are how you do one step yourself; Play is still where the story is.
-  const tools = Settings.playMode() === "gm" && Settings.gmScreen() ? ["#/gm", "Do it by hand: GM tools"]
-    : Settings.solo() ? ["#/solo", "Do it by hand: Solo tools"]
-    : Settings.gmScreen() ? ["#/gm", "Do it by hand: GM tools"] : null;
-  wrap.append(el("div", { class: "btn-grid" },
-    tools ? el("a", { class: "btn", href: tools[0] }, tools[1]) : null,
-    el("a", { class: "btn", href: "#/play" }, "How a session works"),
-    el("a", { class: "btn", href: "#/rules" }, "What the words mean")));
+  // Warning lights: always there, lit only when the situation calls for that tool.
+  const combat = getCombat();
+  const crisis = ["pressure", "crisis", "fighting"].includes(beat.id);
+  const helmetOn = cast.some((c) => c.state?.wearingCaster);
+  const hurtCar = j?.vehicle && ((j.hull ?? j.vehicle.hull) < j.vehicle.hull || j.chase || (j.maneuverability != null && j.maneuverability < j.vehicle.maneuverability));
+  const lamp = (href, mark, label, lit, badge = null) => el("a", {
+    class: "lamp" + (lit ? " is-lit" : ""), href, "aria-label": label + (lit ? " — needed now" : "")
+  }, icon(mark, { size: 20 }), el("span", {}, label), badge ? el("span", { class: "lamp-badge" }, badge) : null);
+  dash.append(el("div", { class: "lamps", role: "group", "aria-label": "Tools" },
+    lamp("#/combat", "fight", "Fight", !!combat?.active || crisis, combat?.active ? `R${combat.round}` : null),
+    lamp("#/hazards", "hazard", "Hazard", crisis && !combat?.active),
+    lamp("#/neuro", "helmet", "Network", helmetOn),
+    lamp("#/driving", "car", "Wheel", !!hurtCar)));
+
+  // The rest of the dash: the controls you reach for between scenes.
+  const radio = Settings.playMode() === "gm" && Settings.gmScreen() ? ["#/gm", "mask", "GM tools"]
+    : Settings.solo() ? ["#/solo", "radio", "Solo deck"]
+    : Settings.gmScreen() ? ["#/gm", "mask", "GM tools"] : null;
+  const knob = (href, mark, label) => el("a", { class: "knob", href }, icon(mark, { size: 22 }), el("span", {}, label));
+  const knobs = el("div", { class: "knobs" },
+    knob("#/journey", "road", "Map"),
+    knob("#/time", "clock", "Time"),
+    cast.length > 1 ? knob("#/tension", "link", "Tension") : knob("#/home", "traveler", "Party"),
+    radio ? knob(...radio) : knob("#/home", "traveler", "Party"));
+  // The story so far is the trip log in the glovebox: there when you want it, not in the way.
+  if (state.log.length) {
+    knobs.append(el("button", { class: "knob", type: "button", onclick: () => storySoFar(state, rerender) },
+      icon("book", { size: 22 }), el("span", {}, "Story")));
+  }
+  dash.append(knobs);
+  wrap.append(dash);
   return wrap;
+}
+
+/** The session's narration, newest first, with the way to start the evening over. */
+async function storySoFar(state, rerender) {
+  const body = el("div", { class: "story-log" },
+    ...state.log.slice(0, 30).map((entry) => el("p", { class: "narr" }, entry.text)));
+  const go = await modal({
+    title: "The story so far", body,
+    actions: [{ label: "Close", value: false, class: "btn-primary" }, { label: "Start a fresh session", value: "fresh" }]
+  });
+  if (go !== "fresh") return;
+  const ok = await modal({
+    title: "Start a fresh session?",
+    body: el("p", { class: "faint" }, "Clears what the road remembers of tonight. Your Travelers, the Journey and the Stop all stay exactly as before."),
+    actions: [{ label: "Start fresh", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+  });
+  if (ok) { resetDirector(); showToast("Ready when you are."); rerender(); }
 }

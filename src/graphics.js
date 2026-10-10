@@ -396,3 +396,43 @@ const DRIVE = {
 export function driveArt(kind, size = 44) {
   return html(`hazard-art dr-${kind}`, svg("0 0 64 64", DRIVE[kind] || "", `width="${size}" height="${size}"`), { "aria-hidden": "true" });
 }
+
+// ---------------------------------------------------------------- dash gauge
+/**
+ * One instrument per Traveler on the dashboard: Health on the outer arc, Hope on the inner,
+ * and Bliss as a teal needle on the Hope scale — when the needle reaches the end of the Hope
+ * that is left, the Traveler is lost in the Electric State. The portrait sits in the middle.
+ */
+export function gauge({ health, hMax, hope, pMax, bliss = null }) {
+  const a0 = -135, sweep = 270;
+  const at = (v, max) => a0 + sweep * Math.max(0, Math.min(1, max ? v / max : 0));
+  const track = (r) => `<path class="g-track" d="${arc(50, 50, r, a0, a0 + sweep)}"/>`;
+  const fill = (r, v, max, cls) => (v > 0 ? `<path class="${cls}" d="${arc(50, 50, r, a0, at(v, max))}"/>` : "");
+  let ticks = "";
+  for (let i = 0; i <= hMax; i++) {
+    const [x0, y0] = polar(50, 50, 49.5, at(i, hMax)), [x1, y1] = polar(50, 50, 46.5, at(i, hMax));
+    ticks += `<path class="g-tick" d="M${x0.toFixed(1)} ${y0.toFixed(1)} L${x1.toFixed(1)} ${y1.toFixed(1)}"/>`;
+  }
+  let needle = "";
+  if (bliss != null && pMax) {
+    const [x, y] = polar(50, 50, 40, at(Math.min(bliss, pMax), pMax));
+    const [x1, y1] = polar(50, 50, 32, at(Math.min(bliss, pMax), pMax));
+    needle = `<path class="g-bliss" d="M${x.toFixed(1)} ${y.toFixed(1)} L${x1.toFixed(1)} ${y1.toFixed(1)}"/>`;
+  }
+  const low = health === 0 ? " is-down" : hope === 0 ? " is-broken" : "";
+  return html(`gauge${low}`, svg("0 0 100 100",
+    track(43) + fill(43, health, hMax, "g-health") + ticks + track(36) + fill(36, hope, pMax, "g-hope") + needle),
+  { "aria-hidden": "true" });
+}
+
+/**
+ * The windshield's frame: the roof line, two A-pillars leaning in and the curve of the dash
+ * top. Drawn over the road, so the scene reads as seen from the driver's seat.
+ */
+export function windshieldFrame() {
+  return html("shield-frame", svg("0 0 400 300",
+    `<path class="sf-body" d="M0 0 H400 V300 H372 L338 34 Q200 22 62 34 L28 300 H0 Z"/>` +
+    `<path class="sf-edge" d="M28 300 L62 34 Q200 22 338 34 L372 300" fill="none"/>` +
+    `<path class="sf-dash" d="M0 300 Q200 262 400 300 V300 H0 Z"/>`,
+    'preserveAspectRatio="none"'), { "aria-hidden": "true" });
+}

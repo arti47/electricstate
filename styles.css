@@ -2028,3 +2028,296 @@ a.party-row.has-face > :first-child { grid-row: 1 / span 6; border-radius: 50%; 
 .rolled-list ol, .rolled-list ul { margin: 0 0 6px; padding-left: 20px; }
 .rolled-list li { margin: 2px 0; }
 .rolled-list p { margin: 0; }
+
+/* ======================================================================
+   Sixteenth pass — the dashboard. Play is the driver's seat: the road through the
+   windshield, the dash below it. Every other screen is a panel with one header line.
+   ====================================================================== */
+
+/* The cockpit is a physical thing and stays dark in either theme, the way a real dash
+   does at noon: these are the dark tokens, scoped. */
+.windshield, .dashboard {
+  --bg-raised: #1a1e23; --bg-hover: #222830; --bg-sunk: #0c0f12; --card: rgba(26, 30, 35, .985);
+  --ink: #ebe5d9; --ink-dim: #b9b2a6; --ink-faint: #9b958b;
+  --line: #2c333b; --line-soft: #222830; --line-strong: #414a54;
+  --accent: #d99654; --accent-hi: #ebae6f; --on-accent: #17120c; --accent-soft: rgba(217, 150, 84, .14);
+  --danger: #ea7a64; --danger-soft: rgba(234, 122, 100, .12); --neuro: #6fc3ce; --neuro-glow: rgba(111, 195, 206, .35);
+  --ok: #96bb85; --bone: #e9e2d4; --bone-ink: #15181b;
+  --dash: #15181c; --dash-hi: #1d2126;
+  color: var(--ink);
+}
+
+/* ---- one header line */
+.hdr-back[hidden] { display: none; }
+.hdr-back .icon { transform: rotate(180deg); }
+.hdr-title {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 700 1.2rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase;
+}
+.app-header { gap: 4px; padding-left: 6px; }
+.app-header:has(#hdrBack:not([hidden])) .brand { display: none; }
+html[data-route="session"] .brand, html[data-route="session"] .hdr-title { display: none; }
+html[data-route="session"] .hclock { margin-right: auto; }
+.screen h1:first-child, .screen > div > h1:first-child, .screen > div > div > h1:first-child { padding-right: 0; }
+
+/* The ⓘ lives in the header, beside the dice and settings, on every screen. */
+.explain.is-lead > summary {
+  position: fixed; z-index: 22;
+  top: calc(env(safe-area-inset-top) + 8px); right: 98px;
+  width: 40px; height: 40px;
+}
+.explain.is-lead.is-new > summary { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .explain.is-lead.is-new > summary { animation: info-glow 2.4s ease-in-out 3; }
+}
+@keyframes info-glow { 50% { box-shadow: 0 0 0 6px var(--accent-soft); } }
+
+/* ---- the windshield */
+html[data-route="session"] .topbar {
+  background: linear-gradient(180deg, rgba(5, 7, 10, .75), transparent);
+  border-bottom: 0; -webkit-backdrop-filter: none; backdrop-filter: none;
+  --ink: #ebe5d9; --ink-dim: #b9b2a6; --ink-faint: #b9b2a6; --accent: #d99654; --bg-hover: rgba(255, 255, 255, .08);
+  color: var(--ink);
+}
+html[data-route="session"] .topbar { position: fixed; left: 0; right: 0; }
+html[data-route="session"] .screen { padding-top: 0; }
+.windshield {
+  position: relative; overflow: hidden;
+  height: clamp(250px, 40dvh, 420px);
+  margin: 0 -16px;
+}
+.windshield .scene-band {
+  position: absolute; inset: 0; height: 100%; margin: 0; border: 0;
+}
+.shield-frame { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.shield-frame svg { width: 100%; height: 100%; display: block; }
+.sf-body { fill: #0b0d10; }
+.sf-edge { stroke: rgba(255, 255, 255, .07); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.sf-dash { fill: var(--dash); }
+
+/* The rear-view mirror: the last roll, and the way into the log. */
+.mirror {
+  position: absolute; z-index: 3; top: calc(env(safe-area-inset-top) + 56px); left: 50%;
+  transform: translateX(-50%);
+  min-width: 96px; height: 30px; padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #23272d, #121417); color: var(--ink-faint);
+  border: 1px solid #343b44; border-radius: 15px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .5);
+}
+.mirror::before {
+  content: ""; position: absolute; bottom: 100%; left: 50%; width: 3px; height: 60px;
+  margin-left: -1.5px; background: #0b0d10;
+}
+.mirror .dice { gap: 3px; }
+
+/* A card turned in solo play sits tucked in the corner of the glass. */
+.shield-card {
+  position: absolute; z-index: 3; top: calc(env(safe-area-inset-top) + 64px); right: 54px;
+  width: 52px; transform: rotate(7deg);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .5));
+}
+.shield-card svg { width: 100%; height: auto; }
+
+/* The story is written on the glass. */
+.beat.glass {
+  position: absolute; z-index: 3; left: 40px; right: 40px; bottom: 34px;
+  margin: 0; padding: 14px 4px 8px; border: 0; border-radius: 0; box-shadow: none;
+  background: none; overflow: visible;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 18px rgba(0, 0, 0, .8);
+}
+.beat.glass::before {
+  content: ""; position: absolute; inset: -40px -40px -34px; z-index: -1;
+  background: linear-gradient(180deg, transparent, rgba(4, 6, 9, .72) 48%);
+}
+.beat.glass .beat-heading { margin-bottom: 6px; font-size: .74rem; }
+.beat.glass .beat-now { font-size: 1.22rem; line-height: 1.4; margin: 0; color: #f6f1e7; }
+.beat-card-line { margin: 6px 0 0; font: italic 1rem/1.4 var(--serif); color: var(--accent-hi); }
+
+/* ---- the dash */
+.dashboard {
+  position: relative; margin: 0 -16px; padding: 4px 16px 18px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, var(--dash-hi), transparent 70%),
+    var(--dash);
+  min-height: 40dvh;
+}
+.dashboard::after {     /* stitching along the top of the dash */
+  content: ""; position: absolute; left: 16px; right: 16px; top: 0;
+  border-top: 1px dashed rgba(255, 255, 255, .07);
+}
+.beat-you { margin: 8px 0 10px; color: var(--ink-faint); font-size: .86rem; line-height: 1.4; }
+.roll-echo { margin: 6px 0 10px; color: var(--ink-dim); font-size: .9rem; }
+.roll-echo strong { color: var(--accent); }
+.dash-choices { margin-bottom: 18px; }
+.dash-choices .btn { min-height: 52px; }
+.dash-choices .btn-primary { min-height: 60px; font-size: 1.05rem; box-shadow: 0 0 24px -6px var(--accent); }
+
+/* Instruments: one gauge per Traveler. */
+.cluster {
+  display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  margin: 0 -6px 14px;
+}
+.instrument {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 86px; text-decoration: none; color: var(--ink-dim);
+}
+.instrument-face {
+  position: relative; width: 78px; height: 78px; display: grid; place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #20252b, #0d0f12 70%);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .8), 0 0 0 2px #2a3038, 0 0 0 3px #0a0c0e;
+}
+.instrument-face .gauge { position: absolute; inset: 0; }
+.instrument-face .gauge svg { width: 100%; height: 100%; }
+.instrument-face .portrait svg { width: 40px; height: 40px; }
+.instrument-name { font: 600 .78rem/1 var(--font-head); letter-spacing: .1em; text-transform: uppercase; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.instrument.is-dead { opacity: .4; filter: grayscale(1); }
+.instrument.is-fuel .dial svg { width: 64px; height: 64px; }
+.g-track { fill: none; stroke: #262b31; stroke-width: 5; stroke-linecap: round; }
+.g-health { fill: none; stroke: var(--bone); stroke-width: 5; stroke-linecap: round; }
+.g-hope { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--accent-soft)); }
+.g-tick { stroke: #0d0f12; stroke-width: 1.4; }
+.g-bliss { stroke: var(--neuro); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--neuro-glow)); }
+.gauge.is-down .g-health, .gauge.is-down .g-track:first-child { stroke: var(--danger); }
+@media (prefers-reduced-motion: no-preference) {
+  .gauge.is-down, .gauge.is-broken { animation: lamp-pulse 1.6s ease-in-out infinite; }
+}
+
+/* Warning lamps: always there, dark until the moment needs that tool. */
+.lamps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.lamp {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 2px 8px; min-height: 58px;
+  border-radius: 8px; text-decoration: none;
+  background: #0f1114; color: #4c535c;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8), 0 0 0 1px #22272d;
+  font: 600 .72rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
+}
+.lamp.is-lit { color: var(--accent); background: radial-gradient(circle at 50% 35%, rgba(217, 150, 84, .22), #0f1114 75%); }
+.lamp.is-lit .icon { filter: drop-shadow(0 0 6px var(--accent)); }
+.lamp[href="#/combat"].is-lit, .lamp[href="#/hazards"].is-lit { color: var(--danger); background: radial-gradient(circle at 50% 35%, rgba(234, 122, 100, .24), #0f1114 75%); }
+.lamp[href="#/combat"].is-lit .icon, .lamp[href="#/hazards"].is-lit .icon { filter: drop-shadow(0 0 6px var(--danger)); }
+.lamp[href="#/neuro"].is-lit { color: var(--neuro); background: radial-gradient(circle at 50% 35%, rgba(111, 195, 206, .2), #0f1114 75%); }
+.lamp[href="#/neuro"].is-lit .icon { filter: drop-shadow(0 0 6px var(--neuro)); }
+.lamp-badge {
+  position: absolute; top: 4px; right: 6px; font: 700 .7rem/1 var(--mono); color: var(--danger);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lamp.is-lit .icon { animation: lamp-pulse 2s ease-in-out infinite; }
+}
+@keyframes lamp-pulse { 50% { opacity: .55; } }
+
+/* Knobs: the controls you reach for between scenes. */
+.knobs { display: flex; justify-content: space-around; gap: 6px; flex-wrap: wrap; }
+.knob {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-width: 60px; padding: 0; border: 0; background: none; cursor: pointer;
+  color: var(--ink-dim); text-decoration: none;
+  font: 600 .74rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
+}
+.knob .icon {
+  width: 50px; height: 50px; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #2d333b, #14171b 70%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .08), 0 0 0 1px #0a0c0e;
+  color: var(--ink);
+}
+.knob:hover .icon, .knob:focus-visible .icon { color: var(--accent); }
+.story-log .narr { padding: 6px 0; border-top: 1px solid var(--line-soft); margin: 0; }
+
+/* The dash is the hub: on it the tab bar is the bezel under the controls. */
+html[data-route="session"] .tabbar { background: #0b0d10; border-top-color: #1d2126; }
+html[data-route="session"] body, html[data-route="session"] { background: var(--dash, #15181c); }
+html[data-route="session"] { --dash: #15181c; }
+
+@media (min-width: 768px) {
+  .windshield, .dashboard { margin: 0 -24px; }
+  .dashboard { padding-left: 24px; padding-right: 24px; }
+}
+html[data-route="session"] .strip { display: none; }    /* the Fight lamp carries the round */
+.cluster { flex-wrap: nowrap; }
+.cluster:has(> :nth-child(4)) .instrument { width: 70px; }
+.cluster:has(> :nth-child(4)) .instrument-face { width: 64px; height: 64px; }
+.cluster:has(> :nth-child(4)) .instrument-face .portrait svg { width: 32px; height: 32px; }
+.cluster:has(> :nth-child(4)) .instrument.is-fuel .dial svg { width: 52px; height: 52px; }
+.cluster:has(> :nth-child(6)) { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+html:not([data-route="session"]) .hclock { display: none; }
+
+/* ---- Time: a clock and a handful of chips */
+.clock-face { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 8px 0 18px; }
+.clock-face .dial svg { width: 112px; height: 112px; }
+.clock-face .clock-shift { font: 700 2rem/1 var(--font-head); letter-spacing: .04em; text-transform: uppercase; }
+.chip-set { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
+.chip-toggle {
+  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  min-height: 46px; padding: 0 16px; border-radius: 23px; cursor: pointer;
+  background: var(--bg-raised); border: 1px solid var(--line); color: var(--ink-dim);
+  font: 600 .92rem/1 var(--font-head); letter-spacing: .08em; text-transform: uppercase;
+}
+.chip-toggle input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip-toggle:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.chip-toggle:has(input:checked) .icon { color: var(--accent); }
+.chip-toggle:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.chip-more { margin: 0 0 14px; text-align: center; }
+.chip-more > summary { display: inline-flex; color: var(--ink-faint); min-height: 40px; align-items: center; font-size: .82rem; letter-spacing: .1em; cursor: pointer; }
+.chip-more[open] > summary { color: var(--accent); }
+
+/* ---- the sheet: stats you tap, tracks side by side, everything else in drawers */
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 12px; }
+.stat {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 4px 10px; min-height: 96px; cursor: pointer;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--hi), var(--shadow);
+}
+.stat:hover, .stat:focus-visible { border-color: var(--accent); }
+.stat:active { transform: translateY(1px); }
+.stat-label { font: 600 .7rem/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.stat-value { font: 700 2.2rem/1 var(--font-head); color: var(--ink); }
+.stat .attr-bar { width: 80%; }
+.vital-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; row-gap: 2px; padding: 10px 14px; }
+.vital-grid > .card-row { padding: 4px 0 !important; }
+.vital-grid .stepper-btn { width: 34px; }
+@media (max-width: 380px) { .vital-grid { grid-template-columns: 1fr; } }
+.drawer { padding: 0; }
+.drawer > summary {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; cursor: pointer;
+  list-style: none; text-transform: none; font-family: var(--font-body);
+}
+.drawer > summary::-webkit-details-marker { display: none; }
+.drawer > summary::after {
+  content: ""; width: 8px; height: 8px; margin-left: 4px; flex: none;
+  border-right: 2px solid var(--ink-faint); border-bottom: 2px solid var(--ink-faint);
+  transform: rotate(-45deg); transition: transform .15s var(--ease);
+}
+.drawer[open] > summary::after { transform: rotate(45deg); }
+.drawer > summary .icon { color: var(--accent); }
+.drawer-title { font: 600 1rem/1 var(--font-head); letter-spacing: .08em; text-transform: uppercase; flex: none; }
+.drawer-sub { flex: 1; min-width: 0; text-align: right; color: var(--ink-faint); font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drawer[open] > :not(summary) { margin-left: 16px; margin-right: 16px; }
+.drawer[open] > :last-child { margin-bottom: 16px; }
+.drawer[open] > summary { border-bottom: 1px solid var(--line-soft); margin-bottom: 12px; }
+.vital-grid { grid-template-columns: 1fr; }
+@media (min-width: 560px) { .vital-grid { grid-template-columns: 1fr 1fr; } }
+.drawer > summary::before { content: none !important; display: none; }
+.drawer-sub { font: 400 .85rem/1.2 var(--font-body); letter-spacing: 0; text-transform: none; }
+/* The sheet carries its own tracks; the bar would say the same thing twice. */
+html[data-route="sheet"] #vitals { display: none; }
+
+/* ---- dice: four attributes, talent chips, one fold for the rest */
+.chip-set.is-left { justify-content: flex-start; margin: 4px 0 12px; }
+.dice-more { margin: 4px 0 12px; }
+.dice-more > summary { color: var(--ink-faint); min-height: 44px; display: flex; align-items: center; font-size: .85rem; letter-spacing: .1em; cursor: pointer; }
+.dice-more[open] > summary { color: var(--accent); }
+.pool-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.pool-tags .tag { font: 500 .78rem/1 var(--mono); padding: 6px 8px; border-radius: 12px; background: var(--bg-raised); border: 1px solid var(--line); color: var(--ink-dim); text-transform: none; }
+.actionbar .btn { white-space: nowrap; }
+.cluster { margin: 0 0 14px; overflow-x: auto; scrollbar-width: none; justify-content: safe center; gap: 6px; }
+.cluster::-webkit-scrollbar { display: none; }
+.cluster .instrument { flex: 0 0 auto; }
+.app-header:has(#hdrBack[hidden]) .hdr-title { display: none; }
+@media (min-width: 1100px) {
+  .hdr-title { display: none; }
+  html[data-route="session"] .screen h1.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}

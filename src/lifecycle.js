@@ -2,13 +2,13 @@
 // The app owns the boundaries: each one fires a bundle, shows what it did, and can be undone once.
 import { el, d6, uid, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
-         ARCHETYPES, TALENTS, TENSION, FUEL, HAZARD_RULES } from "../data.js";
+         ARCHETYPES, TALENTS, TENSION, HAZARD_RULES } from "../data.js";
 import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, harm } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent, getSessionLog,
          clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
 import { activeStop, setActiveStop } from "./stops.js";
-import { shiftDial, fuelDial, portrait } from "./graphics.js";
+import { shiftDial, portrait } from "./graphics.js";
 import { icon } from "./icons.js";
 import { subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar, haptic, related } from "./ui.js";
@@ -276,44 +276,30 @@ function build(rerender) {
   const j = getJourney() || {};
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Time"));
-  wrap.append(explain('The app owns the clock. Say what the group did, then end a Stretch, Shift, Day or session — each fires its whole bundle of healing, hunger, sleep, fuel and Bliss decay, tells you exactly what changed, and can be undone once. Reducing Tension here is the main way Hope comes back.'));
-  wrap.append(el("p", { class: "faint" },
-    TIME_UNITS.map((u) => `${u.label} ${u.duration}`).join(" · ") + ` · ${SHIFTS_PER_DAY} Shifts a day`));
+  wrap.append(explain(`The app owns the clock. Tick what the group did, then end a Stretch, Shift or Day: healing, hunger, sleep, fuel and Bliss all happen at once, you see what changed, and you can undo it once. ${TIME_UNITS.map((u) => `${u.label}: ${u.duration}`).join(" · ")} · ${SHIFTS_PER_DAY} Shifts a day. Resting heals only if nobody is fighting or marching; a Nurse makes it 2 Health a Shift. Going without food means a Strength roll and no recovery. Out in the cold is a Strength roll each Shift (each Stretch if extreme) and no healing until warm. Bliss only fades on a day spent off-cast.`));
 
-  // The clock as a clock: four Shifts round a dial, sun or moon at the middle, and the
-  // fuel gauge beside it when there is a tank to read.
-  wrap.append(el("div", { class: "card dial-row" },
+  // The clock, large: four Shifts round a dial, sun or moon at its heart.
+  wrap.append(el("div", { class: "clock-face" },
     shiftDial(SHIFT_NAMES, j.shift || SHIFT_NAMES[0], j.day || 1),
     el("div", {},
-      el("div", { class: "card-row" },
-        el("strong", { class: "clock-shift" }, j.shift || SHIFT_NAMES[0]),
-        el("span", { class: "faint" }, `Day ${j.day || 1}`)),
-      j.vehicle ? el("div", { class: "card-row" },
-        el("span", { class: "faint" }, `Fuel ${j.fuel ?? 0} gallons`), fuelDial(j.fuel ?? 0, FUEL.tankGallons)) : null)));
+      el("strong", { class: "clock-shift" }, j.shift || SHIFT_NAMES[0]),
+      el("div", { class: "faint" }, `Day ${j.day || 1}${j.vehicle ? ` · ${j.fuel ?? 0} gal` : ""}`))));
 
   // The Night Shift is the one people sleep through: pre-ticked, so pressing Shift all day
   // does not quietly sleep-deprive everyone. Untick it for a night spent driving.
   const opts = { resting: true, slept: (j.shift || SHIFT_NAMES[0]) === "Night", fed: true, travelled: false, nurse: false, neurocastToday: false };
-  // Each thing that happened is a tile with its mark; the switch is still a real checkbox.
+  // Each thing that happened is a chip with its mark: tap to switch. Still a real checkbox.
   const OPTION_ICON = { resting: "bed", nurse: "med", slept: "moon", fed: "food", cold: "snow",
     extremeCold: "snow", travelled: "car", neurocastToday: "helmet" };
-  const optionRow = (label, key, blurb) => el("label", { class: "card-row toggle-tile" },
-    el("span", { class: "toggle-icon" }, icon(OPTION_ICON[key] || "info", { size: 20 })),
-    el("span", { class: "toggle-text" }, el("strong", {}, label), blurb ? el("div", { class: "faint" }, blurb) : null),
-    el("input", {
-      type: "checkbox", checked: opts[key],
-      onchange: (e) => { opts[key] = e.target.checked; }
-    }));
+  const chip = (label, key) => el("label", { class: "chip-toggle" },
+    el("input", { type: "checkbox", checked: opts[key], onchange: (e) => { opts[key] = e.target.checked; } }),
+    icon(OPTION_ICON[key] || "info", { size: 18 }), el("span", {}, label));
 
-  wrap.append(el("div", { class: "card" }, el("h3", {}, "What happened"), el("div", { class: "tile-grid" },
-    optionRow("Resting", "resting", "Health returns only if nobody is fighting or marching."),
-    optionRow("Under a Nurse's care", "nurse", "2 Health per Shift instead of 1."),
-    optionRow("Slept this Shift", "slept"),
-    optionRow("Ate and drank", "fed", "Going without means a Strength roll and no recovery at all."),
-    optionRow("Out in the cold", "cold", "No shelter or warm clothing: a Strength roll each Shift, and no healing until the Traveler is warm."),
-    optionRow("Extreme cold", "extremeCold", "Bites every Stretch instead of every Shift."),
-    optionRow("Travelled", "travelled", "Burns fuel."),
-    optionRow("Neurocast today", "neurocastToday", "Bliss only fades on a day spent off-cast."))));
+  wrap.append(el("div", { class: "chip-set", role: "group", "aria-label": "What happened" },
+    chip("Rested", "resting"), chip("Slept", "slept"), chip("Ate", "fed"), chip("Drove", "travelled")));
+  wrap.append(el("details", { class: "chip-more" }, el("summary", {}, "Cold, a Nurse, the network…"),
+    el("div", { class: "chip-set" },
+      chip("Nurse's care", "nurse"), chip("Cold", "cold"), chip("Extreme cold", "extremeCold"), chip("Neurocast today", "neurocastToday"))));
 
   wrap.append(el("details", { class: "explain" }, el("summary", {}, "Bigger boundaries"),
     el("p", { class: "faint" }, "End of session is the debrief where Travelers improve. A week is the interval mental trauma recovers on. Ending the Journey rolls each Traveler's epilogue and closes the campaign."),
@@ -327,7 +313,7 @@ function build(rerender) {
     const a = el("select", { "aria-label": "First Traveler" }, ...chars.map((c) => el("option", { value: c.id }, c.name)));
     const b = el("select", { "aria-label": "Second Traveler" }, ...chars.map((c, i) => el("option", { value: c.id, selected: i === 1 }, c.name)));
     wrap.append(el("div", { class: "card" }, el("h3", {}, "Talk it through"),
-      el("p", { class: "faint" }, "A Stretch with no immediate threat. Both sides drop a step of Tension and each regains a point of Hope — the only reliable way Hope comes back."),
+      el("p", { class: "faint" }, "A quiet Stretch: both drop a step of Tension and get a Hope back."),
       // The two people at the table, face to face, above the two pickers.
       talkPair(a, b, chars),
       related([["#/tension", "Tension", "link"]]),

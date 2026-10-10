@@ -647,3 +647,35 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   (found); a service picker pays from cash via `rules.service()`. The Journey vehicle card
   can **Fill up** (gasoline price, chosen payer) or **Pour in the jerrycan** — fuel used to
   only go down. Combat's realm switch needs the helmet on and links to Neuroscape.
+- **Sixteenth pass — the dashboard (radical UI rethink, rules untouched).** Diagnosis: five
+  chrome layers before content, a sentence on every card, a dice *form*, eight Time questions
+  per Shift, and an app organised by the book's subsystems. Decided with the user: **the app is
+  the car**.
+  - `#/session` is the cockpit: the **windshield** (the scene band, the Shift sky, an SVG frame
+    from `graphics.windshieldFrame()`, the beat written on the glass as `.beat.glass`, the solo
+    card tucked in the corner) and the **dash** under it (the lit choice, one `graphics.gauge()`
+    per Traveler — Health outer arc, Hope inner, Bliss a teal needle on the Hope scale — plus
+    fuel; four **warning lamps** Fight / Hazard / Network / Wheel that glow only when needed,
+    the Fight lamp carrying the round; and knobs Map / Time / Tension / Solo deck or GM tools /
+    Story). The **rear-view mirror** shows the last roll and opens the log. The cockpit keeps
+    dark tokens in both themes, scoped on `.windshield, .dashboard`.
+  - **No section pills.** `subnav()` is gone; the dashboard is the hub. Every other screen is a
+    panel with one header line: `#hdrBack` (to `#/session`, or `#/home` when nobody exists),
+    `#hdrTitle` (copied from the screen's H1, which is always `.sr-only`), the ⓘ (fixed in the
+    header), dice, settings. The theme toggle left the header (Settings has it). The desktop
+    rail still lists every section.
+  - `explain()` never opens by itself any more: a new screen's ⓘ glows (`.is-new`) until opened.
+  - **Sheet:** four big attribute tiles you **tap to roll** (`roller.rollAttr(id, attr)` opens
+    the tray on that attribute); Health/Hope/Bliss steppers in one compact grid (the vitals bar
+    hides on the sheet — it said the same thing); everything else in one-line **drawers**
+    (`drawer()` in sheet.js) showing what they hold, opening by themselves when they need you
+    (injuries at Health 0, the caster while worn). No jump bar.
+  - **Dice:** attributes, talent **chips** (`.chip-toggle`), a "Helmet on −N" chip, the weapon,
+    then one fold `.dice-more` for gear, helpers, modifiers, circumstances and opposed rolls
+    (opens by itself when any is in use). Pool extras show as tags; the base/gear paragraph is
+    in the ⓘ.
+  - **Time:** a big clock, four chips (Rested / Slept / Ate / Drove), a fold for Nurse / Cold /
+    Extreme cold / Neurocast today. The per-option blurbs live in the ⓘ.
+  - Tests follow the hub: `probe-flow` starts on the dashboard (fight 3→2 taps, Threat 4→3,
+    log 2→1); the browser smoke checks the lamps, the R badge, the header back/title, and picks
+    the theme in Settings.

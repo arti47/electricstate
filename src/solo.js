@@ -268,7 +268,7 @@ function build(rerender) {
   wrap.append(el("div", { class: "card toolbox-intro" },
     el("p", { class: "faint" }, steering
       ? `Play has the next step: ${setup.title}.`
-      : "Draw a card when you need an answer; Tilt when you only need to know whether it helps or hurts. Play does both for you if you would rather be walked through."),
+      : "Draw for an answer; Tilt for whether it helps or hurts."),
     el("a", { class: "btn" + (steering ? " btn-primary" : ""), href: "#/session" }, "Continue in Play")));
 
   // The deck on the table: how much is left, and the last card turned over with what it
@@ -302,7 +302,7 @@ function build(rerender) {
     const lead = cast.find((c) => c.id === leadId);
     const next = cast[(cast.findIndex((c) => c.id === leadId) + 1) % cast.length];
     wrap.append(phase("Whose Stop is this?",
-      "One Traveler leads each Stop and the others follow. Rotate, so every Traveler gets a Stop to lead.",
+      "One Traveler leads each Stop; it rotates to whoever has led fewest.",
       el("div", { class: "card-row" },
         el("strong", {}, lead?.name || "Unnamed"),
         el("span", { class: "faint" }, `${led[leadId] || 0} led so far`)),
@@ -310,7 +310,6 @@ function build(rerender) {
         cast.filter((c) => !led[c.id]).length
           ? `Still waiting for a Stop to lead: ${cast.filter((c) => !led[c.id]).map((c) => c.name).join(", ")}.`
           : "Everyone has led at least one Stop."),
-      el("div", { class: "faint" }, "Generating a Stop hands this on by itself, to whoever has led fewest."),
       row(
         act("Hand it to " + (next?.name || "the next one"), () => {
           write({ leadId: next.id, ledStops: { ...led, [next.id]: (led[next.id] || 0) + 1 } });

@@ -68,9 +68,8 @@ export function homeScreen() {
         el("button", { class: "mode-tile", onclick: go(null, "player") }, icon("chat", { size: 28 }),
           el("strong", {}, "With friends — someone else is the GM"),
           el("span", { class: "faint" }, "Make your one Traveler; this app is your character sheet and dice.")))));
-    wrap.append(el("div", { class: "empty card" },
-      el("p", {}, "No Travelers yet. The road is long and someone has to drive it."),
-      el("a", { class: "btn", href: "#/create" }, "Create a Traveler")));
+    // Three tiles already ask the question; this is only the shortcut for someone who knows.
+    wrap.append(el("a", { class: "btn btn-block", href: "#/create" }, "Just create a Traveler"));
   } else {
     const list = el("ul", { class: "list" });
     for (const c of chars) {

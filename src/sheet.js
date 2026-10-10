@@ -245,15 +245,29 @@ function build(ch, rerender) {
       : null);
 
   const wrap = el("div", {}, hero,
-    explain("Everything about this Traveler, and everything that happens. The bar at the top follows you around the app. Steppers are clamped to real maxima, injuries and traumas apply dice penalties to rolls automatically, and gear degrades as you push rolls with it."));
+    explain("This Traveler, all of it. Tap an attribute to roll it. Injuries and traumas cost dice on every roll automatically, and gear wears down as you push with it. Everything else is in the drawers below — each opens on its own."));
 
-  // --- vitals steppers
-  wrap.append(el("div", { class: "card" },
-    ...vitalSteppers(ch, patch),
-    statusNotes(ch, hMax, pMax, rerender)));
+  // --- the four attributes, as the things you roll. Tap one: the dice come out with it.
+  wrap.append(el("div", { class: "stat-row", id: "sec-attributes", role: "group", "aria-label": "Attributes — tap to roll" },
+    ...ATTRIBUTES.map((a) => {
+      const v = ch.attributes[a.id];
+      return el("button", {
+        class: "stat", "aria-label": `Roll ${a.label}, ${v}`,
+        onclick: async () => {
+          const [{ rollAttr }, { openTray }] = await Promise.all([import("./roller.js"), import("./router.js")]);
+          rollAttr(ch.id, a.id); openTray();
+        }
+      }, el("span", { class: "stat-label" }, a.label),
+        el("span", { class: "stat-value" }, v),
+        el("span", { class: "attr-bar", "aria-hidden": "true" }, ...Array.from({ length: 6 }, (_, i) => el("i", { class: i < v ? "on" : "" }))));
+    })));
 
-  // The things you reach for mid-scene, directly under the vitals rather than below
-  // eight cards of reference. Rally and the death roll appear only when they apply.
+  // --- the three tracks, side by side, clamped to their real limits
+  wrap.append(el("div", { class: "card vital-grid" }, ...vitalSteppers(ch, patch)));
+  const notes = statusNotes(ch, hMax, pMax, rerender);
+  if (notes) wrap.append(notes);
+
+  // The things you reach for mid-scene. Rally and the death roll appear only when they apply.
   // While a fight is running the sheet is a detour from it: the way back is the lit button.
   const fighting = getJourney()?.combat?.active;
   if (fighting) wrap.append(el("a", { class: "btn btn-primary btn-block", href: "#/combat", style: "margin-bottom:8px" }, "Back to the fight"));
@@ -272,35 +286,10 @@ function build(ch, rerender) {
       ? el("button", { class: "btn btn-danger", onclick: async () => { const { deathRollDialog } = await import("./roller.js"); await deathRollDialog(ch); rerender(); } }, "Death roll")
       : null));
 
-  // The sheet is five screens with a few injuries and a full pack, and the thing you
-  // want is rarely at the top. Jump straight to it.
-  wrap.append(el("nav", { class: "jumpbar", "aria-label": "Sheet sections" },
-    ...[["sec-attributes", "Attributes"], ["sec-talents", "Talents"], ["sec-conditions", "Conditions"],
-        ["sec-caster", "Neurocaster"], ["sec-gear", "Gear"], ["sec-tension", "Tension"]]
-      .map(([id, label]) => el("a", {
-        href: `#/sheet/${ch.id}`, "data-sec": id,
-        onclick: (e) => {
-          e.preventDefault();
-          document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
-        }
-      }, label))));
-
-  // --- attributes
-  const attrGrid = el("div", { class: "card", id: "sec-attributes" }, el("h3", {}, "Attributes"));
-  // Each attribute as six die-shaped slots, the rating lit: 2 is thin, 6 is everything.
-  for (const a of ATTRIBUTES) {
-    const v = ch.attributes[a.id];
-    attrGrid.append(el("div", { class: "card-row attr-row" },
-      el("span", {}, a.label),
-      el("span", { class: "attr-bar", role: "meter", "aria-label": a.label, "aria-valuemin": "0", "aria-valuemax": "6", "aria-valuenow": String(v) },
-        ...Array.from({ length: 6 }, (_, i) => el("i", { class: i < v ? "on" : "" }))),
-      el("span", { class: "mono", style: "font-size:1.1rem" }, v)));
-  }
-  wrap.append(attrGrid);
-
-  // --- talents
+  // --- drawers: one line each until opened. A drawer that needs you opens by itself.
+  const names = (ch.talents || []).map((id) => findTalent(id, ch)?.name).filter(Boolean);
   const talents = el("div", { class: "card", id: "sec-talents" }, el("h3", {}, "Talents"));
-  if (!ch.talents?.length) talents.append(el("p", { class: "faint" }, "None yet."));
+  if (!names.length) talents.append(el("p", { class: "faint" }, "None yet."));
   for (const id of ch.talents || []) {
     const t = findTalent(id, ch);
     if (!t) continue;
@@ -309,9 +298,8 @@ function build(ch, rerender) {
       el("span", { class: "talent-badge" + (t.effect?.bonus ? " is-dice" : "") }, icon(t.effect?.bonus ? "dice" : "book", { size: 18 })),
       el("div", {}, el("strong", {}, t.name), el("div", { class: "faint" }, describeTalent(t)))));
   }
-  wrap.append(talents);
+  wrap.append(drawer(talents, "star", "Talents", names.join(", ") || "None"));
 
-  // --- dream, flaw, goal, threat: written at creation, read often, edited rarely
   // A dossier: the four things that drive this Traveler, kept in a manila folder.
   wrap.append(el("details", { class: "card phase-fold dossier" },
     el("summary", {}, "Dream, Flaw, Goal and Threat"),
@@ -323,49 +311,41 @@ function build(ch, rerender) {
     ch.threatWords?.length ? el("p", { class: "faint" }, ch.threatWords.join(" · ")) : null,
     field("Kicker", ch.kicker, (v) => patch((c) => { c.kicker = v; }))));
 
-  // --- conditions
-  wrap.append(conditionsCard(ch, patch));
-
-  // --- neurocaster
-  wrap.append(neurocasterCard(ch, patch, rerender));
-
-  // --- inventory
-  wrap.append(inventoryCard(ch, patch, rerender));
-
-  // --- tension
-  wrap.append(tensionCard(ch));
+  const conds = ch.conditions || [];
+  wrap.append(drawer(conditionsCard(ch, patch), "heart", "Injuries & trauma",
+    conds.length ? conds.map((c) => c.name).join(", ") : "None", conds.length > 0 || ch.state.health === 0));
+  const model = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
+  if (model || !isDronePilot(ch)) {
+    wrap.append(drawer(neurocasterCard(ch, patch, rerender), "helmet", "Neurocaster",
+      model ? `${model.name}${ch.state.wearingCaster ? " · on" : ""}` : "None", !!ch.state.wearingCaster));
+  }
+  const items = ch.inventory?.items || [];
+  wrap.append(drawer(inventoryCard(ch, patch, rerender), "pack", "Gear",
+    isDronePilot(ch) ? "You are the machine" : `${items.length} item${items.length === 1 ? "" : "s"} · $${ch.inventory?.cash ?? 0}`));
+  const others = listCharacters().filter((c) => c.id !== ch.id);
+  if (others.length) {
+    wrap.append(drawer(tensionCard(ch), "link", "Tension",
+      others.map((o) => `${(o.name || "?").split(" ")[0]} ${ch.tension?.[o.id] ?? 0}`).join(" · ")));
+  }
 
   wrap.append(el("details", { class: "card phase-fold" },
     el("summary", {}, "Notes"),
     el("textarea", { rows: 4, "aria-label": "Notes", onchange: (e) => patch((c) => { c.notes = e.target.value; }) }, ch.notes || "")));
-
-  // Everything under the section bar flows into two columns on a tablet.
-  const bar = wrap.querySelector(".jumpbar");
-  const cols = el("div", { class: "sheet-cols" });
-  while (bar?.nextSibling) cols.append(bar.nextSibling);
-  if (bar) wrap.append(cols);
-  spySections(bar);
-
-
   return wrap;
 }
 
-/** The section bar marks whichever section is under it as you scroll. */
-function spySections(bar) {
-  if (!bar || !("IntersectionObserver" in window)) return;
-  requestAnimationFrame(() => {
-    const links = [...bar.querySelectorAll("a")];
-    const targets = links.map((a) => document.getElementById(a.dataset.sec)).filter(Boolean);
-    const io = new IntersectionObserver((entries) => {
-      if (!bar.isConnected) { io.disconnect(); return; }
-      const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-      if (!top) return;
-      links.forEach((a) => a.classList.toggle("is-here", a.dataset.sec === top.target.id));
-    }, { rootMargin: "-30% 0px -60% 0px" });
-    targets.forEach((t) => io.observe(t));
-  });
+/**
+ * A card folded to one line: its mark, its name, and what it holds. Opened by default only
+ * when what is inside needs attention now.
+ */
+function drawer(card, mark, title, sub, open = false) {
+  card.querySelector(":scope > h3")?.remove();
+  const d = el("details", { class: "card drawer", id: card.id || null },
+    el("summary", {}, icon(mark, { size: 20 }), el("span", { class: "drawer-title" }, title), el("span", { class: "drawer-sub" }, sub)));
+  d.append(...card.childNodes);
+  d.open = open;
+  return d;
 }
-
 /** A clamped stepper. At its floor or ceiling the button that cannot move is disabled,
  *  because a control that looks pressable and does nothing reads as a broken app. */
 function stepper(label, value, max, onChange, kind, min = 0, gauge = null) {

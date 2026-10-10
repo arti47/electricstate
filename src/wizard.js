@@ -2,7 +2,7 @@
 // Rolling is the default method (p.52); point-buy is offered as the book's stated alternative.
 import { tensionGraph, archetypeGlyph, routeStrip, fuelDial, vehicleArt, ringDial, portrait } from "./graphics.js";
 import { icon, gearIcon } from "./icons.js";
-import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, shuffle, onReset } from "./core.js";
+import { el, add, clamp, d6, d100, fromD100, rollNotation, uid, pick, shuffle, onReset } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL, ATTRIBUTE_MIN,
          ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
@@ -640,7 +640,7 @@ function buildJourney(rerender) {
           onclick: () => save({ destination: `${fromD100(JOURNEY_PLACES)} — ${fromD100(JOURNEY_PURPOSE)}` })
         }, "D100")),
       el("div", { class: "card-row", style: "margin-top:6px" },
-        el("span", { class: "faint" }, "The book's own D6: former home, new home, a remaining city, a battle site, a secret facility, a pilgrimage"),
+        el("span", { class: "faint" }, "Or the book's own D6"),
         el("button", {
           class: "btn", "aria-label": "Roll the book's destination table",
           onclick: () => save({ destination: SOLO_DESTINATIONS[d6() - 1] })
@@ -673,7 +673,7 @@ function buildJourney(rerender) {
   if (j.vehicle) {
     const v = j.vehicle;
     const fuel = j.fuel ?? Math.round(FUEL.tankGallons * FUEL.startingFraction);
-    vehicleCard.append(
+    add(vehicleCard,
       el("div", { class: "art-row" }, vehicleArt(v, { hull: j.hull ?? v.hull, max: v.hull }), fuelDial(fuel, FUEL.tankGallons)),
       el("div", { class: "card-row" }, el("strong", {}, v.label || v.name), el("span", { class: "faint mono" }, `Hull ${v.hull}`)),
       el("div", { class: "faint" }, `Passengers ${v.passengers ?? "—"} · Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability ?? "—"} · Speed ${v.speed} · Armor ${v.armor}`),

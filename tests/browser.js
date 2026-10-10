@@ -69,20 +69,16 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     }
   }
 
-  // section nav reaches the routes that hang off a tab, and marks where you are
-  await page.evaluate(() => { location.hash = "#/dice"; });
-  await page.waitForTimeout(80);
-  const diceNav = await page.evaluate(() => ({
-    items: [...document.querySelectorAll("#screen .subnav-item")].map((a) => a.getAttribute("href")),
-    here: document.querySelector("#screen .subnav-item.is-here")?.getAttribute("href")
-  }));
-  for (const href of ["#/combat", "#/neuro", "#/hazards", "#/driving", "#/log"]) {
-    check(diceNav.items.includes(href), `section nav does not reach ${href}`);
+  // The dashboard is the hub: its lamps, knobs and mirror reach every tool screen
+  await page.evaluate(() => { location.hash = "#/session"; });
+  await page.waitForTimeout(100);
+  const dashLinks = await page.evaluate(() => [...document.querySelectorAll("#screen .dashboard a, #screen .windshield a")].map((a) => a.getAttribute("href")));
+  for (const href of ["#/combat", "#/neuro", "#/hazards", "#/driving", "#/log", "#/time", "#/journey"]) {
+    check(dashLinks.includes(href), `the dashboard does not reach ${href}`);
   }
-  check(diceNav.here === "#/dice", `section nav marks ${diceNav.here} as current, expected #/dice`);
 
-  // A running fight is state you need from anywhere, so the nav says so
-  const noBadge = await page.evaluate(() => !document.querySelector("#screen .subnav-badge"));
+  // A running fight is state you need from anywhere, so the Fight lamp lights and says the round
+  const noBadge = await page.evaluate(() => !document.querySelector("#screen .lamp-badge"));
   check(noBadge, "combat badge shows with no fight running");
   await page.evaluate(() => {
     __game.edit((g) => {
@@ -90,19 +86,21 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
     });
   });
   await page.reload({ waitUntil: "networkidle" });
-  await page.evaluate(() => { location.hash = "#/dice"; });
+  await page.evaluate(() => { location.hash = "#/session"; });
   await page.waitForTimeout(100);
-  const badge = await page.textContent("#screen .subnav-badge").catch(() => null);
+  const badge = await page.textContent("#screen .lamp-badge").catch(() => null);
   check(badge === "R3", `combat badge showed "${badge}", expected R3`);
+  check(await page.evaluate(() => !!document.querySelector('#screen .lamp.is-lit[href="#/combat"]')), "the Fight lamp is not lit during a fight");
   await page.evaluate(() => { __game.edit((g) => { g.journey.combat = null; }); });
   await page.reload({ waitUntil: "networkidle" });
-  await page.click('#screen .subnav-item[href="#/combat"]');
+  await page.evaluate(() => { location.hash = "#/session"; });
+  await page.waitForTimeout(100);
+  await page.click('#screen .lamp[href="#/combat"]');
   await page.waitForTimeout(80);
-  check(await page.evaluate(() => location.hash) === "#/combat", "section nav did not navigate");
-  // the wizard is somewhere you go into, not a sibling to flick between
-  await page.evaluate(() => { location.hash = "#/create"; });
-  await page.waitForTimeout(80);
-  check(await page.evaluate(() => !document.querySelector("#screen .subnav")), "the wizard should not carry section nav");
+  check(await page.evaluate(() => location.hash) === "#/combat", "the Fight lamp did not navigate");
+  // every panel has one way back to the road, in the header
+  check(await page.evaluate(() => !document.getElementById("hdrBack").hidden), "a panel has no way back to the road");
+  check(await page.evaluate(() => document.getElementById("hdrTitle").textContent.trim().length > 0), "a panel's header carries no title");
 
   // rules page is an accordion, collapsed by default, and every panel carries an explainer
   await page.evaluate(() => { location.hash = "#/rules"; });
@@ -142,10 +140,13 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(found.entries > 0 && found.entries < 38, `rules search did not filter (got ${found.entries})`);
   check(found.open === found.entries, "search results should open automatically");
 
-  // theme toggle switches the document attribute
-  await page.click("#themeToggle");
+  // the theme lives in Settings now: choosing one sets the document attribute
+  await page.evaluate(() => { location.hash = "#/settings"; });
+  await page.waitForTimeout(80);
+  await page.selectOption('#screen select:has(option[value="light"])', "light");
+  await page.waitForTimeout(60);
   const themed = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
-  check(themed !== null, "theme toggle did not set data-theme");
+  check(themed === "light", "choosing a theme did not set data-theme");
 
   // walk the creation wizard end to end and assert the character persists
   await page.evaluate(() => { __game.reset(); location.hash = "#/create"; });
@@ -308,10 +309,10 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   await page.waitForTimeout(120);
   const withCaster = await page.textContent("#screen");
   check(/Neurocaster\s*[-−]2/.test(withCaster), "the worn neurocaster did not reach the pool");
-  const poolWith = Number((withCaster.match(/(\d+) base \+ \d+ gear/) || [])[1]);
+  const poolWith = Number((withCaster.match(/(\d+) base · \d+ gear/) || [])[1]);
   await page.click('#screen input[aria-label="Wearing the neurocaster"]');
   await page.waitForTimeout(120);
-  const poolWithout = Number(((await page.textContent("#screen")).match(/(\d+) base \+ \d+ gear/) || [])[1]);
+  const poolWithout = Number(((await page.textContent("#screen")).match(/(\d+) base · \d+ gear/) || [])[1]);
   check(poolWithout > poolWith, `untick did not restore dice (${poolWith} then ${poolWithout})`);
 
   await page.evaluate(() => { location.hash = "#/log"; });
@@ -458,7 +459,9 @@ for (const viewport of [{ width: 360, height: 740 }, { width: 390, height: 844 }
   check(/Roll up a Stop/.test(await page.textContent("#screen")), "enabling in place did not render the GM screen");
   // Solo and the GM screen are modes of Play now, not tabs: enabling one adds it to the
   // Play section's nav.
-  check(await page.evaluate(() => !!document.querySelector('#screen .subnav-item[href="#/gm"]')), "GM still missing from the Play section nav after enabling");
+  await page.evaluate(() => { location.hash = "#/session"; });
+  await page.waitForTimeout(100);
+  check(await page.evaluate(() => !!document.querySelector('#screen .knob[href="#/gm"]')), "GM tools missing from the dashboard after enabling");
   // With a Traveler in the game, the Play tab opens the session itself.
   check(await page.evaluate(() => document.querySelector('.tabbar [data-tab="home"]').getAttribute("href")) === "#/session",
     "the Play tab does not open the session once there is a Traveler");

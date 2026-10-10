@@ -11,6 +11,7 @@ import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
 import { Settings } from "./settings.js";
 import { showToast, modal, confirmModal, explain, diceRow, dieFace, haptic } from "./ui.js";
+import { icon } from "./icons.js";
 import { renderVitals } from "./sheet.js";
 import { successSeal, failureStatic, poolPreview } from "./graphics.js";
 import { refer, obj, poss, Subj } from "./pronouns.js";
@@ -163,7 +164,7 @@ export function diceScreen() {
 function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Dice"));
-  wrap.append(explain('Build a pool and roll it. Attribute dice plus any talent you tap, plus gear, plus whatever the situation is worth. One 6 succeeds; extra 6s add damage or a better outcome. Pushing re-rolls everything that is not a 1 or a 6, and the app charges the Hope and gear damage that follow.'));
+  wrap.append(explain('Pick an attribute and roll. One 6 succeeds; extra 6s add damage or a better outcome. Tap a talent to add its dice; weapons, gear and modifiers are under the fold. Base dice come from you, gear dice from what you hold — it matters when you push: a 1 left on a base die costs Hope, a 1 on a gear die wears the gear down.'));
 
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" },
@@ -215,18 +216,18 @@ function build(rerender) {
 
   // talents that could apply
   const talents = applicableTalents(ch, pending.attr);
+  // Talents that could apply are chips: tap one to add its dice. When it applies is on the chip.
   if (talents.length) {
-    wrap.append(el("div", { class: "card" }, el("h3", {}, "Talents"),
-      ...talents.map((t) => el("label", { class: "card-row" },
-        el("span", {}, el("strong", {}, t.name), el("div", { class: "faint" }, t.effect.when || "")),
+    wrap.append(el("div", { class: "chip-set is-left", role: "group", "aria-label": "Talents" },
+      ...talents.map((t) => el("label", { class: "chip-toggle", title: t.effect.when || "" },
         el("input", {
-          type: "checkbox",
+          type: "checkbox", "aria-label": `${t.name}${t.effect.when ? ` — ${t.effect.when}` : ""}`,
           checked: pending.talents.includes(t.id),
           onchange: (e) => {
             pending.talents = e.target.checked ? [...pending.talents, t.id] : pending.talents.filter((x) => x !== t.id);
             pending.result = null; rerender();
           }
-        })))));
+        }), icon("star", { size: 16 }), el("span", {}, `${t.name} +${t.effect.bonus || 0}`)))));
   }
 
   // Ids held from an earlier render can point at someone who has gone, or at yourself
@@ -294,20 +295,30 @@ function build(rerender) {
   }
   wrap.append(weaponCard);
 
+  // Everything else that can change a pool, folded: most rolls need none of it. It opens
+  // by itself when something in it is already in play.
+  const more = el("details", { class: "dice-more", ontoggle: (e) => { pending.moreOpen = e.target.open; } },
+    el("summary", {}, "Gear, helpers, modifiers…"));
+  more.open = !!(pending.moreOpen || pending.gear || pending.helpers || pending.modifier || pending.opposedId
+    || pending.driving || pending.gearItem != null);
+
   // circumstances that cost dice wherever you are: the helmet on your head, the wheel in your hands
   const casterPenalty = casterDicePenalty(ch);
   // Most things you do with a helmet on need eyes or legs, so it starts applied.
   if (casterPenalty && pending.casterOn === undefined) pending.casterOn = true;
   const circumstances = el("div", { class: "card" }, el("h3", {}, "Circumstances"));
+  // The helmet is on by default and costs dice on most things: a chip on the main screen,
+  // not a switch buried in the fold. Untick it for something you could do blind and still.
   if (casterPenalty) {
-    circumstances.append(toggleRow("Wearing the neurocaster",
-      "casterOn",
-      `${casterPenalty} dice on any real-world action needing mobility or vision. Untick it for something you could do blind and still.`,
-      rerender));
+    wrap.insertBefore(el("div", { class: "chip-set is-left" },
+      el("label", { class: "chip-toggle", title: "Needs mobility or vision? The helmet costs dice. Untick for something you could do blind and still." },
+        el("input", { type: "checkbox", "aria-label": "Wearing the neurocaster", checked: !!pending.casterOn,
+          onchange: (e) => { pending.casterOn = e.target.checked; pending.result = null; rerender(); } }),
+        icon("helmet", { size: 16 }), el("span", {}, `Helmet on ${casterPenalty}`))), wrap.querySelector(".dice-more") || null);
   }
   circumstances.append(toggleRow("Doing this while driving", "driving",
     `${STUNTS.otherActionsWhileDriving} dice for anything that is not maneuvering the vehicle.`, rerender));
-  wrap.append(circumstances);
+  more.append(circumstances);
 
   const casterMod = pending.casterOn && casterPenalty ? casterPenalty : 0;
   const drivingMod = pending.driving ? STUNTS.otherActionsWhileDriving : 0;
@@ -330,7 +341,7 @@ function build(rerender) {
     : linked ? { kind: "item", index: linkedIndex, name: linked.name } : null;
   const gearItems = items.map((it, i) => [it, i]).filter(([it]) => (it.bonus ?? 0) > 0 || it.maxBonus);
   if (gearItems.length && !onNetwork) {
-    wrap.append(el("div", { class: "field" }, el("label", {}, "Gear"),
+    more.append(el("div", { class: "field" }, el("label", {}, "Gear"),
       el("select", {
         "aria-label": "Gear",
         onchange: (e) => {
@@ -344,7 +355,7 @@ function build(rerender) {
   }
 
   // gear + modifier
-  wrap.append(el("div", { class: "card" },
+  more.append(el("div", { class: "card" },
     numberRow("Gear dice", pending.gear, (v) => { pending.gear = Math.max(0, v); pending.result = null; rerender(); }, { min: 0 }),
     numberRow("Helpers", pending.helpers || 0, (v) => { pending.helpers = clamp(v, 0, 3); pending.result = null; rerender(); }, { min: 0, max: 3 }),
     numberRow("Modifier", pending.modifier, (v) => { pending.modifier = v; pending.result = null; rerender(); })));
@@ -352,11 +363,12 @@ function build(rerender) {
   // opposed
   const others = chars.filter((c) => c.id !== ch.id);
   if (others.length) {
-    wrap.append(el("div", { class: "field" }, el("label", {}, "Opposed by another Traveler (adds Tension dice)"),
+    more.append(el("div", { class: "field" }, el("label", {}, "Opposed by another Traveler (adds Tension dice)"),
       el("select", { onchange: (e) => { pending.opposedId = e.target.value || null; pending.result = null; rerender(); } },
         el("option", { value: "" }, "No one"),
         ...others.map((c) => el("option", { value: c.id, selected: pending.opposedId === c.id }, c.name || "Unnamed")))));
   }
+  wrap.append(more);
 
   // pool preview
   const mods = conditionModifiers(ch, { attr: pending.attr });
@@ -374,21 +386,17 @@ function build(rerender) {
       + casterMod + drivingMod
   });
 
-  wrap.append(el("div", { class: "card" },
-    el("div", { class: "card-row" },
-      el("strong", {}, `${pool.base} base + ${pool.gear} gear`),
-      el("span", { class: "faint" }, `${pool.base + pool.gear} dice`)),
-    // "base" and "gear" are the whole push economy in two words, and nothing said which
-    // was which until you had already pushed and lost something.
-    el("div", { class: "faint" },
-      "Base dice come from you, gear dice from what you are holding. It only matters when you push: a 1 left on a base die costs Hope, a 1 on a gear die breaks the gear."),
-    mods.notes.length ? el("div", { class: "faint" }, "Conditions: " + mods.notes.join(", ")) : null,
-    tension ? el("div", { class: "faint" }, `Tension +${tension}`) : null,
-    rangeMod ? el("div", { class: "faint" }, `Range ${rangeMod}`) : null,
-    pending.helpers ? el("div", { class: "faint" }, `${pending.helpers} helping (+${pending.helpers}) — each helper spends a turn in combat`) : null,
-    ambushMod ? el("div", { class: "faint" }, `Ambush ${ambushMod}`) : null,
-    casterMod ? el("div", { class: "faint" }, `Neurocaster ${casterMod}`) : null,
-    drivingMod ? el("div", { class: "faint" }, `Driving ${drivingMod}`) : null));
+  // What is in the pool besides the attribute, as small tags — only the ones that apply.
+  const tags = [
+    ...mods.notes.map((n) => `${n}`),
+    tension ? `Tension +${tension}` : null,
+    rangeMod ? `Range ${rangeMod}` : null,
+    pending.helpers ? `${pending.helpers} helping +${pending.helpers}` : null,
+    ambushMod ? `Ambush ${ambushMod}` : null,
+    casterMod ? `Neurocaster ${casterMod}` : null,
+    drivingMod ? `Driving ${drivingMod}` : null
+  ].filter(Boolean);
+  if (tags.length) wrap.append(el("div", { class: "pool-tags" }, ...tags.map((t) => el("span", { class: "tag" }, t))));
 
   const legality = pushLegality(ch);
   if (pending.result) wrap.append(resultCard(ch, pool, legality, rerender));
@@ -401,7 +409,7 @@ function build(rerender) {
     poolPreview({ attr: ch.attributes[pending.attr], boost: talentDice + tension + Math.max(0, shift),
       penalty: Math.max(0, -shift), gear: pool.gear }),
     el("div", { class: "actionbar-inner" },
-      el("span", { class: "pool" }, `${pool.base + pool.gear}`,
+      el("span", { class: "pool" }, `${pool.base + pool.gear}`, " ",
         el("small", {}, `${pool.base} base · ${pool.gear} gear`)),
       // The same pool gets rolled three times running in a fight — say so, so the button
       // reads as a repeat rather than as something that might have kept the old result.
@@ -1263,6 +1271,13 @@ export async function repairDroneBody(ch, onDone) {
 export function rollFor(id) {
   if (pending?.charId === id) return;
   pending = { charId: id, attr: "strength", gear: 0, modifier: 0, talents: [], opposedId: null, result: null, weaponId: null };
+}
+
+/** Tapping an attribute on the sheet: that Traveler's pool, built on that attribute. */
+export function rollAttr(id, attr) {
+  rollFor(id);
+  pending.attr = attr;
+  pending.result = null;
 }
 
 /** Called from the combat tracker: pick a target, then send the player to the dice. */
