@@ -2173,7 +2173,8 @@ html[data-route="session"] .screen { padding-top: 0; }
 .instrument-face .portrait svg { width: 40px; height: 40px; }
 .instrument-name { font: 600 .78rem/1 var(--font-head); letter-spacing: .1em; text-transform: uppercase; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .instrument.is-dead { opacity: .4; filter: grayscale(1); }
-.instrument.is-fuel .dial svg { width: 64px; height: 64px; }
+.instrument.is-fuel .fuel { display: block; line-height: 0; margin-top: 8px; }
+.instrument.is-fuel .fuel svg { width: 60px; height: auto; display: block; }
 .g-track { fill: none; stroke: #262b31; stroke-width: 5; stroke-linecap: round; }
 .g-health { fill: none; stroke: var(--bone); stroke-width: 5; stroke-linecap: round; }
 .g-hope { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--accent-soft)); }
@@ -2239,7 +2240,7 @@ html[data-route="session"] .strip { display: none; }    /* the Fight lamp carrie
 .cluster:has(> :nth-child(4)) .instrument { width: 70px; }
 .cluster:has(> :nth-child(4)) .instrument-face { width: 64px; height: 64px; }
 .cluster:has(> :nth-child(4)) .instrument-face .portrait svg { width: 32px; height: 32px; }
-.cluster:has(> :nth-child(4)) .instrument.is-fuel .dial svg { width: 52px; height: 52px; }
+.cluster:has(> :nth-child(4)) .instrument.is-fuel .fuel svg { width: 50px; }
 .cluster:has(> :nth-child(6)) { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
 html:not([data-route="session"]) .hclock { display: none; }
 
