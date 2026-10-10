@@ -628,3 +628,22 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   attribute/gear/talent from it), `STOP_COUNTDOWN_UNASSIGNED` (the 61–66 re-roll),
   `ACTION_ECONOMY` (free actions in the combat note), `OPPOSED` (Tension in PvP).
   `state.disconnected` was written and never read — Hull 0 on a Drone Pilot already says it.
+- **Cross-tab rules pass.** Every loss of Health goes through `derived.harm(next, amount)`
+  ("hurt" / "down" / "restarted" / "killed" / "disconnected") and its UI follow-up
+  `roller.afterHarm()`: hazards, falls, disease, cold, hunger, a Threat's hit, a lost
+  fight-back and component damage now reach the same death rolls, instant kill and Drone
+  Pilot disconnection a gunshot did — before, they set Health to 0 and stopped. The damage
+  dialog starts in the victim's worn body armor (sheet) or a machine Threat's own armor.
+- **Vehicles follow p.104–108.** `j.maneuverability` (null = stock) and `j.componentHits`
+  beside `j.hull`; `inoperable(j)` at Hull 0 or Maneuverability 0 blocks stunts, rams and
+  chase rolls. `damageVehicle()` rolls vehicle armor as dice (it subtracted flat), triggers
+  component damage at ≥ half Hull and wrecks on the second; component results apply
+  (driver/passenger damage, spin, engine, fuel explosion). Accidents apply by name
+  (Blowout, Engine loss, Collision, Tumble, Sinking); Broach is a spin. Driving rolls use
+  Maneuverability as **gear** dice (chase rolled it as base) and can be pushed — base 1s
+  cost Hope, gear 1s wear Maneuverability. Repairs choose Hull or Maneuverability, and
+  tools / spare part default from what the group carries.
+- **Money and fuel connect.** Sheet gear has **Buy** (list price from cash) beside Add
+  (found); a service picker pays from cash via `rules.service()`. The Journey vehicle card
+  can **Fill up** (gasoline price, chosen payer) or **Pour in the jerrycan** — fuel used to
+  only go down. Combat's realm switch needs the helmet on and links to Neuroscape.

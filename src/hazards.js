@@ -1,14 +1,15 @@
 // Hazards and vehicle handling (Chapter 4). Everything here rolls the book's own dice
 // and applies the result, rather than leaving the player to work it out.
-import { el, rollDice, countSixes, clamp, d6, d66, fromRangeTable, onReset } from "./core.js";
+import { el, rollDice, countSixes, clamp, d6, d66, pick, fromRangeTable, onReset } from "./core.js";
 import { EXPLOSIVES, FIRES, DISEASES, FIRE_SPREAD_PER_ROUND, HAZARD_RULES } from "../data.js";
-import { ACCIDENTS, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, ACCIDENT_REROLL_MODIFIER, RAMMING } from "../data-vehicles.js";
+import { ACCIDENTS, COMPONENT_DAMAGE, CHASE, CHASE_OBSTACLES, ACCIDENT_REROLL_MODIFIER, RAMMING, STUNTS, VEHICLE_DAMAGE } from "../data-vehicles.js";
 import { GEAR, REPAIR } from "../data-tables.js";
-import { maxHealth } from "./derived.js";
+import { harm, maxHope, pushLegality } from "./derived.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll, getJourney, saveJourney } from "./store.js";
 import { showToast, modal, explain, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { forfeitNextTurn } from "./combat.js";
+import { afterHarm, soak, resolvePush } from "./roller.js";
 import { vehicleArt, hazardArt, driveArt } from "./graphics.js";
 
 // ------------------------------------------------------------------- hazards
@@ -141,8 +142,7 @@ async function applyHazard(ch, label, power, { dodgeable = false } = {}, onDone)
   }
 
   const next = structuredClone(ch);
-  const hMax = maxHealth(next);
-  next.state.health = clamp(next.state.health - final, 0, hMax);
+  const outcome = harm(next, final);
   // Throwing yourself clear costs the next turn, same as freezing does.
   if (dodge) { next.state.frozen = true; forfeitNextTurn(ch.id, "frozen"); }
   saveCharacter(next);
@@ -157,6 +157,7 @@ async function applyHazard(ch, label, power, { dodgeable = false } = {}, onDone)
       next.state.health === 0 ? el("p", { style: "color:var(--danger)" }, "Incapacitated.") : null),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
+  await afterHarm(next, outcome, final);
   onDone?.();
 }
 
@@ -176,7 +177,7 @@ async function applyFall(ch, metres, onDone) {
   }
 
   const next = structuredClone(ch);
-  next.state.health = clamp(next.state.health - final, 0, maxHealth(next));
+  const outcome = harm(next, final);
   saveCharacter(next);
   renderVitals(next);
   logRoll({ by: ch.name, label: "Falling", dice, outcome: `${final} damage from ${metres}m` });
@@ -185,6 +186,7 @@ async function applyFall(ch, metres, onDone) {
     body: el("p", { class: "mono faint" }, dice.join(" ") || `${metres}m ÷ 2`),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
+  await afterHarm(next, outcome, final);
   onDone?.();
 }
 
@@ -196,10 +198,11 @@ async function applyDisease(ch, virulence, onDone, nurse = null) {
   const damage = Math.max(0, their6 - my6);
 
   const next = structuredClone(ch);
+  let diseaseHarm = "hurt";
   if (my6 > their6) {
     next.conditions = (next.conditions || []).filter((c) => c.kind !== "disease");
   } else {
-    if (damage) next.state.health = clamp(next.state.health - damage, 0, maxHealth(next));
+    if (damage) diseaseHarm = harm(next, damage);
     if (!(next.conditions || []).some((c) => c.kind === "disease")) {
       next.conditions = [...(next.conditions || []), { id: `disease-${Date.now()}`, kind: "disease", name: `Disease (Virulence ${virulence})`, effects: [] }];
     }
@@ -215,6 +218,7 @@ async function applyDisease(ch, virulence, onDone, nurse = null) {
       my6 > their6 ? el("p", {}, "The sickness passes.") : el("p", {}, "Roll again tomorrow. You cannot heal while sick.")),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
+  await afterHarm(next, diseaseHarm, damage);
   onDone?.();
 }
 
@@ -250,12 +254,12 @@ function buildVehicle(rerender) {
     el("div", { class: "art-row" }, vehicleArt(v, { hull: j.hull ?? v.hull, max: v.hull }),
       el("div", { class: "card-row" }, el("strong", {}, v.label || v.name),
         el("span", { class: "mono faint" }, `Hull ${j.hull ?? v.hull}/${v.hull}`))),
-    el("div", { class: "faint" }, `Maneuverability ${v.maneuverability >= 0 ? "+" : ""}${v.maneuverability} · Speed ${v.speed} · Armor ${v.armor}`),
-    (j.hull ?? v.hull) <= 0 ? el("p", { style: "color:var(--danger)" }, "Wrecked — it needs repairs and a spare part before it moves again.") : null,
+    el("div", { class: "faint" }, `Maneuverability ${maneuverNow(j)}${maneuverNow(j) !== v.maneuverability ? ` of ${v.maneuverability}` : ""} · Speed ${v.speed} · Armor ${v.armor}${j.componentHits ? " · component damage taken" : ""}`),
+    inoperable(j) ? el("p", { style: "color:var(--danger)" }, `${inoperable(j)} — it needs repairs and a spare part before it moves again.`) : null,
     related([["#/journey", "Journey", "road"]])));
 
   const driver = el("select", { "aria-label": "Driver", onchange: (e) => { driveWho = e.target.value; } },
-    ...chars.map((c) => el("option", { value: c.id, selected: c.id === driveWho }, c.name || "Unnamed")));
+    ...chars.filter((c) => !c.state?.dead).map((c) => el("option", { value: c.id, selected: c.id === driveWho }, c.name || "Unnamed")));
   wrap.append(el("div", { class: "field" }, el("label", {}, "Driving"), driver));
 
   const terrain = el("select", { "aria-label": "Terrain" },
@@ -269,7 +273,7 @@ function buildVehicle(rerender) {
       el("div", { class: "field" }, terrain),
       el("div", { class: "btn-row" },
         el("button", { class: "btn btn-primary", onclick: () => stunt(getCharacter(driver.value), v, terrain.value, rerender) }, "Roll stunt"),
-        el("button", { class: "btn", onclick: () => accident(terrain.value, rerender) }, "Accident only"))),
+        el("button", { class: "btn", onclick: () => accident(terrain.value, rerender, 0, getCharacter(driver.value)) }, "Accident only"))),
     ramming: () => el("div", { class: "card" }, el("h3", {}, "Ramming"),
       el("p", { class: "faint" }, `Only at Engaged range. Roll Agility with Maneuverability as gear dice; a hit deals half your starting Hull (${Math.ceil(v.hull / 2)}), +1 per extra 6, and you take half the other vehicle's.`),
       el("div", { class: "btn-row" },
@@ -293,38 +297,157 @@ function buildVehicle(rerender) {
   return wrap;
 }
 
-async function stunt(ch, vehicle, terrain, onDone) {
-  if (!ch) { showToast("No driver selected."); return; }
-  const dice = rollDice(Math.max(1, ch.attributes.agility));
-  const gear = rollDice(Math.max(0, vehicle.maneuverability || 0));
-  const sixes = countSixes(dice) + countSixes(gear);
-  logRoll({ by: ch.name, label: "Stunt", dice: [...dice, ...gear], outcome: sixes ? "held it" : "accident" });
+// ------------------------------------------------------------- vehicle state
+/** Hull right now; the Journey only stores it once the vehicle has taken damage. */
+export const hullNow = (j) => j?.hull ?? j?.vehicle?.hull ?? 0;
+/** Maneuverability right now: a gear bonus, worn down by pushes and accidents (p.105). */
+export const maneuverNow = (j) => j?.maneuverability ?? j?.vehicle?.maneuverability ?? 0;
+/** Hull zero or Maneuverability zero leaves a vehicle inoperable (VEHICLE_DAMAGE). */
+export function inoperable(j) {
+  const v = j?.vehicle;
+  if (!v) return null;
+  if (hullNow(j) <= 0) return "Wrecked";
+  // A horse has no Maneuverability rating at all; only a rated one can fail.
+  if (v.maneuverability != null && v.maneuverability > 0 && maneuverNow(j) <= 0) return "Maneuverability zero";
+  return null;
+}
+const patchJourney = (fields) => saveJourney({ ...(getJourney() || {}), ...fields });
 
-  if (sixes) {
-    await modal({ title: "Held it", body: el("p", { class: "mono faint" }, [...dice, ...gear].join(" ")), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
+/**
+ * A driving roll: the driver's Agility plus the vehicle's Maneuverability as gear dice, and
+ * the one push every roll gets. Base 1s on the push cost Hope; gear 1s wear down the
+ * Maneuverability itself, as any gear bonus wears (p.105).
+ */
+async function driveRoll(ch, label) {
+  const j = getJourney() || {};
+  let base = rollDice(Math.max(1, ch.attributes[STUNTS.attr]));
+  let gear = rollDice(Math.max(0, maneuverNow(j)));
+  let pushed = false;
+  const sixes = () => countSixes(base) + countSixes(gear);
+  const legal = pushLegality(ch);
+  if (!sixes() && legal.may) {
+    const push = legal.must || await modal({
+      title: "No 6",
+      body: el("div", {}, el("p", { class: "mono faint" }, [...base, ...gear].join(" ")),
+        el("p", {}, "Push it? Everything but 1s and 6s rolls again. A 1 on an Agility die costs a Hope; a 1 on a Maneuverability die wears the vehicle down a point.")),
+      actions: [{ label: "Push", value: true, class: "btn-primary" }, { label: "Take it", value: false }]
+    });
+    if (push) {
+      const r = resolvePush({ base, gear });
+      base = r.base; gear = r.gear; pushed = true;
+      if (r.hopeLost) {
+        const next = structuredClone(getCharacter(ch.id));
+        next.state.hope = clamp((next.state.hope ?? 0) - r.hopeLost, 0, maxHope(next));
+        saveCharacter(next);
+        renderVitals(next);
+      }
+      if (r.gearDamage) patchJourney({ maneuverability: Math.max(0, maneuverNow(getJourney()) - r.gearDamage) });
+    }
+  }
+  const dice = [...base, ...gear];
+  logRoll({ by: ch.name, label: pushed ? `${label} (pushed)` : label, dice, outcome: sixes() ? `${sixes()} success${sixes() > 1 ? "es" : ""}` : "failed" });
+  return { dice, sixes: sixes(), pushed };
+}
+
+/** Refuse a manoeuvre the vehicle cannot make, saying why. */
+function canDrive(ch) {
+  if (!ch) { showToast("No driver selected."); return false; }
+  const why = inoperable(getJourney());
+  if (why) { showToast(`${why}: the vehicle needs repairs before it moves.`, "danger"); return false; }
+  return true;
+}
+
+/**
+ * Damage to the vehicle (p.105). Its Armor Level rolls dice like body armor, each 6
+ * stopping a point; Hull at zero is Wrecked; half the Hull or more in one hit is component
+ * damage, and a second component damage always wrecks it.
+ */
+export function damageVehicle(j, raw, { armor = true, supplied = null } = {}) {
+  const v = j.vehicle;
+  const soaked = armor && v.armor ? soak(raw, v.armor, supplied) : { damage: raw, stopped: 0, dice: [] };
+  let hull = Math.max(0, hullNow(j) - soaked.damage);
+  let componentHits = j.componentHits || 0;
+  const component = hull > 0 && soaked.damage >= Math.ceil(v.hull / 2);
+  if (component) {
+    componentHits += 1;
+    if (componentHits >= 2 && VEHICLE_DAMAGE.secondComponentDamageWrecks) hull = 0;
+  }
+  return { journey: { ...j, hull, componentHits }, ...soaked, raw, wrecked: hull === 0, component: component && hull > 0 };
+}
+
+async function hitVehicle(raw, { armor = true, driver = null, label = "Vehicle damage" } = {}) {
+  const j = getJourney() || {};
+  if (!j.vehicle || raw <= 0) return;
+  const r = damageVehicle(j, raw, { armor });
+  saveJourney(r.journey);
+  logRoll({ by: driver?.name, label, dice: r.dice, outcome: `${r.damage} to the vehicle${r.stopped ? `, ${r.stopped} stopped` : ""}${r.wrecked ? " — Wrecked" : ""}` });
+  await modal({
+    title: r.wrecked ? "Wrecked" : `${r.damage} damage to the vehicle`,
+    body: el("div", {},
+      r.dice.length ? el("p", { class: "mono faint" }, `Armor ${r.dice.join(" ")} — stopped ${r.stopped}`) : null,
+      el("p", {}, r.wrecked
+        ? "The Hull is gone. It needs repairs and a spare part before it moves again."
+        : `Hull ${r.journey.hull} of ${j.vehicle.hull}.${r.component ? " That is half its Hull in one hit: component damage." : ""}`)),
+    actions: [{ label: "Understood", value: true, class: r.wrecked ? "btn-danger" : "btn-primary" }]
+  });
+  if (r.component) await componentDamage(r.damage, driver);
+}
+
+/** Damage to the people in or on the vehicle, each rolling Agility to cut it (no action). */
+async function hitOccupants(amount, { agilityHelps = true } = {}) {
+  for (const ch of listCharacters().filter((c) => !c.state?.dead)) {
+    const dice = agilityHelps ? rollDice(Math.max(1, ch.attributes.agility)) : [];
+    const final = Math.max(0, amount - countSixes(dice));
+    const next = structuredClone(getCharacter(ch.id));
+    const outcome = harm(next, final);
+    saveCharacter(next);
+    renderVitals(next);
+    logRoll({ by: ch.name, label: "Thrown about", dice, outcome: `${final} damage` });
+    if (final) showToast(`${ch.name}: ${final} damage`, "danger");
+    await afterHarm(next, outcome, final);
+  }
+}
+
+async function stunt(ch, vehicle, terrain, onDone) {
+  if (!canDrive(ch)) return;
+  const r = await driveRoll(ch, "Stunt");
+  if (r.sixes) {
+    await modal({ title: "Held it", body: el("p", { class: "mono faint" }, r.dice.join(" ")), actions: [{ label: "Good", value: true, class: "btn-primary" }] });
     onDone?.();
     return;
   }
-  await modal({ title: "Lost control", body: el("p", {}, "No successes — roll on the accident table."), actions: [{ label: "Accident", value: true, class: "btn-danger" }] });
+  await modal({ title: "Lost control", body: el("div", {}, el("p", { class: "mono faint" }, r.dice.join(" ")), el("p", {}, "No successes — roll on the accident table.")), actions: [{ label: "Accident", value: true, class: "btn-danger" }] });
   await accident(terrain, onDone, 0, ch);
 }
+
+/** What each accident does to the vehicle and the people in it, by name (p.104). */
+const ACCIDENT_EFFECTS = {
+  Blowout: async () => patchJourney({ maneuverability: Math.max(0, maneuverNow(getJourney()) - 1) }),
+  "Engine loss": async () => patchJourney({ maneuverability: 0 }),
+  Collision: async (driver) => hitVehicle(getJourney().vehicle.speed, { driver, label: "Collision" }),
+  // Wrecked, and everyone aboard takes the Speed; Agility cuts it, vehicle armor does not.
+  Tumble: async () => { const s = getJourney().vehicle.speed; patchJourney({ hull: 0 }); await hitOccupants(s); },
+  Sinking: async () => { const s = getJourney().vehicle.speed; await hitOccupants(s); patchJourney({ hull: 0 }); }
+};
 
 async function accident(terrain, onDone, modifier = 0, driver = null) {
   const roll = Math.min(6, d6() + modifier);
   const table = ACCIDENTS[terrain] || ACCIDENTS.road;
   const entry = table.find((e) => e.d6 === roll) || table[table.length - 1];
-  logRoll({ label: `Accident (${terrain})`, dice: [roll], outcome: entry.name });
+  logRoll({ by: driver?.name, label: `Accident (${terrain})`, dice: [roll], outcome: entry.name });
 
   // A spin is not over: another Agility roll, and failing it rolls again at +2.
-  const spins = /^Spin/i.test(entry.name);
+  const spins = /^Spin|^Broach/i.test(entry.name);
+  const effect = ACCIDENT_EFFECTS[entry.name];
   const again = await modal({
     title: entry.name,
     body: el("div", {}, el("p", {}, entry.effect),
       modifier ? el("p", { class: "faint" }, `Rolled with +${modifier} from the previous result.`) : null),
     actions: spins
       ? [{ label: "Fight the wheel", value: true, class: "btn-primary" }, { label: "Leave it", value: false }]
-      : [{ label: "Understood", value: false, class: "btn-primary" }]
+      : [{ label: effect ? "Apply it" : "Understood", value: false, class: "btn-primary" }]
   });
+  if (effect) await effect(driver);
 
   if (spins && again) {
     const dice = rollDice(Math.max(1, driver?.attributes?.agility || 3));
@@ -343,123 +466,122 @@ async function accident(terrain, onDone, modifier = 0, driver = null) {
 
 /**
  * Hull damage lands from a dozen places — rams, collisions, potholes, gunfire — and the
- * only way back is the same Wits roll every other repair uses (p.108). A vehicle at zero
- * also needs a spare part before the roll means anything.
+ * way back is a Wits roll per Shift, stated as Hull or Maneuverability first (p.108). An
+ * inoperable vehicle also needs a spare part before the roll means anything.
  */
 function hullCard(j, v, chars, rerender) {
-  const hull = j.hull ?? v.hull;
   const amount = el("input", { type: "number", value: "1", min: "1", "aria-label": "Hull damage" });
-  const mechanics = chars.length
-    ? el("select", { "aria-label": "Who works on it" }, ...chars.map((c) => el("option", { value: c.id }, c.name || "Unnamed")))
+  const living = chars.filter((c) => !c.state?.dead);
+  const mechanics = living.length
+    ? el("select", { "aria-label": "Who works on it" }, ...living.map((c) => el("option", { value: c.id }, c.name || "Unnamed")))
     : null;
-  const tools = el("input", { type: "checkbox", checked: true,"aria-label": "Vehicle tools to hand" });
-  const part = el("input", { type: "checkbox","aria-label": "Spare part to hand" });
-
-  const setHull = (next) => {
-    const journey = getJourney() || {};
-    saveJourney({ ...journey, hull: clamp(next, 0, v.hull) });
-    rerender();
-  };
+  // What the group carries decides the defaults: tools and spare parts on any sheet.
+  const carried = (id) => chars.some((c) => (c.inventory?.items || []).some((i) => i.gearId === id));
+  const hasTools = carried("toolsVehicle") || carried("toolsGeneral");
+  const tools = el("input", { type: "checkbox", checked: hasTools, "aria-label": "Vehicle tools to hand" });
+  const part = el("input", { type: "checkbox", checked: carried("sparePart"), "aria-label": "Spare part to hand" });
+  const what = el("select", { "aria-label": "Repair what" },
+    el("option", { value: "hull" }, `Hull (${hullNow(j)}/${v.hull})`),
+    v.maneuverability > 0 ? el("option", { value: "maneuverability", selected: maneuverNow(j) < v.maneuverability && hullNow(j) >= v.hull }, `Maneuverability (${maneuverNow(j)}/${v.maneuverability})`) : null);
 
   return el("div", { class: "card" }, el("h3", {}, "Hull and repairs"),
     el("div", { class: "field" }, el("label", {}, "Damage it took"), amount),
     el("div", { class: "btn-row" },
       el("button", {
         class: "btn btn-danger",
-        onclick: () => {
-          const dealt = Math.max(1, Number(amount.value) || 1);
-          const soaked = Math.max(0, dealt - (v.armor || 0));
-          setHull(hull - soaked);
-          showToast(soaked < dealt ? `Armor stopped ${dealt - soaked}. Hull ${clamp(hull - soaked, 0, v.hull)}.` : `Hull ${clamp(hull - soaked, 0, v.hull)}.`);
-        }
+        onclick: async () => { await hitVehicle(Math.max(1, Number(amount.value) || 1), { label: "Vehicle hit" }); rerender(); }
       }, "Take the damage"),
-      el("button", { class: "btn", onclick: () => setHull(v.hull) }, "Back to full")),
+      el("button", { class: "btn", onclick: () => { patchJourney({ hull: v.hull, maneuverability: null, componentHits: 0 }); rerender(); } }, "Back to full")),
 
     el("div", { style: "margin-top:12px;border-top:1px solid var(--line-soft);padding-top:12px" },
-      el("p", { class: "faint" }, `A Shift of work and a Wits roll. Each 6 restores a point of Hull. ${REPAIR.vehicleAtZeroRequires === "sparePart" ? "A wrecked vehicle needs a spare part before any of it helps." : ""}`),
+      el("p", { class: "faint" }, `A Shift of work and a Wits roll. Each 6 restores a point of whichever you chose. ${REPAIR.vehicleAtZeroRequires === "sparePart" ? "An inoperable vehicle needs a spare part before any of it helps." : ""}`),
       mechanics ? el("div", { class: "field" }, el("label", {}, "Who works on it"), mechanics) : null,
-      el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
+      el("div", { class: "field" }, el("label", {}, "Repairing"), what),
+      el("label", { class: "card-row" },
         el("span", {}, "Vehicle tools to hand", el("div", { class: "faint" }, "The tool bonus becomes gear dice.")), tools),
-      el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit" },
-        el("span", {}, "Spare part to hand", el("div", { class: "faint" }, "Only needed once it is wrecked.")), part),
+      el("label", { class: "card-row" },
+        el("span", {}, "Spare part to hand", el("div", { class: "faint" }, "Only needed once it is inoperable.")), part),
       el("button", {
         class: "btn btn-block",
-        onclick: () => repairVehicle({
-          who: mechanics ? getCharacter(mechanics.value) : null,
-          vehicle: v, hull, tools: tools.checked, part: part.checked, setHull
-        })
-      }, "Work on it")));
+        onclick: async () => {
+          await repairVehicle({ who: mechanics ? getCharacter(mechanics.value) : null, what: what.value, tools: tools.checked, part: part.checked });
+          rerender();
+        }
+      }, "Work on it"),
+      related([["#/time", "A Shift passes", "clock"]])));
 }
 
-async function repairVehicle({ who, vehicle, hull, tools, part, setHull }) {
+async function repairVehicle({ who, what = "hull", tools, part }) {
+  const j = getJourney() || {};
+  const v = j.vehicle;
   if (!who) { showToast("Nobody here to do the work."); return; }
-  if (hull >= vehicle.hull) { showToast("Nothing to fix."); return; }
-  if (hull <= 0 && !part) { showToast("Wrecked: you need a spare part before the work means anything.", "danger"); return; }
+  const now = what === "hull" ? hullNow(j) : maneuverNow(j);
+  const max = what === "hull" ? v.hull : v.maneuverability;
+  if (now >= max) { showToast("Nothing to fix."); return; }
+  if (inoperable(j) && !part) { showToast("Inoperable: you need a spare part before the work means anything.", "danger"); return; }
 
   const mechanic = (who.talents || []).includes("mechanic") ? 2 : 0;
   // Reliable vehicles are the ones that let you put them back together.
-  const reliable = (vehicle.traits || []).some((t) => /reliable/i.test(t?.name || t || "")) ? 2 : 0;
-  const toolDice = tools ? (GEAR.find((g) => g.id === "toolsVehicle")?.bonus || 0) : 0;
+  const reliable = (v.traits || []).some((t) => /reliable/i.test(t?.name || t || "")) ? 2 : 0;
+  const best = (ids) => Math.max(0, ...ids.map((id) => GEAR.find((g) => g.id === id)?.bonus || 0));
+  const toolDice = tools ? best(["toolsVehicle", "toolsGeneral"]) : 0;
 
-  const dice = rollDice(Math.max(1, who.attributes.wits + mechanic));
+  const dice = rollDice(Math.max(1, who.attributes[REPAIR.attr] + mechanic));
   const gear = rollDice(Math.max(0, toolDice + reliable));
   const restored = countSixes(dice) + countSixes(gear);
-  logRoll({ by: who.name, label: "Repair the vehicle", dice: [...dice, ...gear], outcome: restored ? `+${restored} Hull` : "no progress" });
-  if (restored) setHull(hull + restored);
+  const label = what === "hull" ? "Hull" : "Maneuverability";
+  const after = Math.min(max, now + restored);
+  logRoll({ by: who.name, label: "Repair the vehicle", dice: [...dice, ...gear], outcome: restored ? `+${restored} ${label}` : "no progress" });
+  if (restored) {
+    // Back to full Hull, the component damage it carried is mended with it.
+    patchJourney(what === "hull" ? { hull: after, ...(after >= max ? { componentHits: 0 } : {}) } : { maneuverability: after });
+  }
 
   await modal({
-    title: restored ? `+${restored} Hull` : "No progress",
+    title: restored ? `+${restored} ${label}` : "No progress",
     body: el("div", {}, el("p", { class: "mono faint" }, [...dice, ...gear].join(" ")),
       el("p", {}, restored
-        ? `Hull is ${Math.min(vehicle.hull, hull + restored)} of ${vehicle.hull}. Another Shift buys another roll.`
+        ? `${label} is ${after} of ${max}. Another Shift buys another roll.`
         : "A Shift gone and nothing to show for it. Try again.")),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
 }
 
 async function ram(ch, vehicle, onDone) {
-  if (!ch) { showToast("No driver selected."); return; }
+  if (!canDrive(ch)) return;
   const targetHull = await promptHull();
   if (targetHull == null) return;
   // A ram is an attack: Agility plus Maneuverability as gear dice (RAMMING).
-  const dice = rollDice(Math.max(1, ch.attributes[RAMMING.attr]));
-  const gear = rollDice(Math.max(0, vehicle[RAMMING.gear] || 0));
-  const sixes = countSixes(dice) + countSixes(gear);
-  const all = [...dice, ...gear];
-  if (!sixes) {
-    logRoll({ by: ch.name, label: "Ramming", dice: all, outcome: "missed" });
+  const r = await driveRoll(ch, "Ramming");
+  if (!r.sixes) {
     await modal({
       title: "Missed",
-      body: el("div", {}, el("p", { class: "mono faint" }, all.join(" ")),
+      body: el("div", {}, el("p", { class: "mono faint" }, r.dice.join(" ")),
         el("p", {}, "No successes — the ram does not connect.")),
       actions: [{ label: "Understood", value: true, class: "btn-primary" }]
     });
     onDone?.();
     return;
   }
-  const dealt = Math.ceil(vehicle.hull / 2) + (sixes - 1);
+  const dealt = Math.ceil(vehicle.hull / 2) + (r.sixes - 1);
   const taken = Math.ceil(targetHull / 2);
-  const soaked = RAMMING.armorApplies ? (vehicle.armor || 0) : 0;
-  const j = getJourney() || {};
-  const hull = Math.max(0, (j.hull ?? vehicle.hull) - Math.max(0, taken - soaked));
-  saveJourney({ ...j, hull });
-  logRoll({ by: ch.name, label: "Ramming", dice: all, outcome: `dealt ${dealt}, took ${taken}` });
   await modal({
-    title: `Dealt ${dealt}, took ${taken}`,
+    title: `Rammed for ${dealt}`,
     body: el("div", {},
-      el("p", { class: "mono faint" }, all.join(" ")),
-      el("p", {}, `The target may still stand tall or dodge. Your armor stops ${soaked} of it. Hull is now ${hull}.`),
+      el("p", { class: "mono faint" }, r.dice.join(" ")),
+      el("p", {}, `The target takes ${dealt} damage — it may still stand tall or dodge. Your vehicle takes ${taken} back.`),
       RAMMING.movementEndsAfter ? el("p", { class: "faint" }, "Your movement ends immediately.") : null),
-    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    actions: [{ label: `Take the ${taken}`, value: true, class: "btn-primary" }]
   });
+  await hitVehicle(taken, { armor: RAMMING.armorApplies, driver: ch, label: "Rammed back" });
   onDone?.();
 }
 
 async function promptHull() {
-  const input = el("input", { type: "number", value: "6", min: "1", "aria-label": "Target Hull" });
+  const input = el("input", { type: "number", value: "6", min: "0", "aria-label": "Target Hull" });
   const ok = await modal({
     title: "Ram what?",
-    body: el("div", { class: "field" }, el("label", {}, "The other vehicle's Hull"), input),
+    body: el("div", { class: "field" }, el("label", {}, "The other vehicle's Hull — 0 for a person"), input),
     actions: [{ label: "Ram", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
   });
   return ok ? Number(input.value) || 0 : null;
@@ -499,8 +621,7 @@ function chaseCard(j, v, chars, driver, rerender) {
           class: "btn btn-primary",
           onclick: () => write({ role: role.value, theirDice: Math.max(1, Number(theirs.value) || 4), bandIndex: 3, round: 1 })
         }, "Start the chase"),
-        el("button", { class: "btn", onclick: () => obstacle(rerender) }, "Roll an obstacle"),
-        el("button", { class: "btn", onclick: () => componentDamage(rerender) }, "Component damage")));
+        el("button", { class: "btn", onclick: () => obstacle(rerender) }, "Roll an obstacle")));
     return card;
   }
 
@@ -518,18 +639,20 @@ function chaseCard(j, v, chars, driver, rerender) {
       onclick: () => chaseRound(getCharacter(driver.value), v, chase, write)
     }, "Drive"),
     el("button", { class: "btn", onclick: () => obstacle(rerender) }, "Roll an obstacle"),
-    el("button", { class: "btn", onclick: () => componentDamage(rerender) }, "Component damage"),
     el("button", { class: "btn btn-danger", onclick: () => write(null) }, "Call it off")));
   return card;
 }
 
 async function chaseRound(ch, vehicle, chase, write) {
-  if (!ch) { showToast("No driver selected."); return; }
-  const mine = rollDice(Math.max(1, ch.attributes.agility + Math.max(0, vehicle.maneuverability || 0)));
+  if (!canDrive(ch)) return;
+  // Agility with Maneuverability as gear dice, pushable like any roll (CHASE.movement).
+  const r = await driveRoll(ch, "Chase");
+  const mine = r.dice;
+  // The other driver is not a Traveler, and NPCs never push.
   const theirs = rollDice(chase.theirDice);
-  const step = chaseStep(chase.bandIndex, countSixes(mine), countSixes(theirs), chase.role === "prey");
+  const step = chaseStep(chase.bandIndex, r.sixes, countSixes(theirs), chase.role === "prey");
 
-  logRoll({ by: ch.name, label: "Chase", dice: [...mine, ...theirs],
+  logRoll({ label: "Chase — the other driver", dice: theirs,
     outcome: step.escaped ? "broke away" : `${CHASE_BANDS[step.bandIndex]}` });
 
   if (step.escaped) {
@@ -553,7 +676,7 @@ async function chaseRound(ch, vehicle, chase, write) {
       CHASE_BANDS[step.bandIndex] === "engaged"
         ? el("p", { class: "faint" }, "Engaged: the pursuer can ram now, or attack in close combat.")
         : null,
-      el("p", { class: "faint" }, "Both sides may push a chase roll — a 1 on a base die still costs Hope.")),
+      r.pushed ? el("p", { class: "faint" }, "Pushed — any 1s have been charged.") : null),
     actions: [{ label: "Understood", value: true, class: "btn-primary" }]
   });
 }
@@ -571,14 +694,46 @@ async function obstacle(onDone) {
   onDone?.();
 }
 
-async function componentDamage(onDone) {
-  const roll = d6();
-  const entry = COMPONENT_DAMAGE.find((c) => c.d6 === roll);
-  logRoll({ label: "Component damage", dice: [roll], outcome: entry.name });
+/**
+ * Component damage (p.105): a D6, each result doing what it says to the vehicle or the
+ * people in it. Results that name something the group does not have are re-rolled.
+ */
+async function componentDamage(dealt, driver = null) {
+  const living = listCharacters().filter((c) => !c.state?.dead);
+  const passengers = living.filter((c) => c.id !== driver?.id);
+  const mounted = (getJourney()?.vehicle?.weapons || []).length > 0;
+  let entry;
+  do { entry = COMPONENT_DAMAGE.find((c) => c.d6 === d6()); }
+  while ((entry.d6 === 2 && !passengers.length) || (entry.d6 === 4 && !mounted) || (entry.d6 === 1 && !driver));
+  logRoll({ by: driver?.name, label: "Component damage", dice: [entry.d6], outcome: entry.name });
+
   await modal({
     title: entry.name,
     body: el("p", {}, entry.effect),
-    actions: [{ label: "Understood", value: true, class: "btn-primary" }]
+    actions: [{ label: "Apply it", value: true, class: "btn-danger" }]
   });
-  onDone?.();
+
+  const hurt = async (who) => {
+    const next = structuredClone(getCharacter(who.id));
+    const outcome = harm(next, dealt);
+    saveCharacter(next);
+    renderVitals(next);
+    showToast(`${who.name}: ${dealt} damage`, "danger");
+    await afterHarm(next, outcome, dealt);
+  };
+  switch (entry.d6) {
+    case 1: await hurt(driver); break;
+    case 2: await hurt(pick(passengers)); break;
+    case 3: {
+      const dice = rollDice(Math.max(1, driver?.attributes?.agility || 3));
+      const held = countSixes(dice) > 0;
+      logRoll({ by: driver?.name, label: "Severe spin", dice, outcome: held ? "held it" : "Wrecked" });
+      if (!held) patchJourney({ hull: 0 });
+      await modal({ title: held ? "Held it" : "Wrecked", body: el("p", { class: "mono faint" }, dice.join(" ")), actions: [{ label: "Understood", value: true, class: "btn-primary" }] });
+      break;
+    }
+    case 5: patchJourney({ maneuverability: 0 }); break;
+    case 6: patchJourney({ hull: 0 }); break;
+    default: break;
+  }
 }

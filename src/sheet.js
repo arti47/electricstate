@@ -1,11 +1,11 @@
 // The live character sheet and the persistent vitals header (Phase 2).
 import { $, el, clamp, die } from "./core.js";
 import { ATTRIBUTES, ARCHETYPES, NEUROCASTERS, TENSION } from "../data.js";
-import { GEAR, SURGERY } from "../data-tables.js";
+import { GEAR, SURGERY, SERVICES } from "../data-tables.js";
 import { BODY_ARMOR } from "../data.js";
 import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./derived.js";
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney } from "./store.js";
-import { talent as findTalent, rule } from "./rules.js";
+import { talent as findTalent, rule, service } from "./rules.js";
 import { describeTalent } from "./wizard.js";
 import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic, related } from "./ui.js";
 import { undoLast } from "./store.js";
@@ -617,25 +617,32 @@ function inventoryCard(ch, patch, rerender) {
     el("label", {}, "Worn armor"), armorSelect,
     worn ? el("p", { class: "faint" }, `Every Agility roll takes ${worn.agility} dice while you wear it.`) : null));
 
+  // Found gear is free; bought gear comes out of the cash on this sheet, at the list price.
+  const addGear = (buy) => {
+    const g = GEAR.find((x) => x.id === pick.value);
+    if (!g) { showToast("Choose an item first."); return; }
+    const price = g.price || 0;
+    if (buy && (ch.inventory?.cash ?? 0) < price) { showToast(`Not enough money — $${price} is needed.`, "danger"); return; }
+    patch((c) => {
+      c.inventory.items.push({
+        name: g.name, bonus: g.bonus || null, maxBonus: g.bonus || null,
+        uses: g.uses ?? null, gearId: g.id,
+        // Carried through, or the Hope-from-an-item rule has nothing to read.
+        hope: g.hope || null, alcohol: !!g.alcohol
+      });
+      if (buy) c.inventory.cash = (c.inventory.cash || 0) - price;
+    });
+    if (buy && price) showToast(`Bought ${g.name} for $${price}.`);
+  };
   const pick = el("select", { "aria-label": "Add gear" },
     el("option", { value: "" }, "Add from the gear list…"),
     ...GEAR.map((g) => el("option", { value: g.id }, `${g.name}${g.price ? ` — $${g.price}` : ""}`)));
   card.append(el("div", { class: "field", style: "margin-top:12px" }, pick),
     el("div", { class: "btn-row" },
       el("button", {
-        class: "btn", onclick: () => {
-          const g = GEAR.find((x) => x.id === pick.value);
-          if (!g) return;
-          patch((c) => {
-            c.inventory.items.push({
-              name: g.name, bonus: g.bonus || null, maxBonus: g.bonus || null,
-              uses: g.uses ?? null, gearId: g.id,
-              // Carried through, or the Hope-from-an-item rule has nothing to read.
-              hope: g.hope || null, alcohol: !!g.alcohol
-            });
-          });
-        }
+        class: "btn", onclick: () => addGear(false)
       }, "Add"),
+      usesCash(ch) ? el("button", { class: "btn", onclick: () => addGear(true) }, "Buy") : null,
       el("button", {
         class: "btn", onclick: async () => {
           const v = await promptModal("Adjust cash", { label: "Dollars (use a minus sign to spend)", value: "" });
@@ -645,6 +652,27 @@ function inventoryCard(ch, patch, rerender) {
           patch((c) => { c.inventory.cash = Math.max(0, (c.inventory.cash || 0) + delta); });
         }
       }, `Cash $${ch.inventory?.cash ?? 0}`)));
+
+  // The book's price list for things you pay for rather than carry (surgery has its own button).
+  if (usesCash(ch)) {
+    const svc = el("select", { "aria-label": "Pay for a service" },
+      el("option", { value: "" }, "Pay for a service…"),
+      ...SERVICES.filter((x) => x.use !== "surgeryForCash").map((x) =>
+        el("option", { value: x.id }, `${x.name} — $${x.price}${x.per ? ` a ${x.per}` : ""}`)));
+    card.append(el("div", { class: "field", style: "margin-top:12px" }, svc),
+      el("button", {
+        class: "btn", onclick: () => {
+          const x = service(svc.value);
+          if (!x) { showToast("Choose a service first."); return; }
+          if ((ch.inventory?.cash ?? 0) < x.price) { showToast(`Not enough money — $${x.price} is needed.`, "danger"); return; }
+          patch((c) => { c.inventory.cash = (c.inventory.cash || 0) - x.price; });
+          showToast(x.food
+            ? `${x.name}: $${x.price}. ${x.food.personDays >= 1 ? "That covers the day's food" : "Half a day's food"} — Ate and drank on Time.`
+            : `${x.name}: $${x.price}.`);
+        }
+      }, "Pay"),
+      related([["#/time", "Time", "clock"]]));
+  }
   return card;
 }
 

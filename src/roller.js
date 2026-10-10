@@ -5,7 +5,7 @@ import { ATTRIBUTES, TALENTS, PUSH, COMBAT_REACTIONS, OPPOSED, TENSION, DEATH, W
          COVER, NEUROCASTERS, NEUROCASTER_DEFAULT_PENALTY, TASER_RULE, FULL_AUTO_MAX_BURSTS,
          TRAUMATIC_EVENTS, RANGES, FIREARM_RULES, TRAUMA_RESIST } from "../data.js";
 import { STUNTS } from "../data-vehicles.js";
-import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss, isDronePilot } from "./derived.js";
+import { maxHealth, maxHope, conditionModifiers, pushLegality, tracksBliss, isDronePilot, isInstantKill, harm } from "./derived.js";
 import { SURGERY } from "../data-tables.js";
 import { getCharacter, saveCharacter, listCharacters, logRoll } from "./store.js";
 import { talent as findTalent, buildPool, weapon as findWeapon, rangePenalty } from "./rules.js";
@@ -14,7 +14,7 @@ import { showToast, modal, confirmModal, explain, diceRow, dieFace, haptic } fro
 import { renderVitals } from "./sheet.js";
 import { successSeal, failureStatic, poolPreview } from "./graphics.js";
 import { refer, obj, poss, Subj } from "./pronouns.js";
-import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn, markActed } from "./combat.js";
+import { getCombat, findCombatant, defencePool, damageCombatant, forfeitNextTurn, markActed, bestiaryEntry } from "./combat.js";
 
 // ============================================================ pure resolution
 
@@ -86,7 +86,7 @@ export function deathRollStep(state, dice) {
   return next;
 }
 
-export const isInstantKill = (damage, maxHp) => damage >= maxHp * DEATH.instantKillMultiplier;
+export { isInstantKill };
 
 // ============================================================ character effects
 
@@ -755,9 +755,10 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
 
   if (outcome.winner === "defender" && outcome.damage) {
     const next = structuredClone(getCharacter(attacker.id));
-    next.state.health = clamp(next.state.health - outcome.damage, 0, maxHealth(next));
+    const hurt = harm(next, outcome.damage);
     saveCharacter(next);
     renderVitals(next);
+    await afterHarm(next, hurt, outcome.damage);
   }
 
   // A hit on a tracked combatant lands on them, wherever their health lives.
@@ -766,7 +767,10 @@ export async function opposedDialog(attacker, attackerSixes, onDone) {
     if (result) {
       showToast(`${result.name}: ${result.health} left${result.health === 0 ? " — down" : ""}`,
         result.health === 0 ? "danger" : "");
-      if (result.kind === "traveler") renderVitals(getCharacter(target.id));
+      if (result.kind === "traveler") {
+        renderVitals(getCharacter(target.id));
+        await afterHarm(getCharacter(target.id), result.outcome, outcome.damage);
+      }
     }
   }
   onDone?.();
@@ -907,10 +911,17 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
     type: "number", min: "0", "aria-label": "Damage",
     value: String(preset ?? (sixes ? damageWithExtras(ch, pending.weaponId, sixes) : 1))
   });
+  const threatArmor = combatTarget?.kind === "threat" ? bestiaryEntry(combatTarget.threatId)?.armor || 0 : 0;
+  // Whoever takes the hit starts in the armor the sheet says they wear.
+  const victim = combatTarget && combatTarget.id !== ch.id
+    ? (combatTarget.kind === "traveler" ? getCharacter(combatTarget.id) : null)
+    : ch;
   const armor = el("select", { "aria-label": "Armor or cover" },
     el("option", { value: "0" }, "None"),
-    ...BODY_ARMOR.map((a) => el("option", { value: a.armor }, `${a.name} (${a.armor})`)),
-    ...COVER.map((c) => el("option", { value: c.armor }, `Cover: ${c.name} (${c.armor})`)));
+    ...BODY_ARMOR.map((a) => el("option", { value: a.armor, selected: victim?.state?.armor === a.id }, `${a.name} (${a.armor})`)),
+    ...COVER.map((c) => el("option", { value: c.armor }, `Cover: ${c.name} (${c.armor})`)),
+    // A machine Threat carries its own plating in the bestiary.
+    threatArmor ? el("option", { value: threatArmor, selected: true }, `${combatTarget.name}'s own armor (${threatArmor})`) : null);
   const body = el("div", {},
     el("div", { class: "field" }, el("label", {}, "Damage"), amount),
     el("div", { class: "field" }, el("label", {}, "Armor or cover"), armor));
@@ -928,6 +939,15 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
   // If a combatant is targeted and it is not this character, the damage lands on them.
   if (combatTarget && combatTarget.id !== ch.id) {
     const result = damageCombatant(combatTarget.id, soaked.damage);
+    if (result?.kind === "traveler") {
+      if (pending?.result) pending.result.applied = true;
+      logRoll({ by: ch.name, label: "Damage", dice: soaked.dice, outcome: `${soaked.damage} to ${result.name}` });
+      renderVitals(getCharacter(combatTarget.id));
+      if (result.outcome === "hurt") showToast(`${result.name}: ${result.health} left`);
+      await afterHarm(getCharacter(combatTarget.id), result.outcome, soaked.damage);
+      onDone?.();
+      return;
+    }
     // One roll, one hit: the button that applied it cannot apply it again.
     if (pending?.result) pending.result.applied = true;
     logRoll({ by: ch.name, label: "Damage", dice: soaked.dice, outcome: `${soaked.damage} to ${result?.name ?? "target"}` });
@@ -941,9 +961,8 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
   }
 
   const hMax = maxHealth(ch);
-
   const next = structuredClone(ch);
-  next.state.health = clamp(next.state.health - soaked.damage, 0, hMax);
+  const outcome = harm(next, soaked.damage);
   saveCharacter(next);
   renderVitals(next);
 
@@ -952,13 +971,16 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
     dice: soaked.dice,
     outcome: `${raw} damage${soaked.stopped ? `, ${soaked.stopped} stopped` : ""} → ${next.state.health}/${hMax} Health`
   });
+  await afterHarm(next, outcome, soaked.damage);
+  onDone?.();
+}
 
-  // A Drone Pilot takes damage as a drone: Hull zero disconnects the operator and the
-  // drone is unusable until repaired. No death rolls, and no flesh injuries either.
-  if (isDronePilot(next) && next.state.health === 0) {
-    next.state.death = null;
-    saveCharacter(next);
-    renderVitals(next);
+/**
+ * Say what a loss of Health set in motion, and start the death rolls where it did.
+ * `outcome` is what `harm()` returned. Shared by every screen that deals damage.
+ */
+export async function afterHarm(ch, outcome, amount = 0) {
+  if (outcome === "disconnected") {
     await modal({
       title: "Hull breached — disconnected",
       body: el("div", {},
@@ -966,31 +988,16 @@ export async function damageDialog(ch, onDone, { amount: preset = null } = {}) {
         el("p", { class: "faint" }, "No death rolls: your body is elsewhere. The drone cannot be used again until someone repairs it.")),
       actions: [{ label: "Understood", value: true, class: "btn-danger" }]
     });
-    onDone?.();
-    return;
-  }
-
-  if (isInstantKill(soaked.damage, hMax)) {
-    // Killed outright is dead: the record says so, the same as three failed death rolls.
-    next.state.dead = true;
-    next.state.death = null;
-    saveCharacter(next);
+  } else if (outcome === "killed") {
     await modal({
       title: "Killed outright",
-      body: el("p", {}, `${soaked.damage} damage is twice the maximum Health of ${hMax}. No death rolls — time to make a new Traveler.`),
+      body: el("p", {}, `${amount} damage is twice the maximum Health of ${maxHealth(ch)}. No death rolls — time to make a new Traveler.`),
       actions: [{ label: "Understood", value: true, class: "btn-danger" }]
     });
-  } else if (next.state.health === 0) {
-    // More damage on someone already down restarts the death rolls from zero,
-    // stabilized or not — the old tally does not carry over.
-    const again = !!(next.state.stabilized || next.state.death);
-    next.state.stabilized = false;
-    next.state.death = { successes: 0, failures: 0 };
-    saveCharacter(next);
-    showToast(again ? "Hit while down — death rolls start over." : "Incapacitated — death rolls begin.", "danger");
-    await deathRollDialog(getCharacter(next.id));
+  } else if (outcome === "down" || outcome === "restarted") {
+    showToast(outcome === "restarted" ? "Hit while down — death rolls start over." : "Incapacitated — death rolls begin.", "danger");
+    await deathRollDialog(getCharacter(ch.id));
   }
-  onDone?.();
 }
 
 // ================================================================= death rolls

@@ -6,12 +6,12 @@ import { el, clamp, d6, d100, fromD100, rollNotation, uid, pick, shuffle, onRese
 import { ATTRIBUTES, ARCHETYPES, TALENTS, NEUROCASTERS, VEHICLES, VEHICLE_TRAITS, FUEL, ATTRIBUTE_MIN,
          ATTRIBUTE_MAX, POINT_BUY_TOTAL, BONUS_TALENT_THRESHOLD, TENSION } from "../data.js";
 import { JOURNEY_LENGTH } from "../data-gm.js";
-import { SHARED_ITEMS } from "../data-tables.js";
+import { SHARED_ITEMS, GEAR } from "../data-tables.js";
 import { JOURNEY_PLACES, JOURNEY_PURPOSE, ROUTE_FEATURES, VEHICLE_DETAILS, JOURNEY_ROLLS, KICKERS } from "../data-journey.js";
 import { DESTINATIONS as SOLO_DESTINATIONS } from "../data-solo.js";
 import { PREGENS, PREGEN_ERRATA } from "../data-pregens.js";
 import { FIRST_NAMES, SURNAMES, SONGS, DESCRIPTOR_TABLES, GOAL_SEEDS, THREAT_SEEDS, SEED_ROLLS } from "../data-names.js";
-import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot } from "./derived.js";
+import { maxHealth, maxHope, attributeTotal, qualifiesForBonusTalent, isDronePilot, usesCash } from "./derived.js";
 import { listCharacters, getCharacter, saveCharacter, getJourney, saveJourney } from "./store.js";
 import { listStops, activeStop } from "./stops.js";
 import { showToast, modal, explain, actionBar, dismissModal, related, dieFace, haptic } from "./ui.js";
@@ -689,8 +689,9 @@ function buildJourney(rerender) {
             el("p", { class: "faint" }, "Play opens each session with one of these."))
         : null,
       el("div", { class: "card-row", style: "margin-top:8px" },
-        el("span", { class: "faint" }, `Fuel ${j.fuel ?? Math.round(FUEL.tankGallons * FUEL.startingFraction)} / ${FUEL.tankGallons} gal`),
+        el("span", { class: "faint" }, `Fuel ${fuel} / ${FUEL.tankGallons} gal`),
         el("button", { class: "btn", onclick: () => save({ vehicle: null }) }, "Change")),
+      fuelRow(j, fuel, save),
       related([["#/driving", "Driving", "car"], ["#/time", "Time", "clock"]]));
   } else {
     const select = el("select", { "aria-label": "Vehicle" },
@@ -707,7 +708,7 @@ function buildJourney(rerender) {
             vehicle: { ...base, label: base.name, traits: [trait], ...applyTrait(base, trait) },
             fuel: Math.round(FUEL.tankGallons * FUEL.startingFraction),
             // A new vehicle starts whole: the old one's damage and chase do not carry over.
-            hull: null, chase: null
+            hull: null, maneuverability: null, componentHits: 0, chase: null
           });
         }
       }, "Take this one (rolls one trait)"));
@@ -762,7 +763,7 @@ function buildJourney(rerender) {
       const base = pick(VEHICLES);
       const trait = rollTrait();
       Object.assign(patch, { vehicle: { ...base, label: base.name, traits: [trait], ...applyTrait(base, trait) },
-        fuel: Math.round(FUEL.tankGallons * FUEL.startingFraction), hull: null, chase: null });
+        fuel: Math.round(FUEL.tankGallons * FUEL.startingFraction), hull: null, maneuverability: null, componentHits: 0, chase: null });
     }
     const items = [...(j.sharedItems || [])];
     let guard = 0;
@@ -881,4 +882,49 @@ function buildTension(rerender) {
       : [el("button", { class: "btn btn-primary", onclick: rollStart }, "Roll starting Tension")]
   }));
   return wrap;
+}
+
+/**
+ * Fuel only ever went down: Time burns it, and nothing put it back. Gasoline is on the
+ * gear list at a price per gallon, and a jerrycan among the shared items holds five.
+ */
+function fuelRow(j, fuel, save) {
+  const room = FUEL.tankGallons - fuel;
+  const gas = GEAR.find((g) => g.id === "gasoline");
+  const can = (j.sharedItems || []).findIndex((i) => i.fuelGallons > 0);
+  const payers = listCharacters().filter((c) => !c.state?.dead && usesCash(c));
+  return el("div", { class: "btn-row" },
+    room > 0 && payers.length ? el("button", {
+      class: "btn", onclick: async () => {
+        const who = el("select", { "aria-label": "Who pays" },
+          ...payers.map((c) => el("option", { value: c.id }, `${c.name || "Unnamed"} — $${c.inventory?.cash ?? 0}`)));
+        const gallons = el("input", { type: "number", min: "1", max: String(room), value: String(room), "aria-label": "Gallons" });
+        const ok = await modal({
+          title: "Fill up",
+          body: el("div", {},
+            el("p", { class: "faint" }, `$${gas.price} a gallon. The tank has room for ${room}.`),
+            el("div", { class: "field" }, el("label", {}, "Gallons"), gallons),
+            el("div", { class: "field" }, el("label", {}, "Who pays"), who)),
+          actions: [{ label: "Pay", value: true, class: "btn-primary" }, { label: "Cancel", value: false }]
+        });
+        if (!ok) return;
+        const n = clamp(Math.floor(Number(gallons.value) || 0), 0, room);
+        const payer = getCharacter(who.value);
+        const cost = n * gas.price;
+        if (!n) return;
+        if ((payer.inventory?.cash ?? 0) < cost) { showToast(`Not enough money — $${cost} is needed.`, "danger"); return; }
+        saveCharacter({ ...payer, inventory: { ...payer.inventory, cash: payer.inventory.cash - cost } });
+        save({ fuel: fuel + n });
+        showToast(`${n} gallons for $${cost}.`);
+      }
+    }, "Fill up") : null,
+    room > 0 && can >= 0 ? el("button", {
+      class: "btn", onclick: () => {
+        const item = j.sharedItems[can];
+        const n = Math.min(room, item.fuelGallons);
+        const items = j.sharedItems.map((x, i) => (i === can ? { ...x, fuelGallons: x.fuelGallons - n } : x));
+        save({ fuel: fuel + n, sharedItems: items });
+        showToast(`${n} gallons from the ${item.name.toLowerCase()}.`);
+      }
+    }, "Pour in the jerrycan") : null);
 }

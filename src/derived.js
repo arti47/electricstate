@@ -1,6 +1,6 @@
 // Character-derived calculations. Pure functions over a character object.
 import { ceilHalf, clamp } from "./core.js";
-import { TALENTS, DERIVED, DRONE_PILOT_RULES, BODY_ARMOR } from "../data.js";
+import { TALENTS, DERIVED, DRONE_PILOT_RULES, BODY_ARMOR, DEATH } from "../data.js";
 import { genderOf } from "./pronouns.js";
 
 const talentEffect = (id) => TALENTS.find((t) => t.id === id)?.effect;
@@ -24,6 +24,31 @@ export const healsByResting = (ch) => !isDronePilot(ch);
 export const tracksBliss = (ch) => !isDronePilot(ch);
 export const usesCash = (ch) => !isDronePilot(ch);
 export const needsFood = (ch) => !isDronePilot(ch);
+
+/** Damage of twice maximum Health in one hit kills outright (p.82). */
+export const isInstantKill = (damage, maxHp) => damage >= maxHp * DEATH.instantKillMultiplier;
+
+/**
+ * Health lost, from any source, and what the rules say follows. Mutates `next`.
+ * Every path that takes Health goes through here, so a fall, a fire or a hunger roll
+ * reaches the same death rolls a gunshot does:
+ *   "hurt"         still standing
+ *   "down"         Health 0 — Incapacitated, death rolls begin
+ *   "restarted"    hit again while down — death rolls start over
+ *   "killed"       twice maximum Health in one hit
+ *   "disconnected" a Drone Pilot's Hull gone — no death rolls
+ */
+export function harm(next, amount) {
+  const hMax = maxHealth(next);
+  const wasDown = (next.state.health ?? hMax) === 0;
+  next.state.health = clamp((next.state.health ?? hMax) - Math.max(0, amount), 0, hMax);
+  if (amount <= 0 || next.state.health > 0 || next.state.dead) return "hurt";
+  if (isDronePilot(next)) { next.state.death = null; return "disconnected"; }
+  if (isInstantKill(amount, hMax)) { next.state.dead = true; next.state.death = null; return "killed"; }
+  next.state.stabilized = false;
+  next.state.death = { successes: 0, failures: 0 };
+  return wasDown ? "restarted" : "down";
+}
 
 export function attributeTotal(ch) {
   return Object.values(ch.attributes || {}).reduce((a, b) => a + (b || 0), 0);

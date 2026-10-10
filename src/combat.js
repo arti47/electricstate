@@ -5,8 +5,8 @@ import { RANGES, WEAPONS, INITIATIVE, ACTION_ECONOMY } from "../data.js";
 import { weapon as findWeapon, rangePenalty } from "./rules.js";
 import { THREATS, ANIMALS } from "../data-npcs.js";
 import { listCharacters, getCharacter, saveCharacter, logRoll, getJourney, saveJourney } from "./store.js";
-import { maxHealth, isDronePilot } from "./derived.js";
-import { showToast, modal, promptModal, confirmModal, explain, moreMenu } from "./ui.js";
+import { maxHealth, isDronePilot, harm } from "./derived.js";
+import { showToast, modal, promptModal, confirmModal, explain, moreMenu, related } from "./ui.js";
 
 import { rollGender, subj, poss } from "./pronouns.js";
 import { portrait } from "./graphics.js";
@@ -85,9 +85,9 @@ export function damageCombatant(id, amount) {
     const ch = getCharacter(combatant.id);
     if (!ch) return null;
     const next = structuredClone(ch);
-    next.state.health = clamp(next.state.health - amount, 0, maxHealth(next));
+    const outcome = harm(next, amount);
     saveCharacter(next);
-    return { name: combatant.name, health: next.state.health, kind: "traveler" };
+    return { name: combatant.name, health: next.state.health, kind: "traveler", outcome };
   }
 
   const health = Math.max(0, (combatant.health ?? 0) - amount);
@@ -371,7 +371,8 @@ function combatantCard(combatant, c, rerender) {
       }, "→"))));
 
   // Dual-realm: a character acts in one realm per round and is inert in the other.
-  if (ch?.neurocaster) {
+  // Only someone with the helmet on can be in the network at all.
+  if (ch?.neurocaster && ch.state?.wearingCaster) {
     card.append(el("div", { class: "card-row" },
       el("span", { class: "faint" }, "Acts in"),
       el("div", { class: "seg", role: "group", "aria-label": "Realm this round" },
@@ -382,7 +383,8 @@ function combatantCard(combatant, c, rerender) {
         }, realm === "real" ? "World" : "Network")))));
     if (combatant.realm === "neuroscape") {
       card.append(el("p", { class: "faint" },
-        `Inert out here until ${poss(combatant)} next turn — ${subj(combatant)} cannot answer an attack in the real world.`));
+        `Inert out here until ${poss(combatant)} next turn — ${subj(combatant)} cannot answer an attack in the real world.`),
+        related([["#/neuro", "Neuroscape", "helmet"]]));
     }
   }
 
@@ -492,7 +494,7 @@ async function enemyAttack(combatant, c, rerender) {
 
   // The target's choice. Someone down, or already reacting this round, just takes it.
   let defence = 0, defDice = null;
-  const canReact = (victim.state?.health ?? 1) > 0 && victimFighter?.realm !== "neuroscape";
+  const canReact = (victim.state?.health ?? 1) > 0 && !(victimFighter?.realm === "neuroscape" && victim.state?.wearingCaster);
   const reactLabel = close ? "Fight back" : "Dodge";
   const choice = canReact ? await modal({
     title: `${hits} ${hits === 1 ? "hit" : "hits"} on ${victim.name}`,

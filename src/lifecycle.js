@@ -3,7 +3,7 @@
 import { el, d6, uid, rollDice, countSixes, clamp } from "./core.js";
 import { RECOVERY, BLISS, ADVANCEMENT, SHIFT_NAMES, SHIFTS_PER_DAY, TIME_UNITS, ATTRIBUTES,
          ARCHETYPES, TALENTS, TENSION, FUEL, HAZARD_RULES } from "../data.js";
-import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting } from "./derived.js";
+import { maxHealth, maxHope, tracksBliss, needsFood, healsByResting, harm } from "./derived.js";
 import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEvent, getSessionLog,
          clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
@@ -14,6 +14,13 @@ import { subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar, haptic, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
+
+/** What a boundary's 1 damage set in motion, as a clause for its report. */
+const downNote = (outcome) => ({
+  down: " Incapacitated — death rolls begin on the sheet.",
+  restarted: " Hurt again while down — death rolls start over.",
+  disconnected: " The drone's Hull is gone."
+}[outcome] || "");
 
 // Undo lives in the store now, so every destructive action shares one stack.
 export { undoLast, canUndo } from "./store.js";
@@ -27,14 +34,13 @@ export { undoLast, canUndo } from "./store.js";
  * Cold with no shelter or clothing: a Strength roll, a point of damage on a failure,
  * and no natural healing until they are warm again (p.89).
  */
-function exposure(ch, hMax, name) {
+function exposure(ch, name) {
   const notes = [];
   const dice = rollDice(Math.max(1, ch.attributes[HAZARD_RULES.cold.attr]));
   const ok = countSixes(dice) > 0;
   logRoll({ by: name, label: "Cold", dice, outcome: ok ? "endured" : "1 damage" });
   if (!ok) {
-    ch.state.health = clamp(ch.state.health - 1, 0, hMax);
-    notes.push(`${name} is freezing — 1 damage.`);
+    notes.push(`${name} is freezing — 1 damage.${downNote(harm(ch, 1))}`);
   } else notes.push(`${name} keeps the cold out.`);
   ch.state.flags.cold = true;
   return notes;
@@ -59,12 +65,12 @@ export function advanceTime(unit, options = {}) {
         notes.push(`${name} rallies alone — 1 Health.`);
       }
       // Extreme cold bites every Stretch rather than every Shift.
-      if (options.cold && options.extremeCold) notes.push(...exposure(ch, hMax, name));
+      if (options.cold && options.extremeCold) notes.push(...exposure(ch, name));
     }
 
     if (unit === "shift") {
       ch.state.flags.hopeItemUsedThisShift = false;
-      if (options.cold && !options.extremeCold) notes.push(...exposure(ch, hMax, name));
+      if (options.cold && !options.extremeCold) notes.push(...exposure(ch, name));
       if (!options.cold) ch.state.flags.cold = false;
 
       const blocked = (ch.conditions || []).some((c) => c.kind === "disease") ||
@@ -112,10 +118,7 @@ export function advanceTime(unit, options = {}) {
         const dice = rollDice(ch.attributes.strength);
         const ok = countSixes(dice) > 0;
         logRoll({ by: name, label: "Hunger", dice, outcome: ok ? "endured" : "1 damage" });
-        if (!ok) {
-          ch.state.health = clamp(ch.state.health - 1, 0, hMax);
-          notes.push(`${name} goes hungry — 1 damage.`);
-        }
+        if (!ok) notes.push(`${name} goes hungry — 1 damage.${downNote(harm(ch, 1))}`);
         ch.state.flags.hungry = true;
       } else if (options.fed) {
         ch.state.flags.hungry = false;
@@ -225,7 +228,7 @@ export function useHopeItem(ch, item) {
 
   next.state.hope = clamp(next.state.hope + 1, 0, pMax);
   next.state.flags.hopeItemUsedThisShift = true;
-  if (item.healthCost) next.state.health = clamp(next.state.health - item.healthCost, 0, maxHealth(next));
+  if (item.healthCost) harm(next, item.healthCost);
   saveCharacter(next);
   return { ok: true, character: next };
 }

@@ -389,6 +389,24 @@ await test("solo generators return complete Stops and Threats", () => {
 
 const derived = await import("../src/derived.js");
 
+await test("every source of damage reaches the same Incapacitated rules", () => {
+  const mk = (h, extra = {}) => ({ archetype: "pilot", attributes: { strength: 3, agility: 3, wits: 3, empathy: 3 }, state: { health: h, ...extra } });
+  let ch = mk(2);
+  assert.equal(derived.harm(ch, 1), "hurt");
+  assert.equal(derived.harm(ch, 1), "down");
+  assert.deepEqual(ch.state.death, { successes: 0, failures: 0 });
+  ch.state.death = { successes: 2, failures: 1 }; ch.state.stabilized = true;
+  assert.equal(derived.harm(ch, 1), "restarted", "a hit while down restarts the death rolls");
+  assert.deepEqual(ch.state.death, { successes: 0, failures: 0 });
+  assert.equal(ch.state.stabilized, false);
+  ch = mk(3);
+  assert.equal(derived.harm(ch, 6), "killed", "twice max Health in one hit");
+  assert.equal(ch.state.dead, true);
+  ch = { ...mk(1), archetype: "dronePilot" };
+  assert.equal(derived.harm(ch, 1), "disconnected");
+  assert.equal(ch.state.death, null);
+});
+
 await test("worn body armor costs dice on Agility rolls only", () => {
   const ch = { state: { armor: "plateVest" }, conditions: [] };
   assert.equal(derived.conditionModifiers(ch, { attr: "agility" }).mod, -2);
@@ -857,9 +875,27 @@ await test("a wrecked vehicle needs a spare part before repairs mean anything", 
   assert.equal(tables.REPAIR.attr, "wits");
   assert.equal(tables.REPAIR.eachSuccessRestores, 1);
   assert.ok(tables.GEAR.find((g) => g.id === "toolsVehicle")?.bonus > 0, "vehicle tools supply the gear dice");
-  const src = readFileSync(new URL("../src/hazards.js", import.meta.url), "utf8");
-  assert.match(src, /hull <= 0 && !part/, "the wrecked-vehicle gate is wired, not just documented");
-  assert.match(src, /Hull and repairs/, "and the vehicle has a repair surface at all");
+  const v = { hull: 6, maneuverability: 2, armor: 2, speed: 3 };
+  assert.equal(hazards.inoperable({ vehicle: v }), null);
+  assert.equal(hazards.inoperable({ vehicle: v, hull: 0 }), "Wrecked", "Hull zero gates repairs on a spare part");
+  assert.equal(hazards.inoperable({ vehicle: v, maneuverability: 0 }), "Maneuverability zero", "so does Maneuverability zero");
+  assert.equal(hazards.inoperable({ vehicle: { ...v, maneuverability: null } }), null, "an unrated mount cannot lose it");
+});
+
+await test("vehicle damage follows p.105: armor dice, component damage, second one wrecks", () => {
+  const v = { hull: 6, maneuverability: 2, armor: 2, speed: 3 };
+  // Armor rolls its Level in dice; each 6 stops a point.
+  let r = hazards.damageVehicle({ vehicle: v }, 2, { supplied: [6, 1] });
+  assert.equal(r.damage, 1); assert.equal(r.journey.hull, 5); assert.equal(r.component, false);
+  // Half the Hull (3) in one hit is component damage.
+  r = hazards.damageVehicle({ vehicle: v }, 3, { supplied: [1, 1] });
+  assert.equal(r.component, true); assert.equal(r.journey.componentHits, 1); assert.equal(r.wrecked, false);
+  // A second component damage always wrecks it.
+  r = hazards.damageVehicle(r.journey, 3, { supplied: [1, 1] });
+  assert.equal(r.wrecked, true); assert.equal(r.journey.hull, 0);
+  // Armor can be switched off where the rule says it gives no protection.
+  r = hazards.damageVehicle({ vehicle: v }, 2, { armor: false });
+  assert.equal(r.damage, 2);
 });
 
 await test("the solo spotlight rotates to whoever has led fewest Stops", () => {

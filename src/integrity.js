@@ -39,8 +39,9 @@ export function checkLinks(c) {
     if (j.director?.stopId && !stopIds.has(j.director.stopId)) problems.push({ link: "director-stop", id: j.director.stopId });
 
     // The Hull damage belongs to the vehicle that took it.
-    if (!j.vehicle && (j.hull != null || j.chase)) problems.push({ link: "vehicle-state" });
+    if (!j.vehicle && (j.hull != null || j.maneuverability != null || j.componentHits || j.chase)) problems.push({ link: "vehicle-state" });
     if (j.vehicle && j.hull != null && (j.hull > j.vehicle.hull || j.hull < 0)) problems.push({ link: "hull-range" });
+    if (j.vehicle && j.maneuverability != null && (j.maneuverability > (j.vehicle.maneuverability ?? 0) || j.maneuverability < 0)) problems.push({ link: "maneuverability-range" });
 
     // Solo: who leads, who has led, whose personal Threat is running.
     const solo = j.solo;
@@ -83,7 +84,10 @@ export function repairLinks(c) {
         j.director = { ...j.director, beat: "idle", stopId: null, now: null };
         break;
       case "vehicle-state":
-        j.hull = null; j.chase = null;
+        j.hull = null; j.maneuverability = null; j.componentHits = 0; j.chase = null;
+        break;
+      case "maneuverability-range":
+        j.maneuverability = Math.max(0, Math.min(j.vehicle.maneuverability ?? 0, j.maneuverability));
         break;
       case "hull-range":
         j.hull = Math.max(0, Math.min(j.vehicle.hull, j.hull));
