@@ -679,3 +679,26 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   - Tests follow the hub: `probe-flow` starts on the dashboard (fight 3→2 taps, Threat 4→3,
     log 2→1); the browser smoke checks the lamps, the R badge, the header back/title, and picks
     the theme in Settings.
+- **Seventeenth pass — the rest of the car.**
+  - **Journey is a road map** (`roadMap(j)` in wizard.js): an `ol.roadmap` read bottom to top —
+    the start, Stops behind you, the one you are at (the car sits there), Stops the length
+    still promises, the rolled route sights between them (struck through once Play has passed
+    them, via `director.routeSeen`), and the destination flag. The plan (start, destination,
+    length, route) folds away as **Plan the road** once start, destination and length are set.
+  - **Creation is a ritual:** each step opens on one large question (`.ritual-q`); "Step N of 7"
+    and the problems card are gone (the action bar names what is missing). Archetypes are dealt
+    as cards (`.arch-card`, a deal-in animation, one of the book's printed Dreams on each);
+    taken ones lie face down; **Deal me one** picks a random free archetype.
+  - **The fight is on the glass:** the zone map renders inside a windshield (`.fight-shield`,
+    crisis scene behind) above the round card; the move/action paragraph went to the ⓘ.
+  - **The network takes the glass:** `.windshield.is-neuro` lays a drifting teal grid over the
+    road — on the dashboard whenever anyone wears a helmet, and as the Neuroscape screen's
+    header, which carries the helmet and its three ratings; **Plugged in** is a chip.
+  - **Night driving:** `html[data-shift="night"]` darkens the dash, makes the gauges and knobs
+    glow and throws headlights on the road.
+  - **One driver:** `journey.driverId`, read through `session.atTheWheel()` (the first living
+    Traveler when unset) and changed by `passTheWheel(±1)`. The dashboard marks the driver's
+    gauge with a wheel, has an "X at the wheel ⇄" chip, and a sideways swipe on the windshield
+    hands it on. The Driving screen's driver select reads and writes the same field (its module
+    `driveWho` is gone) and the session's opening line names the same person. `integrity.js`
+    clears a `driverId` whose Traveler is gone.

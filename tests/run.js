@@ -1524,6 +1524,21 @@ await test("deleting a Traveler leaves nothing pointing at them", () => {
   assert.equal(store.getJourney().solo.leadId, null, "solo does not wait on someone who is gone");
 });
 
+await test("one driver: the wheel passes among the living, and nobody gone holds it", () => {
+  store.resetAll();
+  const a = makeChar({ name: "Ana" });
+  const b = makeChar({ name: "Bo" });
+  store.saveJourney({ destination: "x", vehicle: { name: "Van", hull: 6 } });
+  assert.equal(session.atTheWheel().id, a.id, "nobody chosen: the first living Traveler drives");
+  assert.equal(session.passTheWheel(1).id, b.id);
+  assert.equal(store.getJourney().driverId, b.id, "the choice is the Journey's, shared by every screen");
+  assert.equal(session.passTheWheel(1).id, a.id, "and it wraps round");
+  store.saveJourney({ ...store.getJourney(), driverId: b.id });
+  store.deleteCharacter(b.id);
+  assert.equal(store.getJourney().driverId, null, "a deleted driver lets go of the wheel");
+  assert.equal(session.atTheWheel().id, a.id);
+});
+
 await test("renaming a Traveler reaches the fight", () => {
   store.resetAll();
   const a = makeChar({ name: "Ana" });

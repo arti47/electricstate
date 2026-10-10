@@ -2321,3 +2321,160 @@ html[data-route="sheet"] #vitals { display: none; }
   .hdr-title { display: none; }
   html[data-route="session"] .screen h1.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
+
+/* ======================================================================
+   Seventeenth pass — the road map, the ritual, the fight on the glass, the network,
+   night driving, and whose hands are on the wheel.
+   ====================================================================== */
+/* ---- Journey: a road you read bottom to top */
+.roadmap-card { padding: 18px 16px 10px; background:
+  radial-gradient(90% 50% at 50% 0%, var(--accent-soft), transparent 70%), var(--card); }
+.roadmap { list-style: none; margin: 0; padding: 0; position: relative; }
+.roadmap::before {      /* the road */
+  content: ""; position: absolute; left: 17px; top: 14px; bottom: 14px; width: 10px; border-radius: 5px;
+  background: #2a2f36; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
+}
+.roadmap::after {       /* its centre line */
+  content: ""; position: absolute; left: 21px; top: 18px; bottom: 18px; width: 2px;
+  background: repeating-linear-gradient(180deg, var(--accent) 0 8px, transparent 8px 16px); opacity: .55;
+}
+.roadmap li { position: relative; display: flex; align-items: center; gap: 14px; min-height: 44px; padding: 4px 0; }
+.rm-mark {
+  position: relative; z-index: 1; flex: none; width: 44px; height: 32px; display: grid; place-items: center;
+}
+.rm-mark::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--bg-raised); border: 2px solid var(--line-strong);
+}
+.rm-mark .icon { position: absolute; color: var(--accent); filter: drop-shadow(0 0 6px var(--accent)); }
+.rm-text { display: flex; flex-direction: column; min-width: 0; }
+.rm-label { font-weight: 600; overflow-wrap: anywhere; }
+.rm-sub { font: 600 .7rem/1.3 var(--font-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.rm-stop.is-done .rm-mark::before { background: var(--ink-dim); border-color: var(--ink-dim); }
+.rm-stop.is-here .rm-mark::before { width: 20px; height: 20px; background: var(--accent); border-color: var(--accent-hi); box-shadow: 0 0 14px var(--accent); }
+.rm-stop.is-here .rm-mark .icon { top: -14px; }
+.rm-stop.is-here .rm-label { color: var(--accent); }
+.rm-sight .rm-mark::before { width: 9px; height: 9px; border-radius: 2px; transform: rotate(45deg); border-color: var(--neuro); }
+.rm-sight { min-height: 34px; }
+.rm-sight .rm-label { font-weight: 400; font-size: .9rem; color: var(--ink-dim); }
+.rm-sight.is-passed .rm-label { color: var(--ink-faint); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.rm-start .rm-mark::before { border-radius: 4px; background: var(--ink-dim); border-color: var(--ink-dim); }
+.rm-start .rm-mark .icon { top: -14px; }
+.rm-end .rm-mark::before { display: none; }
+.rm-end .rm-mark .icon { color: var(--danger); filter: drop-shadow(0 0 6px var(--danger)); }
+.rm-end .rm-label { font: 700 1.15rem/1.15 var(--font-head); letter-spacing: .04em; text-transform: uppercase; }
+.rm-car { position: absolute; left: 13px; top: -12px; color: var(--accent); filter: drop-shadow(0 0 6px var(--accent)); z-index: 2; }
+.plan-fold > summary::after { content: "+"; }
+.roadmap li { min-height: 52px; }
+.actionbar-inner > .faint:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+.actionbar .btn-primary { flex: 0 0 auto; padding: 0 16px; }
+.actionbar .pool { flex: 0 0 auto; }
+
+/* ---- creation: one question, large, and the archetypes dealt like cards */
+.ritual-q {
+  margin: 4px 0 16px; font: 500 1.45rem/1.3 var(--serif); color: var(--ink);
+  text-wrap: balance;
+}
+.deal-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0; }
+.deal-row .btn { flex: none; display: inline-flex; gap: 6px; align-items: center; }
+.arch-deal { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.arch-card {
+  position: relative; display: flex !important; flex-direction: column; align-items: flex-start; gap: 6px;
+  min-height: 168px; padding: 14px 12px !important; text-align: left;
+  border-radius: 12px !important;
+  background: linear-gradient(160deg, var(--bg-raised), var(--card)) !important;
+  border: 1px solid var(--line-strong) !important;
+  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, .7), var(--hi);
+}
+.arch-card::after {       /* the card's inner rule, like a printed playing card */
+  content: ""; position: absolute; inset: 6px; border: 1px solid var(--line-soft); border-radius: 8px; pointer-events: none;
+}
+.arch-card strong { font: 700 1.15rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase; }
+.arch-card .glyph-tile { width: 56px; height: 56px; }
+.arch-dream { font: italic .82rem/1.35 var(--serif); color: var(--ink-dim); }
+.arch-card.is-chosen { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent), 0 0 24px -6px var(--accent); transform: translateY(-3px); }
+.arch-card.is-down {      /* a taken archetype lies face down */
+  background: repeating-linear-gradient(45deg, var(--bg-sunk) 0 6px, var(--bg-raised) 6px 12px) !important;
+  opacity: .6;
+}
+.arch-card.is-down .glyph-tile, .arch-card.is-down strong { opacity: .35; }
+@media (prefers-reduced-motion: no-preference) {
+  .arch-deal li { animation: deal-in .42s var(--ease) both; animation-delay: calc(var(--k) * 45ms); }
+}
+@keyframes deal-in {
+  from { opacity: 0; transform: translate(-30px, -40px) rotate(-8deg) scale(.92); }
+  to { opacity: 1; transform: none; }
+}
+@media (min-width: 640px) { .arch-deal { grid-template-columns: repeat(3, 1fr); } }
+
+/* ---- the fight on the glass */
+.fight-shield { height: auto; min-height: 190px; margin: 0 -16px 12px; }
+.fight-shield .scene-band { position: absolute; inset: 0; height: 100%; }
+.fight-glass { position: relative; z-index: 3; padding: 26px 13% 12px; }
+.fight-glass .zonemap { background: rgba(6, 8, 11, .55); border-radius: 10px; padding: 6px; backdrop-filter: blur(2px); }
+.fight-glass .zone { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .12); }
+.fight-hint { margin: 6px 0 0; text-align: center; font-size: .8rem; color: #d8d1c4; text-shadow: 0 1px 2px #000; }
+@media (min-width: 768px) { .fight-shield { margin: 0 -24px 12px; } }
+
+/* ---- the network takes the glass */
+.windshield.is-neuro::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10, 40, 48, .55), rgba(4, 18, 24, .25) 60%, rgba(111, 195, 206, .18)),
+    repeating-linear-gradient(90deg, rgba(111, 195, 206, .22) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(0deg, rgba(111, 195, 206, .18) 0 1px, transparent 1px 22px);
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(180deg, transparent 18%, #000 70%);
+  mask-image: linear-gradient(180deg, transparent 18%, #000 70%);
+}
+.windshield.is-neuro .beat-heading { color: var(--neuro); }
+@media (prefers-reduced-motion: no-preference) {
+  .windshield.is-neuro::after { animation: grid-drift 6s linear infinite; }
+}
+@keyframes grid-drift { to { background-position: 0 0, 28px 0, 0 22px; } }
+.neuro-shield { height: auto; min-height: 200px; margin: 0 -16px 12px; }
+.neuro-shield .scene-band { position: absolute; inset: 0; height: 100%; }
+.neuro-glass {
+  position: relative; z-index: 3; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 44px 13% 18px; color: #e6f6f8; text-shadow: 0 1px 3px #000;
+}
+.neuro-glass .helmet { flex: none; }
+.neuro-model { font: 700 1.2rem/1.1 var(--font-head); letter-spacing: .06em; text-transform: uppercase; color: var(--neuro); }
+.neuro-ratings { display: flex; gap: 12px; margin-top: 6px; }
+.neuro-rating { display: flex; flex-direction: column; }
+.neuro-rating b { font: 700 1.6rem/1 var(--mono); color: #e6f6f8; }
+.neuro-rating small { font: 600 .66rem/1.2 var(--font-head); letter-spacing: .1em; text-transform: uppercase; color: #9fd6dd; }
+.neuro-lost { flex-basis: 100%; margin: 4px 0 0; color: #ffb4a6; font-weight: 600; }
+@media (min-width: 768px) { .neuro-shield { margin: 0 -24px 12px; } }
+
+/* ---- night driving: the dash goes dark and the instruments glow */
+html[data-shift="night"] .dashboard { --dash: #0a0b0d; --dash-hi: #101318; }
+html[data-shift="night"][data-route="session"] .tabbar { background: #050607; }
+html[data-shift="night"] .instrument-face { box-shadow: inset 0 2px 6px rgba(0, 0, 0, .9), 0 0 0 2px #1b2026, 0 0 18px -4px rgba(217, 150, 84, .35); }
+html[data-shift="night"] .g-health { filter: drop-shadow(0 0 4px rgba(233, 226, 212, .55)); }
+html[data-shift="night"] .g-hope { filter: drop-shadow(0 0 6px var(--accent)); }
+html[data-shift="night"] .knob .icon { color: var(--accent); box-shadow: 0 3px 6px rgba(0, 0, 0, .7), inset 0 0 10px rgba(217, 150, 84, .18), 0 0 0 1px #000; }
+html[data-shift="night"] .lamp:not(.is-lit) { color: #343a42; }
+html[data-shift="night"] .windshield:not(.is-neuro)::after {     /* headlights on the road */
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(38% 30% at 50% 100%, rgba(255, 226, 170, .26), transparent 70%);
+}
+
+/* ---- whose hands are on the wheel */
+.instrument.is-driver .instrument-face { box-shadow: inset 0 2px 6px rgba(0, 0, 0, .8), 0 0 0 2px var(--accent), 0 0 16px -2px var(--accent); }
+.wheel-badge {
+  position: absolute; right: -2px; bottom: -2px; z-index: 2; width: 24px; height: 24px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 2px var(--dash);
+}
+.driver-swap {
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin: -4px auto 14px;
+  min-height: 40px; padding: 0 16px; border-radius: 20px; cursor: pointer;
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink-dim);
+  font: 600 .8rem/1 var(--font-head); letter-spacing: .1em; text-transform: uppercase;
+}
+.driver-swap .icon { color: var(--accent); }
+.driver-swap-hint { color: var(--ink-faint); }
+.windshield { touch-action: pan-y; }
+.fight-shield { min-height: 0; }
+.fight-glass { padding: 16px 12% 10px; }
+.fight-shield .zone-n { font-size: .7rem; }

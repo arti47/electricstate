@@ -9,7 +9,7 @@ import { maxHealth, isDronePilot, harm } from "./derived.js";
 import { showToast, modal, promptModal, confirmModal, explain, moreMenu, related } from "./ui.js";
 
 import { rollGender, subj, poss } from "./pronouns.js";
-import { portrait } from "./graphics.js";
+import { portrait, windshieldFrame } from "./graphics.js";
 import { sceneBand } from "./scene.js";
 import { icon } from "./icons.js";
 
@@ -195,8 +195,12 @@ function zoneMap(c, ordered, upNext, rerender) {
     }
     map.append(lane);
   }
-  return el("div", { class: "card zonecard" }, map,
-    moving ? el("p", { class: "faint", style: "margin:8px 0 0" }, `${moving.name}: tap a zone.`) : null);
+  // The fight seen through the windshield: the zones are the ground ahead, nearest at the
+  // left, the crisis landscape behind them.
+  return el("section", { class: "windshield fight-shield zonecard", "aria-label": "The fight" },
+    sceneBand("crisis"), windshieldFrame(),
+    el("div", { class: "fight-glass" }, map,
+      moving ? el("p", { class: "fight-hint" }, `${moving.name}: tap a zone.`) : null));
 }
 
 /**
@@ -285,6 +289,7 @@ function build(rerender) {
       el("p", { class: "faint" }, "Nobody is left standing against you. End the fight; anyone Incapacitated still owes a serious injury roll."),
       el("button", { class: "btn btn-primary btn-block", onclick: endFight }, "End the fight")));
   }
+  wrap.append(zoneMap(c, ordered, upNext, rerender));
   wrap.append(el("div", { class: "card" },
     el("div", { class: "card-row" },
       el("strong", {}, `Round ${c.round}`),
@@ -294,21 +299,14 @@ function build(rerender) {
     el("div", { class: "card-row" },
       el("span", {}, upNext ? el("strong", {}, `${upNext.name} is up`) : el("strong", {}, "Everyone has gone")),
       el("span", { class: "faint" }, upNext ? `${waiting} still to act` : "End the round")),
-    el("p", { class: "faint" }, `One move and one action, or two moves — the move comes first. A reaction costs your next turn but covers every attack until then.`),
     el("div", { class: "btn-grid" },
       el("button", {
         class: "btn" + (upNext ? "" : " btn-primary"), onclick: () => { nextRound(c); rerender(); }
       }, "Next round"),
       el("button", { class: "btn", onclick: () => addThreat(rerender) }, "Add threat"))));
 
-  // Whoever is up comes first — their turn is the thing to press — then the map of
-  // the whole fight, then everyone else.
-  const map = zoneMap(c, ordered, upNext, rerender);
-  if (!upNext) wrap.append(map);
-  for (const combatant of ordered) {
-    wrap.append(combatantCard(combatant, c, rerender));
-    if (upNext && combatant.id === upNext.id) wrap.append(map);
-  }
+  // Whoever is up comes first in the list — their turn is the thing to press — then everyone else.
+  for (const combatant of ordered) wrap.append(combatantCard(combatant, c, rerender));
   wrap.append(tasksCard(rerender));
   return wrap;
 }

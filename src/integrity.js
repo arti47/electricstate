@@ -43,6 +43,9 @@ export function checkLinks(c) {
     if (j.vehicle && j.hull != null && (j.hull > j.vehicle.hull || j.hull < 0)) problems.push({ link: "hull-range" });
     if (j.vehicle && j.maneuverability != null && (j.maneuverability > (j.vehicle.maneuverability ?? 0) || j.maneuverability < 0)) problems.push({ link: "maneuverability-range" });
 
+    // Whoever is at the wheel must still be someone.
+    if (j.driverId && !ids.has(j.driverId)) problems.push({ link: "driver", id: j.driverId });
+
     // Solo: who leads, who has led, whose personal Threat is running.
     const solo = j.solo;
     if (solo?.leadId && !ids.has(solo.leadId)) problems.push({ link: "solo-lead", id: solo.leadId });
@@ -91,6 +94,9 @@ export function repairLinks(c) {
         break;
       case "hull-range":
         j.hull = Math.max(0, Math.min(j.vehicle.hull, j.hull));
+        break;
+      case "driver":
+        j.driverId = null;
         break;
       case "solo-lead":
         j.solo = { ...j.solo, leadId: null };

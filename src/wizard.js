@@ -42,24 +42,32 @@ const knownTalents = (d) => new Set(d.talents);
 // ---------------------------------------------------------------- step: archetype
 function stepArchetype(rerender) {
   const taken = takenArchetypes();
-  const wrap = el("div", {},
-    el("p", { class: "muted" }, "Who are you in this collapsing world? One archetype per group — the rest are greyed out."));
-  // Ten tiles, each with its mark, rather than ten lines of text.
-  const list = el("ul", { class: "list arch-grid" });
-  for (const a of ARCHETYPES) {
+  const wrap = el("div", {});
+  // The archetypes are dealt like cards: the mark large, the key attribute, and one of the
+  // book's own Dreams for the archetype as a taste of who this person is.
+  const open = ARCHETYPES.filter((a) => !taken.has(a.id) || draft.archetype === a.id);
+  wrap.append(el("div", { class: "deal-row" },
+    el("span", { class: "faint" }, "One per group — taken ones are face down."),
+    el("button", {
+      class: "btn", disabled: !open.length,
+      onclick: () => { const a = pick(open); draft.archetype = a.id; draft.talents = []; haptic("roll"); rerender(); }
+    }, icon("dice", { size: 16 }), "Deal me one")));
+  const list = el("ul", { class: "list arch-grid arch-deal" });
+  ARCHETYPES.forEach((a, k) => {
     const isTaken = taken.has(a.id) && draft.archetype !== a.id;
     const chosen = draft.archetype === a.id;
-    list.append(el("li", {},
+    list.append(el("li", { style: `--k:${k}` },
       el("button", {
-        class: "row arch-tile" + (chosen ? " is-chosen" : ""), disabled: isTaken,
+        class: "row arch-tile arch-card" + (chosen ? " is-chosen" : "") + (isTaken ? " is-down" : ""), disabled: isTaken,
         "aria-pressed": chosen ? "true" : "false",
         onclick: () => { draft.archetype = a.id; draft.talents = []; rerender(); }
       },
-        el("span", { class: "glyph-tile" }, archetypeGlyph(a.id)),
+        el("span", { class: "glyph-tile" }, archetypeGlyph(a.id, 44)),
         el("strong", {}, a.name),
-        el("span", { class: "faint" }, chosen ? "✓" : ATTRIBUTES.find((x) => x.id === a.key)?.label),
+        el("span", { class: "faint" }, chosen ? "✓ Chosen" : ATTRIBUTES.find((x) => x.id === a.key)?.label),
+        !isTaken && a.dreams?.[0] ? el("span", { class: "arch-dream" }, `“${a.dreams[0]}”`) : null,
         isTaken ? el("span", { class: "faint" }, "Already in the group") : null)));
-  }
+  });
   wrap.append(list);
   if (draft.archetype && isDronePilot(draft)) {
     wrap.append(el("div", { class: "card" },
@@ -490,9 +498,18 @@ function build(rerender) {
   }[step](rerender);
 
   const issues = problems();
+  // Each screen asks one thing, large, the way a person across the table would ask it.
+  const questions = {
+    archetype: "Who were you, before everything fell apart?",
+    attributes: "How strong, how quick, how sharp, how warm?",
+    talents: "What are you good at?",
+    identity: "What is your name, and what do you want?",
+    gear: "What did you bring?",
+    journey: "What are you driving toward?",
+    review: "Is this you?"
+  };
   const wrap = el("div", {},
     el("h1", {}, titles[step]),
-    el("p", { class: "faint" }, `Step ${draft.step + 1} of ${STEPS.length}`),
     // The seven steps as a track: done, here, still to come.
     el("ol", { class: "stepper-track", "aria-hidden": "true" },
       ...STEPS.map((id, i) => el("li", { class: i < draft.step ? "is-done" : i === draft.step ? "is-here" : "" },
@@ -500,14 +517,12 @@ function build(rerender) {
     // Seven screens of choices from a game you may not have read. Say what the whole thing
     // is for, once, at the top of every step.
     explain("Seven screens make one Traveler. Nothing here is permanent and nothing has to be invented: every field has a roll button, so you can put the whole character together by tapping if you would rather find out who this Traveler is than decide it. If you want to start playing this minute, tap the ready-made Traveler button on the first screen instead — the book's four ready-made Travelers, complete."),
+    el("p", { class: "ritual-q" }, questions[step]),
     // The fastest way in sits above the archetypes, not under four screens of them.
     draft.step === 0
-      ? el("div", { class: "card" },
-          el("p", { class: "faint" }, "In a hurry, or new to this? The book prints four finished Travelers. Take one and you can start playing now."),
-          el("button", { class: "btn btn-block", onclick: choosePregen }, "Use a ready-made Traveler"))
+      ? el("button", { class: "btn btn-block", onclick: choosePregen }, "In a hurry? Use a ready-made Traveler")
       : null,
-    body,
-    issues.length ? el("div", { class: "card" }, ...issues.map((i) => el("p", { class: "faint" }, i))) : null);
+    body);
 
   // Seven steps, and Next sat below the content of each one.
   wrap.append(...actionBar({
@@ -615,6 +630,42 @@ export function routeCard(j) {
       el("span", {}, j?.start || "—"), el("span", {}, j?.destination || "—")));
 }
 
+/**
+ * The Journey as a road map, read bottom to top like the road ahead: where you set out, the
+ * Stops behind you, the one you are at (the car sits there), what the length still promises,
+ * the rolled sights between them, and the destination flag at the top.
+ */
+function roadMap(j) {
+  const stops = listStops();
+  const current = activeStop();
+  const length = JOURNEY_LENGTH.find((l) => l.id === j?.length);
+  const resolved = stops.filter((st) => st.resolved);
+  const planned = Math.max(length ? length.stops[0] : 0, resolved.length + (current && !current.resolved ? 1 : 0));
+  const features = j?.routeFeatures || [];
+  const seen = j?.director?.routeSeen || 0;
+  const rows = [];   // bottom-up, reversed at the end
+  const pin = (kind, label, sub = null, extra = null) =>
+    rows.push(el("li", { class: `rm-${kind}` }, el("span", { class: "rm-mark", "aria-hidden": "true" }, extra),
+      el("span", { class: "rm-text" }, el("span", { class: "rm-label" }, label), sub ? el("span", { class: "rm-sub" }, sub) : null)));
+  const car = () => icon("car", { size: 18 });
+
+  pin("start", j?.start || "Somewhere to start from", "Set out from", !resolved.length && !(current && !current.resolved) ? car() : null);
+  let f = 0;
+  const sight = () => {
+    if (f >= features.length) return;
+    pin(f < seen ? "sight is-passed" : "sight", features[f], f < seen ? "Passed" : "On the road");
+    f += 1;
+  };
+  for (const st of resolved) { sight(); pin("stop is-done", st.name || "A Stop", "Behind you"); }
+  if (current && !current.resolved) { sight(); pin("stop is-here", current.name || "A Stop", "You are here", car()); }
+  else if (resolved.length) rows[rows.length - 1].append(el("span", { class: "rm-car" }, car()));
+  for (let i = resolved.length + (current && !current.resolved ? 1 : 0); i < planned; i++) { sight(); pin("stop", `Stop ${i + 1}`, "Ahead"); }
+  while (f < features.length) sight();
+  if (!planned && !features.length) pin("stop", "The road ahead", "Choose a length to see the Stops");
+  pin("end", j?.destination || "Somewhere to get to", length ? `${length.label} · ${length.stops[0]}–${length.stops[1]} Stops` : "Destination", icon("flag", { size: 18 }));
+  return el("ol", { class: "roadmap", "aria-label": "The road, from where you set out to where you are going", reversed: true }, ...rows.reverse());
+}
+
 function buildJourney(rerender) {
   const j = getJourney() || { destination: "", route: "", stops: null, vehicle: null, sharedItems: [], fuel: null };
   const save = (patch) => { saveJourney({ ...j, ...patch }); rerender(); };
@@ -627,8 +678,12 @@ function buildJourney(rerender) {
   const startInput = el("input", { value: j.start || "", onchange: (e) => save({ start: e.target.value }) });
   const destInput = el("input", { value: j.destination || "", onchange: (e) => save({ destination: e.target.value }) });
 
-  wrap.append(el("div", { class: "card" },
-    routeCard(j),
+  wrap.append(el("div", { class: "card roadmap-card" }, roadMap(j)));
+  // The plan folds away once it is made: start, destination and length all chosen.
+  const planned = !!(j.start && j.destination && j.length);
+  const plan = el("details", { class: "card phase-fold plan-fold" }, el("summary", {}, "Plan the road"));
+  plan.open = !planned;
+  wrap.append(add(plan,
     el("div", { class: "field" }, el("label", {}, "Starting point"),
       el("div", { class: "card-row" }, startInput,
         el("button", { class: "btn", "aria-label": "Roll a starting point", onclick: () => save({ start: fromD100(JOURNEY_PLACES) }) }, "D100"))),

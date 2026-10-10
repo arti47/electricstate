@@ -21,7 +21,7 @@ import { currentStep } from "./play.js";
 import { Settings } from "./settings.js";
 import { getCombat } from "./combat.js";
 import { rollGender, splitPairedName, subj, Subj } from "./pronouns.js";
-import { showToast, explain, modal, diceRow } from "./ui.js";
+import { showToast, explain, modal, diceRow, haptic } from "./ui.js";
 import { sceneBand } from "./scene.js";
 import { portrait, playingCard, gauge, windshieldFrame, fuelDial } from "./graphics.js";
 import { maxHealth, maxHope, tracksBliss, isDronePilot } from "./derived.js";
@@ -63,10 +63,31 @@ export function resetDirector() { write({ ...blank(), routeSeen: director().rout
 // Concrete sentences built from the book's own tables, so a beat is something that has
 // happened rather than a category of thing that could.
 
+/**
+ * Whoever has their hands on the wheel: the Journey's `driverId` while that Traveler is
+ * alive, else the first living one. The Driving screen, the dashboard and the narration all
+ * read this, so they never disagree about who is driving.
+ */
+export function atTheWheel(j = getJourney(), cast = listCharacters()) {
+  const living = cast.filter((c) => !c.state?.dead);
+  return living.find((c) => c.id === j?.driverId) || living[0] || null;
+}
+
+/** Hand the wheel on: +1 to the next living Traveler, -1 to the one before. */
+export function passTheWheel(step = 1) {
+  const j = getJourney() || {};
+  const living = listCharacters().filter((c) => !c.state?.dead);
+  if (living.length < 2) return null;
+  const now = atTheWheel(j, living);
+  const next = living[(living.findIndex((c) => c.id === now?.id) + step + living.length) % living.length];
+  saveJourney({ ...j, driverId: next.id });
+  return next;
+}
+
 function openingLine() {
   const j = getJourney() || {};
   const cast = listCharacters();
-  const driver = cast.length ? pick(cast) : null;
+  const driver = atTheWheel(j, cast);
   // The Journey's own Shift, so the narration and the clock never disagree.
   const shift = j.shift || SHIFT_NAMES[0];
   const weather = pick(SETTING.weather).toLowerCase();
@@ -396,7 +417,9 @@ function build(rerender) {
   // ------------------------------------------------------------- windshield
   const lastRoll = getRollLog()[0];
   const showCard = state.card && beat.id === "scene";
-  wrap.append(el("section", { class: `windshield shield-${SCENE_FOR[beat.id] || "road"}`, "aria-label": "The road ahead" },
+  // Anyone with the helmet on and the glass goes over to the network.
+  const jacked = listCharacters().some((c) => c.state?.wearingCaster);
+  wrap.append(el("section", { class: `windshield shield-${SCENE_FOR[beat.id] || "road"}${jacked ? " is-neuro" : ""}`, "aria-label": "The road ahead" },
     sceneBand(SCENE_FOR[beat.id] || "road"),
     windshieldFrame(),
     // The rear-view mirror shows the last roll; tapping it opens the whole log.
@@ -441,14 +464,16 @@ function build(rerender) {
   const cast = listCharacters();
   if (cast.length) {
     const cluster = el("div", { class: "cluster" });
+    const driver = j?.vehicle ? atTheWheel(j, cast) : null;
     for (const c of cast) {
       const hMax = maxHealth(c), pMax = maxHope(c);
       const health = c.state?.health ?? hMax, hope = c.state?.hope ?? pMax;
-      cluster.append(el("a", { class: "instrument" + (c.state?.dead ? " is-dead" : ""), href: `#/sheet/${c.id}`,
+      cluster.append(el("a", { class: "instrument" + (c.state?.dead ? " is-dead" : "") + (driver?.id === c.id ? " is-driver" : ""), href: `#/sheet/${c.id}`,
         "aria-label": `${c.name || "Unnamed"}: ${isDronePilot(c) ? "Hull" : "Health"} ${health} of ${hMax}, Hope ${hope} of ${pMax}${tracksBliss(c) ? `, Bliss ${c.state?.bliss ?? 0}` : ""}` },
         el("span", { class: "instrument-face" },
           gauge({ health, hMax, hope, pMax, bliss: tracksBliss(c) ? (c.state?.bliss ?? 0) : null }),
-          portrait(c, { size: 40, frame: false })),
+          portrait(c, { size: 40, frame: false }),
+          driver?.id === c.id ? el("span", { class: "wheel-badge", title: "At the wheel" }, icon("wheel", { size: 14 })) : null),
         el("span", { class: "instrument-name" }, (c.name || "Unnamed").split(" ")[0])));
     }
     if (j?.vehicle) {
@@ -457,6 +482,13 @@ function build(rerender) {
         el("span", { class: "instrument-name" }, "Fuel")));
     }
     dash.append(cluster);
+    // Swipe the windshield, or tap this, to hand the wheel to someone else.
+    if (driver && cast.filter((c) => !c.state?.dead).length > 1) {
+      dash.append(el("button", { class: "driver-swap", type: "button",
+        "aria-label": `${driver.name || "Unnamed"} is at the wheel — hand it on`,
+        onclick: () => { const n = passTheWheel(1); if (n) showToast(`${n.name || "Unnamed"} takes the wheel.`); rerender(); } },
+        icon("wheel", { size: 16 }), el("span", {}, `${(driver.name || "Unnamed").split(" ")[0]} at the wheel`), el("span", { class: "driver-swap-hint" }, "⇄")));
+    }
   }
 
   // Warning lights: always there, lit only when the situation calls for that tool.
@@ -490,6 +522,19 @@ function build(rerender) {
   }
   dash.append(knobs);
   wrap.append(dash);
+
+  // A sideways swipe across the glass hands the wheel on, left or right.
+  const shield = wrap.querySelector(".windshield");
+  let x0 = null, y0 = null;
+  shield.addEventListener("pointerdown", (e) => { x0 = e.clientX; y0 = e.clientY; });
+  shield.addEventListener("pointerup", (e) => {
+    if (x0 == null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) || !j?.vehicle) return;
+    const n = passTheWheel(dx < 0 ? 1 : -1);
+    if (n) { haptic(); showToast(`${n.name || "Unnamed"} takes the wheel.`); rerender(); }
+  });
   return wrap;
 }
 

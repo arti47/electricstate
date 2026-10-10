@@ -9,7 +9,9 @@ import { showToast, modal, explain, actionBar, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { resolvePush } from "./roller.js";
 import { PUSH } from "../data.js";
-import { helmetGraphic, ringDial } from "./graphics.js";
+import { helmetGraphic, ringDial, windshieldFrame } from "./graphics.js";
+import { sceneBand } from "./scene.js";
+import { icon } from "./icons.js";
 import { sound } from "./sound.js";
 
 
@@ -74,7 +76,7 @@ let session = null;
 function build(rerender) {
   const chars = listCharacters();
   const wrap = el("div", {}, el("h1", {}, "Neuroscape"));
-  wrap.append(explain("Jacking in. A task's Difficulty is how many successful rolls it needs, one per Stretch, with gear dice from whichever neurocaster attribute suits the job. Every failed roll adds a point of Bliss before you even consider pushing — which is how the network takes people."));
+  wrap.append(explain("Jacking in. A task's Difficulty is how many successful rolls it needs, one per Stretch, with gear dice from whichever neurocaster rating suits the job. Every failed roll adds a point of Bliss before you even consider pushing — which is how the network takes people. With the helmet on, real-world actions needing mobility or vision lose dice and you act in one realm per round; take it off on the sheet. A terminal plugged in adds dice to everything."));
   if (!chars.length) {
     wrap.append(el("div", { class: "empty card" },
       el("p", {}, "Nobody to jack in. Make a Traveler, fit a neurocaster, and come back."),
@@ -110,20 +112,25 @@ function build(rerender) {
   }
 
   const model = NEUROCASTERS.find((n) => n.id === ch.neurocaster);
-  wrap.append(el("div", { class: "card" },
-    el("div", { class: "art-row" },
+  // With the helmet on the windshield goes over to the network: a teal grid laid over the
+  // road, the helmet's three ratings lit on the glass.
+  const rating = (label, v, max) => el("span", { class: "neuro-rating" }, el("b", {}, String(v)), el("small", {}, `${label} / ${max}`));
+  wrap.append(el("section", { class: "windshield neuro-shield is-neuro", "aria-label": "The neuroscape" },
+    sceneBand("road"), windshieldFrame(),
+    el("div", { class: "neuro-glass" },
       helmetGraphic({ ...caster, max: model }, { worn: true, near: (ch.state.bliss ?? 0) === (ch.state.hope ?? 0) - 1, lost: isLost(ch) }),
-      el("strong", {}, model.name)),
-    el("div", {},
-      el("span", { class: "mono faint" },
-        `Processor ${caster.processor} · Network ${caster.network} · Graphics ${caster.graphics}`)),
-    el("p", { class: "faint" }, "The helmet is on: real-world actions needing mobility or vision lose dice, and you act in one realm per round. Take it off on the sheet when you are done."),
-    related([[`#/sheet/${ch.id}`, ch.name || "Unnamed", "traveler"]]),
-    el("label", { class: "card-row", style: "text-transform:none;letter-spacing:0;color:inherit;margin-top:8px" },
-      el("span", {}, el("strong", {}, "Plugged into a terminal"), el("div", { class: "faint" }, `+${WIRED_BONUS} dice to everything`)),
-      el("input", { type: "checkbox", checked: session.wired,onchange: (e) => { session.wired = e.target.checked; } })),
-    isLost(ch) ? el("p", { class: "faint", style: "color:var(--danger)" },
-      "Bliss has caught Hope. You can still act in here — you simply cannot leave on your own.") : null));
+      el("div", {},
+        el("strong", { class: "neuro-model" }, model.name),
+        el("div", { class: "neuro-ratings" },
+          rating("Processor", caster.processor, model.processor),
+          rating("Network", caster.network, model.network),
+          rating("Graphics", caster.graphics, model.graphics))),
+      isLost(ch) ? el("p", { class: "neuro-lost" }, "Bliss has caught Hope. You cannot leave on your own.") : null)));
+  wrap.append(el("div", { class: "chip-set is-left" },
+    el("label", { class: "chip-toggle", title: `Plugged into a terminal: +${WIRED_BONUS} dice to everything` },
+      el("input", { type: "checkbox", "aria-label": "Plugged into a terminal", checked: session.wired, onchange: (e) => { session.wired = e.target.checked; } }),
+      icon("bolt", { size: 16 }), el("span", {}, `Plugged in +${WIRED_BONUS}`))),
+    related([[`#/sheet/${ch.id}`, ch.name || "Unnamed", "traveler"]]));
 
   // task setup
   const kindSelect = el("select", { "aria-label": "Task",

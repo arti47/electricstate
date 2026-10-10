@@ -19,6 +19,7 @@ const PATHS = {
   heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
   hazard: '<path d="M12 4 21 19H3Z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".8" fill="currentColor"/>',
   helmet: '<path d="M5 15a7 7 0 0 1 14 0v2H5Z"/><path d="M6.5 13h11"/><path d="M12 17v3"/>',
+  wheel: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 14.2V20.5M9.9 11.3 3.8 9.6M14.1 11.3l6.1-1.7"/>',
   car: '<path d="M4 15l1.6-4.4A2 2 0 0 1 7.5 9h9a2 2 0 0 1 1.9 1.6L20 15v3H4Z"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/>',
   pack: '<path d="M7 8a5 5 0 0 1 10 0v11H7Z"/><path d="M9 13h6M10 5V3h4v2"/>',
   link: '<path d="M5 8h10l-3-3M19 16H9l3 3"/>',

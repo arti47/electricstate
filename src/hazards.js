@@ -10,6 +10,7 @@ import { showToast, modal, explain, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { forfeitNextTurn } from "./combat.js";
 import { afterHarm, soak, resolvePush } from "./roller.js";
+import { atTheWheel } from "./session.js";
 import { vehicleArt, hazardArt, driveArt } from "./graphics.js";
 
 // ------------------------------------------------------------------- hazards
@@ -225,8 +226,7 @@ async function applyDisease(ch, virulence, onDone, nurse = null) {
 // ------------------------------------------------------------------ vehicles
 let driveKind = "stunt";     // which manoeuvre's card is open
 let driveTouched = false;    // the player chose one; stop following the chase
-let driveWho = null;
-onReset(() => { hazardKind = "explosion"; hazardWho = null; driveKind = "stunt"; driveTouched = false; driveWho = null; });
+onReset(() => { hazardKind = "explosion"; hazardWho = null; driveKind = "stunt"; driveTouched = false; });
 
 export function vehicleScreen() {
   const host = el("div");
@@ -258,8 +258,10 @@ function buildVehicle(rerender) {
     inoperable(j) ? el("p", { style: "color:var(--danger)" }, `${inoperable(j)} — it needs repairs and a spare part before it moves again.`) : null,
     related([["#/journey", "Journey", "road"]])));
 
-  const driver = el("select", { "aria-label": "Driver", onchange: (e) => { driveWho = e.target.value; } },
-    ...chars.filter((c) => !c.state?.dead).map((c) => el("option", { value: c.id, selected: c.id === driveWho }, c.name || "Unnamed")));
+  // Who is driving is the Journey's, shared with the dashboard and the narration.
+  const wheel = atTheWheel(j, chars);
+  const driver = el("select", { "aria-label": "Driver", onchange: (e) => { saveJourney({ ...(getJourney() || {}), driverId: e.target.value }); } },
+    ...chars.filter((c) => !c.state?.dead).map((c) => el("option", { value: c.id, selected: c.id === wheel?.id }, c.name || "Unnamed")));
   wrap.append(el("div", { class: "field" }, el("label", {}, "Driving"), driver));
 
   const terrain = el("select", { "aria-label": "Terrain" },
