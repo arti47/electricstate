@@ -14,6 +14,8 @@ import { subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar, haptic, related } from "./ui.js";
 import { renderVitals } from "./sheet.js";
 import { describeTalent } from "./wizard.js";
+import { journalMode, sessionSummary } from "./journal.js";
+import { addJournal, nextSession, sessionNo } from "./store.js";
 
 /** What a boundary's 1 damage set in motion, as a clause for its report. */
 const downNote = (outcome) => ({
@@ -453,6 +455,22 @@ async function debrief(rerender) {
     await debriefOne(ch);
   }
   clearSessionLog();   // the record covers one session; the next one starts empty
+  // In the journal the session closes with a card of what it held, and the next lines
+  // belong to the next session.
+  if (journalMode()) {
+    const n = sessionNo(), sum = sessionSummary(n);
+    const text = `${sum.beats} beats · ${sum.lines} lines of yours · ${sum.rolls} rolls, ${sum.sixes} sixes${sum.pushes ? ` · ${sum.pushes} pushed` : ""}`;
+    addJournal({ kind: "session", text, summary: sum });
+    nextSession();
+    await modal({
+      title: `Session ${n} complete`,
+      body: el("div", { class: "session-card" },
+        el("p", { class: "book-title" }, sum.chapters.length ? sum.chapters.join(" · ") : "On the road"),
+        el("p", {}, text),
+        el("p", { class: "faint" }, "It is all in the book.")),
+      actions: [{ label: "Good", value: true, class: "btn-primary" }]
+    });
+  }
   // A Stop resolved this session is behind the group now: the next session starts on the
   // road, not back at "That is the Stop" asking for another debrief.
   const done = activeStop();

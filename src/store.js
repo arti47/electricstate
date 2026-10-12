@@ -219,6 +219,7 @@ export function logRoll(entry) {
   c.rollLog.unshift(record);
   if (c.rollLog.length > ROLL_LOG_CAP) c.rollLog.length = ROLL_LOG_CAP;
   persist();
+  for (const fn of rollListeners) { try { fn(record); } catch { /* a listener never breaks a roll */ } }
 }
 
 /** Group key for one entry: a Traveler id, a bare name, or the table itself. */
@@ -230,6 +231,74 @@ export function filterRollLog(key) {
   return !key || key === "all" ? log : log.filter((r) => rollLogKey(r) === key);
 }
 export const getRollLog = () => current().rollLog;
+
+// Rolls also reach the journal: anything that listens is told after the roll is saved.
+const rollListeners = [];
+export const onRoll = (fn) => { rollListeners.push(fn); };
+
+// ------------------------------------------------------------------- journal
+// The Journey as it was played: what the game said, what you chose, wrote and rolled.
+// Kept on the campaign beside the roll log, not on the Journey, so a screen holding a copy
+// of the Journey while it rolls can never write an older Journey back over a new line.
+const JOURNAL_CAP = 3000;
+export const getJournal = () => current().journal || [];
+export const sessionNo = () => current().sessionNo || 1;
+export function addJournal(entry) {
+  const c = current();
+  const e = { id: uid(), ts: Date.now(), session: c.sessionNo || 1, stopId: c.journey?.activeStopId || null, ...entry };
+  c.journal = [...(c.journal || []), e].slice(-JOURNAL_CAP);
+  persist();
+  return e;
+}
+export function updateJournal(id, patch) {
+  const c = current();
+  c.journal = (c.journal || []).map((e) => (e.id === id ? { ...e, ...patch } : e));
+  persist();
+}
+export function removeJournal(id) {
+  const c = current();
+  c.journal = (c.journal || []).filter((e) => e.id !== id);
+  persist();
+}
+/** The debrief closes a session: the next lines belong to the next one. */
+export function nextSession() { const c = current(); c.sessionNo = (c.sessionNo || 1) + 1; persist(); }
+
+/** People, places and threads you chose to keep from what you wrote. */
+export const getMemory = () => ({ people: [], places: [], threads: [], ...(current().memory || {}) });
+export function keepMemory(kind, name) {
+  const c = current(), m = getMemory();
+  const list = m[kind] || [];
+  const clean = String(name || "").trim();
+  if (!clean || list.some((x) => x.name.toLowerCase() === clean.toLowerCase())) return null;
+  const item = { id: uid(), name: clean, ts: Date.now(), seen: 0 };
+  c.memory = { ...m, [kind]: [...list, item] };
+  persist();
+  return item;
+}
+export function forgetMemory(kind, id) {
+  const c = current(), m = getMemory();
+  c.memory = { ...m, [kind]: (m[kind] || []).filter((x) => x.id !== id) };
+  persist();
+}
+export function touchMemory(kind, id) {
+  const c = current(), m = getMemory();
+  c.memory = { ...m, [kind]: (m[kind] || []).map((x) => (x.id === id ? { ...x, seen: (x.seen || 0) + 1 } : x)) };
+  persist();
+}
+
+/** Firsts already celebrated, so each one is celebrated once. */
+export const getMilestones = () => current().milestones || {};
+export function markMilestone(key) {
+  const c = current();
+  if ((c.milestones || {})[key]) return false;
+  c.milestones = { ...(c.milestones || {}), [key]: Date.now() };
+  persist();
+  return true;
+}
+
+/** What Play last showed of each gauge, so a change made anywhere is told once. */
+export const getSeen = () => current().seen || {};
+export function setSeen(seen) { current().seen = seen; persist(); }
 export function clearRollLog() { snapshot("clear the roll log"); current().rollLog = []; persist(); }
 
 // ------------------------------------------------------------ export/import

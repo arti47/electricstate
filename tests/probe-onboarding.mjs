@@ -14,7 +14,7 @@ import { serve, CHROMIUM, GAME_HELPERS, SEEDS, seedPage } from "./fixtures.js";
 const REPORT_ONLY = process.argv.includes("--report");
 
 const ROUTES = ["home", "dice", "rules", "solo", "gm", "settings", "log", "create", "journey",
-  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play", "session"];
+  "tension", "time", "neuro", "combat", "hazards", "driving", "tutorial", "play", "session", "book"];
 
 /**
  * Words the book uses that mean nothing to a new player. Each must be explained somewhere

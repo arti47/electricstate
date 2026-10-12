@@ -24,6 +24,7 @@ import { combatScreen } from "./combat.js";
 import { tutorialScreen } from "./tutorial.js";
 import { playScreen } from "./play.js";
 import { sessionScreen } from "./session.js";
+import { bookScreen } from "./journal-view.js";
 import { hazardScreen, vehicleScreen } from "./hazards.js";
 
 // Four tabs. Play holds the session and everything around it (Solo and the GM screen are
@@ -35,6 +36,7 @@ const ROUTES = [
   { path: "rules", tab: "rules", render: rulesScreen },
   { path: "tutorial", tab: "rules", render: tutorialScreen },
   { path: "play", tab: "rules", render: playScreen },
+  { path: "book", tab: "rules", render: bookScreen },
   { path: "session", tab: "home", render: sessionScreen },
   { path: "log", tab: "dice", render: rollLogScreen },
   { path: "time", tab: "home", render: lifecycleScreen },
@@ -80,7 +82,7 @@ const SUBNAV = {
     ["#/driving", "Driving"],
     ["#/log", "Log"]
   ],
-  rules: [["#/play", "Running a session"], ["#/rules", "Rules"], ["#/tutorial", "The app"]]
+  rules: [["#/book", "The book"], ["#/play", "Running a session"], ["#/rules", "Rules"], ["#/tutorial", "The app"]]
 };
 
 function notYet(what, phase) {

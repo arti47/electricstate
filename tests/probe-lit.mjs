@@ -9,7 +9,7 @@ import { chromium } from "playwright-core";
 import { serve, GAME_HELPERS, CHROMIUM, SEEDS, seedPage } from "./fixtures.js";
 
 const ROUTES = ["home", "session", "solo", "gm", "journey", "time", "tension", "sheet/a1", "injury/a1",
-  "dice", "combat", "neuro", "hazards", "driving", "log", "create"];
+  "dice", "combat", "neuro", "hazards", "driving", "log", "create", "book"];
 const EXCUSED = (seed, route) =>
   (seed === "fresh" && route === "home")      // the mode tiles lead
   || route === "create"                       // Next waits on a choice, and names it

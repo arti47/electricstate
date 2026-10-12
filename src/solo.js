@@ -664,6 +664,22 @@ export async function drawForStory({ autoShuffle = false } = {}) {
   return { card, event, note, extra, tilt: event ? null : tiltRead, exhausted, shuffled, left: deck.length };
 }
 
+/**
+ * A question asked of the deck from Play's journal: one card off the same deck, kept in
+ * its history, read as the book's Tilt (suit = for or against you, rank = how much). The
+ * yes/no on top is a house reading of that Tilt, not a rule of the book: red says yes,
+ * black says no, and the rank says how firmly.
+ */
+export function askTheDeck(question) {
+  let s = state();
+  if (!s.deck.length) { write({ deck: freshDeck() }); s = state(); }
+  const { card, deck } = drawFrom(s.deck);
+  const read = readTilt(card);
+  write({ deck, history: [{ suit: card.suit, rank: card.rank, note: `Asked: ${question} — ${read.label}` }, ...s.history].slice(0, 40) });
+  const answer = `${read.good ? "Yes" : "No"} — ${DEGREE_WORDS[read.degree] || "a little"}`;
+  return { card, read, answer, left: deck.length };
+}
+
 /** A Tilt as a sentence, for anything that reports a card in text rather than on screen. */
 export function tiltSentence(read, subject = "Whatever you were wondering about") {
   return `${subject} goes ${read.good ? "your way" : "against you"} — ${DEGREE_WORDS[read.degree] || "a little"}.`;

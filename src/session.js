@@ -15,7 +15,9 @@ import { MINOR_ENCOUNTERS, TRAVELER_EVENTS, CONVERSATION_SUBJECTS, NPC_PERSONALI
 import { ROUTE_FEATURES } from "../data-journey.js";
 import { FIRST_NAMES, SURNAMES } from "../data-names.js";
 import { SHIFT_NAMES, FUEL } from "../data.js";
-import { listCharacters, getJourney, saveJourney, noteEvent, getRollLog } from "./store.js";
+import { listCharacters, getJourney, saveJourney, noteEvent, getRollLog, addJournal } from "./store.js";
+import { journalMode, callback } from "./journal.js";
+import { buildJournal, tidy } from "./journal-view.js";
 import { makeStop, saveStop, activeStop, setActiveStop, advanceCountdown, resolveStop, listStops } from "./stops.js";
 import { currentStep } from "./play.js";
 import { Settings } from "./settings.js";
@@ -28,7 +30,7 @@ import { maxHealth, maxHope, tracksBliss, isDronePilot } from "./derived.js";
 import { icon } from "./icons.js";
 
 /** Which picture each beat gets: the road at first light, a stop, trouble, nightfall. */
-const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop", scene: "stop",
+export const SCENE_FOR = { idle: "open", opening: "open", road: "road", arrived: "stop", scene: "stop",
   pressure: "crisis", crisis: "crisis", fighting: "crisis", wrap: "close", "no-one": "open",
   "no-destination": "open", "no-vehicle": "open", "no-tension": "open", "journey-over": "close" };
 
@@ -53,6 +55,14 @@ function say(text, kind = "") {
   // `at` marks when this beat was told, so a roll made after it can move the story on.
   write({ log: [{ id: `${Date.now()}-${d.log.length}`, text, kind }, ...d.log].slice(0, 40), at: Date.now(), card: null });
   noteEvent("scene", text);
+  // In solo play the journal is the record: every beat the game tells is a line in it.
+  if (journalMode()) addJournal({ kind: "beat", beat: kind, text });
+}
+
+/** Someone or somewhere you chose to keep, now and then brought back into the road. */
+function recall() {
+  const line = journalMode() ? callback() : null;
+  if (line) say(line, "callback");
 }
 
 // A new session is a new evening, not a new road: how far along the rolled route the group
@@ -326,6 +336,7 @@ export function advance(act) {
   if (act === "road") {
     const line = roadLine();
     say(line.text, "road");
+    recall();
     write({ beat: "road", now: line.text });
     return;
   }
@@ -346,6 +357,7 @@ export function advance(act) {
     const now = (scenes % 3 === 0 && travelerEventLine())
       || (stop ? sceneLine(stop) : openingLine());
     say(now, "scene");
+    recall();
     write({ beat: "scene", now, scenes });
     return;
   }
@@ -386,7 +398,7 @@ export function advance(act) {
  * The card goes on the beat, and anything it fired — a Countdown step above all — is the
  * same record the Solo and GM screens read.
  */
-async function soloCard() {
+export async function soloCard() {
   if (!Settings.solo() || Settings.playMode() === "player") return;
   const { drawForStory, tiltSentence } = await import("./solo.js");
   const drawn = await drawForStory({ autoShuffle: true });
@@ -406,11 +418,35 @@ export function sessionScreen() {
   return host;
 }
 
+/**
+ * Which choice is lit right now. Back from the dice with a result, the roll was the thing to
+ * do, so the next press is whatever happens because of it — not the same Roll again. Back
+ * from the fight the crisis sent you to, settling it is the next thing, not another fight.
+ */
+export function settleChoices(state, beat, lastRoll, j) {
+  const rolled = lastRoll && state.at && lastRoll.ts > state.at;
+  let choices = beat.choices;
+  const fought = state.at && (j?.fightEndedAt || 0) > state.at;
+  if (beat.id === "crisis" && fought) choices = choices.map((c) => ({ ...c, primary: c.act === "resolve" }));
+  let rolledNow = false;
+  if (!fought && rolled && choices.some((c) => c.primary && c.href === "#/dice") && choices.some((c) => c.act)) {
+    const next = choices.find((c) => c.act === beat.after)
+      || choices.find((c) => c.act && c.act !== "resolve" && c.act !== "leave") || choices.find((c) => c.act);
+    choices = choices.map((c) => ({ ...c, primary: c === next }));
+    rolledNow = true;
+  }
+  return { choices, rolledNow };
+}
+
 function build(rerender) {
   reconcile();
   const state = director();
   const beat = beatFor(state);
   const j = getJourney();
+  // Solo play is a journal; a table with a GM keeps the dashboard.
+  const journaling = journalMode() && listCharacters().length > 0;
+  document.documentElement.toggleAttribute("data-journal", journaling);
+  if (journaling) return buildJournal(rerender, state, beat, j);
   const wrap = el("div", { class: "dash" }, el("h1", {}, "Play"));
   wrap.append(explain("You are in the driver's seat. The road ahead tells you what is happening; press the lit button to see what happens next. Tap a gauge to open that Traveler. The lights on the dash open the tools for a fight, a hazard, the network or the wheel — a light glows when you need that tool."));
 
@@ -428,26 +464,14 @@ function build(rerender) {
     showCard ? el("div", { class: "shield-card", title: `${state.card.left} cards left` }, playingCard(state.card, { flip: false })) : null,
     el("div", { class: "beat glass" },
       el("div", { class: "beat-heading" }, beat.heading),
-      el("p", { class: "beat-now" }, beat.now || "—"),
+      el("p", { class: "beat-now" }, tidy(beat.now) || "—"),
       showCard ? el("p", { class: "beat-card-line" }, state.card.line) : null)));
 
   // ------------------------------------------------------------- the dash
-  // Back from the dice with a result: the roll was the thing to do, so the next press is
-  // whatever happens because of it — not the same Roll button again.
-  const rolled = lastRoll && state.at && lastRoll.ts > state.at;
-  let choices = beat.choices;
-  // Back from the fight the crisis sent you to: settling it is the next thing, not another fight.
-  const fought = state.at && (j?.fightEndedAt || 0) > state.at;
-  if (beat.id === "crisis" && fought) {
-    choices = choices.map((c) => ({ ...c, primary: c.act === "resolve" }));
-  }
-  let echo = null;
-  if (!fought && rolled && choices.some((c) => c.primary && c.href === "#/dice") && choices.some((c) => c.act)) {
-    const next = choices.find((c) => c.act === beat.after)
-      || choices.find((c) => c.act && c.act !== "resolve" && c.act !== "leave") || choices.find((c) => c.act);
-    choices = choices.map((c) => ({ ...c, primary: c === next }));
-    echo = el("p", { class: "roll-echo" }, el("strong", {}, lastRoll.label || "Roll"), " ", lastRoll.outcome || "", " — say what it means, then press on.");
-  }
+  const { choices, rolledNow } = settleChoices(state, beat, lastRoll, j);
+  const echo = rolledNow
+    ? el("p", { class: "roll-echo" }, el("strong", {}, lastRoll.label || "Roll"), " ", lastRoll.outcome || "", " — say what it means, then press on.")
+    : null;
   const actions = el("div", { class: "btn-grid dash-choices" });
   for (const c of choices) {
     actions.append(c.href

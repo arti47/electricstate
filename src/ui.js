@@ -29,6 +29,9 @@ export function showToast(message, kind = "", action = null) {
  */
 const BUZZ = { tick: 8, roll: [12, 40, 12, 40, 18], loss: [60, 50, 90], success: [18, 30, 30] };
 export function haptic(kind = "tick") {
+  // A buzz before the player has touched the page is refused by the browser, loudly — and a
+  // milestone can now land on a page that has only just opened. Only buzz after a touch.
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
   try { navigator.vibrate?.(BUZZ[kind] ?? kind); } catch { /* unsupported */ }
   sound(kind);
 }

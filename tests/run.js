@@ -1577,6 +1577,98 @@ await test("every campaign switch forgets every screen's working state", () => {
   assert.equal(forgotten, 1, "registered resets run");
 });
 
+// ---------------------------------------------------------------- the journal
+const journal = await import("../src/journal.js");
+const { set: setJournalSetting } = await import("../src/settings.js");
+
+await test("in solo play a Traveler's roll writes itself into the journal, and a table roll does not", () => {
+  store.resetAll();
+  setJournalSetting("solo", true);
+  try {
+    const a = makeChar({ name: "Ana" });
+    store.saveJourney({ destination: "x" });
+    store.logRoll({ by: "Ana", label: "Agility", dice: [6, 3, 1], outcome: "1 success" });
+    store.logRoll({ label: "Initiative", dice: [4, 2], outcome: "Travelers first" });
+    const rolls = store.getJournal().filter((e) => e.kind === "roll");
+    assert.equal(rolls.length, 1, "only the Traveler's roll");
+    assert.equal(rolls[0].byId, a.id);
+    assert.deepEqual(rolls[0].dice, [6, 3, 1]);
+  } finally { setJournalSetting("solo", false); }
+  store.logRoll({ by: "Ana", label: "Wits", dice: [2] });
+  assert.equal(store.getJournal().filter((e) => e.kind === "roll").length, 1, "outside solo play the journal stays out of it");
+});
+
+await test("each Stop is a chapter, begun once and ended once", () => {
+  store.resetAll();
+  setJournalSetting("solo", true);
+  try {
+    makeChar({ name: "Ana" });
+    store.saveJourney({ destination: "x" });
+    const stop = stopsMod.saveStop(stopsMod.makeStop("The Mall"), { makeActive: true });
+    stopsMod.setActiveStop(stop.id);
+    journal.syncChapters(); journal.syncChapters();
+    assert.equal(store.getJournal().filter((e) => e.kind === "chapter").length, 1);
+    stopsMod.resolveStop(stop.id);
+    journal.syncChapters(); journal.syncChapters();
+    assert.equal(store.getJournal().filter((e) => e.kind === "chapter-end").length, 1);
+    const won = journal.syncMilestones();
+    assert.ok(won.includes("The first Stop") && won.includes("A Stop behind you"));
+    assert.deepEqual(journal.syncMilestones(), [], "a first is celebrated once");
+  } finally { setJournalSetting("solo", false); }
+});
+
+await test("a change to Health or Hope anywhere is told once, on the next look", () => {
+  store.resetAll();
+  setJournalSetting("solo", true);
+  try {
+    const a = makeChar({ name: "Ana Ruiz" });
+    store.saveJourney({ destination: "x" });
+    assert.deepEqual(journal.syncConsequences(), {}, "the first look is a baseline");
+    const ch = store.getCharacter(a.id);
+    store.saveCharacter({ ...ch, state: { ...ch.state, hope: ch.state.hope - 1 } });
+    const moved = journal.syncConsequences();
+    assert.deepEqual(moved[a.id], ["p"]);
+    assert.match(store.getJournal().at(-1).text, /^Ana: Hope \d → \d$/);
+    assert.deepEqual(journal.syncConsequences(), {}, "and only once");
+  } finally { setJournalSetting("solo", false); }
+});
+
+await test("kept names come back, the least-seen first, and only names worth keeping are offered", () => {
+  store.resetAll();
+  store.keepMemory("people", "Old Marta");
+  assert.equal(store.keepMemory("people", "old marta"), null, "no duplicates");
+  store.keepMemory("places", "Blue Dog diner");
+  const seen = new Set();
+  for (let i = 0; i < 60; i++) { const line = journal.callback(); if (line) seen.add(line); }
+  assert.ok([...seen].some((l) => l.includes("Old Marta")) && [...seen].some((l) => l.includes("Blue Dog")), "both come back");
+  const offered = journal.candidates('Then Old Marta waved from the "Blue Dog" diner.');
+  assert.ok(offered.includes("Old Marta") && offered.includes("Blue Dog"));
+  assert.ok(!offered.includes("Then"));
+});
+
+await test("the deck answers a question from the same solo deck, as a Tilt read yes or no", () => {
+  store.resetAll();
+  store.saveJourney({ destination: "x", solo: { deck: soloMod.freshDeck(), events: [], history: [] } });
+  const before = store.getJourney().solo.deck.length;
+  const r = soloMod.askTheDeck("Is the farmer armed?");
+  assert.equal(store.getJourney().solo.deck.length, before - 1, "one card off the shared deck");
+  assert.match(r.answer, /^(Yes|No) — (a little|clearly|a lot|completely)$/);
+  assert.equal(r.answer.startsWith("Yes"), r.read.good, "red says yes, black says no");
+});
+
+await test("the book: chapters from the journal, and a Markdown file of it", () => {
+  store.resetAll();
+  store.addJournal({ kind: "beat", text: "Morning. Rain." });
+  store.addJournal({ kind: "chapter", n: 1, text: "The Mall" });
+  store.addJournal({ kind: "mine", text: "We go in." });
+  const parts = journal.chapters();
+  assert.equal(parts.length, 2);
+  assert.equal(parts[1].title, "The Mall");
+  const md = journal.bookMarkdown("Test");
+  assert.match(md, /## Chapter 1: The Mall/);
+  assert.match(md, /\*We go in\.\*/);
+});
+
 const failed = results.filter((r) => r[0] === "FAIL");
 for (const [status, name, msg] of results) {
   console.log(`${status === "pass" ? "  ok" : "FAIL"}  ${name}${msg ? `\n        ${msg}` : ""}`);

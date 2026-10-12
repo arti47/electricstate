@@ -707,3 +707,45 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   pair. The card used to be a third button that silently picked the male half. Dialogs no longer
   focus their first button on open (a text field still gets the cursor; otherwise the dialog
   box takes focus) — on a phone that drew a focus ring that read as "already chosen".
+- **The journal (solo Play is a diary you play in).** Diagnosis with the user: the game and the
+  journalling were not linked — the app narrated, you pressed, and nothing you imagined or wrote
+  went back in. Now, whenever `journal.journalMode()` (play mode `solo`, or unset with Solo on)
+  and a Traveler exists, `#/session` renders `journal-view.buildJournal()`; GM and player modes
+  keep the dashboard until this is proven.
+  - **Storage is campaign-level** (`store.getJournal/addJournal/updateJournal/removeJournal`,
+    `sessionNo/nextSession`, `getMemory/keepMemory/forgetMemory/touchMemory`,
+    `getMilestones/markMilestone`, `getSeen/setSeen`), beside the roll log, **not on the
+    Journey**: screens hold copies of the Journey across a roll, and a later `saveJourney` would
+    write the older copy back over a new line. Cap 3000 entries.
+  - **Entry kinds:** beat (every `say()`), choice (the button you pressed), mine / answer (your
+    words, free or answering the beat's question), roll (written by `store.onRoll` for any roll
+    with a Traveler behind it; asks "What does that look like?" and stores `meaning`),
+    consequence (`syncConsequences()`: Health/Hope/Bliss/Countdown changes since Play last
+    looked, wherever they happened; the slim dash jolts the gauge), chapter / chapter-end (one
+    per Stop, `syncChapters()`), milestone (nine firsts, `syncMilestones()`, one toast),
+    oracle, meaning-words, reading, session (the debrief's summary card, then `nextSession()`).
+  - **Three ways in** under every beat: tap a choice (written as `→ Choice`), **Answer** the
+    beat's question (`questionFor(beat, n)`, ↻ for another), or **Write freely**.
+  - **Memory:** the star on any line you wrote opens Keep (capitalised names and quoted phrases
+    offered as chips, `candidates()`), as Person / Place / Thread. `callback()` brings one back
+    after one road or scene beat in three, least-revisited first, as a labelled line.
+  - **Helpers:** **Ask the deck** (`solo.askTheDeck(q)` — one card off the same solo deck, read
+    as the book's Tilt; red = yes, black = no, rank = how firmly — the yes/no is a **house
+    reading**, labelled so), **Words** (one word each from the house Goal and Threat seed
+    tables), **Readings** (three of four labelled lines from the book's Chapter 8 NPC and
+    conversation tables).
+  - **Layout:** a 168px windshield strip (mirror, and a **visor** of knobs: Map, Time, Tension,
+    Deck, Book, Kept, Driver), the session's journal, the present beat (`.beat.jnow`, its text
+    never repeated in the list above), the choices, the composer and helpers, and a **slim
+    dash** pinned above the tabs (gauges, the Countdown ring, lamps). The page arrives scrolled
+    to the present; after 45s untouched the lit button pulses. `data-journal` on `<html>` gives
+    the header back its background on this screen. The knobs sit in the visor rather than a
+    pull-up drawer so every one stays one tap away.
+  - **The book** (`#/book`, Reference): chapters per Stop from `journal.chapters()`, read-only
+    entries, **Save the book as a file** (`bookMarkdown()` → `electric-state-journal.md`).
+  - `tidy()` reads "?." / "!." left by table entries that end in their own punctuation as clean
+    text at display time (stored text is untouched, so comparisons still match).
+  - **Sound is on by default** now (`Settings.sound()` is on unless switched off).
+  - Tests: six unit tests (roll hook only in solo and only for Travelers, chapters once, firsts
+    once, consequences once, memory and candidates, the deck answer, the book). The run.js
+    `failed` count must stay **after** every test — tests appended after it pass silently.
