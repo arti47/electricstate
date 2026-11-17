@@ -334,3 +334,30 @@ export function enhanceNumber(input) {
     input,
     el("button", { class: "stepper-btn", type: "button", "aria-label": `Raise ${label}`, onclick: () => step(1) }, "+"));
 }
+
+// ---------------------------------------------------------------- odometer
+/**
+ * A number on mechanical drums, the way a dashboard counts: each digit a strip of 0–9 that
+ * rolls to its place. `key` names the reading (a Traveler's Hope, the fuel) so the drums roll
+ * from the value it showed last time to the new one; without a key they simply sit. The
+ * digits on the drums are drawn by CSS, so the element's text is the plain value once — tests
+ * and screen readers read "3/3", not a column of digits.
+ */
+const odoSeen = new Map();
+export function odometer(value, key = null) {
+  const text = String(value ?? "");
+  const prev = key ? odoSeen.get(key) : null;
+  if (key) odoSeen.set(key, text);
+  const drums = el("span", { class: "odo-drums", "aria-hidden": "true" });
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (!/\d/.test(c)) { drums.append(el("span", { class: "odo-sep", "data-c": c })); continue; }
+    const to = Number(c);
+    const from = prev && prev.length === text.length && /\d/.test(prev[i]) ? Number(prev[i]) : to;
+    const strip = el("span", { class: "odo-strip", style: `--d:${from}` },
+      ...Array.from({ length: 10 }, (_, n) => el("i", { "data-n": String(n) })));
+    if (from !== to) requestAnimationFrame(() => requestAnimationFrame(() => strip.style.setProperty("--d", String(to))));
+    drums.append(el("span", { class: "odo-d" + (from !== to ? " is-rolling" : "") }, strip));
+  }
+  return el("span", { class: "odo" }, el("span", { class: "sr-only" }, text), drums);
+}

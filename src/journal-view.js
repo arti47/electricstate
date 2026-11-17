@@ -17,7 +17,7 @@ import { Settings } from "./settings.js";
 import { maxHealth, maxHope, tracksBliss, isDronePilot } from "./derived.js";
 import { showToast, explain, modal, diceRow, haptic, dismissModal } from "./ui.js";
 import { sceneBand } from "./scene.js";
-import { portrait, playingCard, gauge, windshieldFrame, ringDial } from "./graphics.js";
+import { portrait, playingCard, gauge, windshieldFrame, ringDial, archColor } from "./graphics.js";
 import { icon } from "./icons.js";
 import { getCombat } from "./combat.js";
 
@@ -159,7 +159,8 @@ function entryView(e, rerender, { readOnly = false } = {}) {
       const input = el("input", { type: "text", "aria-label": "What does that look like?", placeholder: "What does that look like?" });
       const save = () => { if (input.value.trim()) { updateJournal(e.id, { meaning: input.value.trim() }); rerender(); } };
       input.addEventListener("keydown", (k) => { if (k.key === "Enter") save(); });
-      return el("li", { class: "j-roll" },
+      const who = listCharacters().find((c) => c.id === e.byId);
+      return el("li", { class: "j-roll", style: `--arch:${archColor(who)}` },
         el("div", { class: "j-roll-head" }, diceRow({ base: e.dice }, { mini: true }),
           el("span", {}, el("strong", {}, e.by), ` · ${e.label}`), el("span", { class: "j-out" }, e.outcome)),
         e.meaning

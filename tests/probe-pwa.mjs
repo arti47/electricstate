@@ -18,7 +18,15 @@ const failures = [];
 const check = (cond, msg) => { if (!cond) failures.push(msg); };
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+// Offline, Chromium's own update check for the worker script fails and logs it. That is the
+// browser, not the app, and only that message is excused, only while the network is off.
+let offline = false;
+const SW_UPDATE_OFFLINE = /^An unknown error occurred when fetching the script\.?$/;
+page.on("console", (m) => {
+  if (m.type() !== "error") return;
+  if (offline && SW_UPDATE_OFFLINE.test(m.text())) return;
+  errors.push(m.text());
+});
 
 const swSource = await readFile(new URL("../service-worker.js", import.meta.url), "utf8");
 const version = /CACHE_VERSION = "([^"]+)"/.exec(swSource)[1];
@@ -69,6 +77,7 @@ check(notHeld.length === 0, `declared in the shell but never cached: ${notHeld.j
 
 // Offline: the whole point of installing it.
 await context.setOffline(true);
+offline = true;
 await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
 await page.waitForTimeout(600);
 const offlineHome = await page.textContent("#screen").catch(() => "");
@@ -81,6 +90,7 @@ await page.waitForTimeout(300);
 check(/Dice/.test(await page.textContent("#screen").catch(() => "")), "routing broke offline");
 
 await context.setOffline(false);
+offline = false;
 check(errors.length === 0, `console errors: ${errors.join(" | ")}`);
 
 await browser.close();

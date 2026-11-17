@@ -7,7 +7,7 @@ import { maxHealth, maxHope, isDronePilot, tracksBliss, usesCash } from "./deriv
 import { getCharacter, saveCharacter, deleteCharacter, listCharacters, getJourney } from "./store.js";
 import { talent as findTalent, rule, service } from "./rules.js";
 import { describeTalent } from "./wizard.js";
-import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic, related } from "./ui.js";
+import { diceRow, showToast, modal, promptModal, explain, dismissModal, moreMenu, haptic, related, odometer } from "./ui.js";
 import { undoLast } from "./store.js";
 import { helmetGraphic, archetypeGlyph, ringDial, portrait } from "./graphics.js";
 import { syncVignette } from "./scene.js";
@@ -48,7 +48,7 @@ export function renderVitals(ch, { onSwitch = null } = {}) {
       ...(kind ? { "aria-label": `${label} ${value} — change`, onclick: () => quickStep(ch.id, kind) } : {})
     },
       el("span", { class: "vital-label" }, label),
-      el("span", { class: "vital-value" }, value),
+      el("span", { class: "vital-value" }, odometer(value, `vital:${ch.id}:${label}`)),
       gauge);
 
   const tiles = [
@@ -258,7 +258,7 @@ function build(ch, rerender) {
           rollAttr(ch.id, a.id); openTray();
         }
       }, el("span", { class: "stat-label" }, a.label),
-        el("span", { class: "stat-value" }, v),
+        el("span", { class: "stat-value" }, odometer(v, `stat:${ch.id}:${a.id}`)),
         el("span", { class: "attr-bar", "aria-hidden": "true" }, ...Array.from({ length: 6 }, (_, i) => el("i", { class: i < v ? "on" : "" }))));
     })));
 
@@ -360,7 +360,7 @@ function stepper(label, value, max, onChange, kind, min = 0, gauge = null) {
         class: "stepper-btn", "aria-label": `Lower ${label}`,
         disabled: min != null && v <= min, onclick: () => onChange(v - 1)
       }, "−"),
-      el("span", { class: "stepper-value" }, v),
+      el("span", { class: "stepper-value" }, odometer(v, `step:${label}`)),
       el("button", {
         class: "stepper-btn", "aria-label": `Raise ${label}`,
         disabled: max != null && v >= max, onclick: () => onChange(v + 1)

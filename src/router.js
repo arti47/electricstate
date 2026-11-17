@@ -6,7 +6,7 @@ import { getCombat, turnOrder } from "./combat.js";
 import { releaseScrollLock, enhanceSelect, enhanceNumber } from "./ui.js";
 import { icon } from "./icons.js";
 import { STORAGE_KEY } from "./core.js";
-import { syncScene, sceneBand } from "./scene.js";
+import { syncScene, sceneBand, screenBand } from "./scene.js";
 import { activeStop } from "./stops.js";
 import { dieIcon, shiftDial } from "./graphics.js";
 import { SHIFT_NAMES } from "../data.js";
@@ -365,7 +365,8 @@ export function render() {
   if (path !== "sheet" && path !== "injury") clearVitals();
   // No section row: the dashboard is the hub, and every other screen is a panel with one
   // header line — back to the road, its title, its ⓘ.
-  screenEl.replaceChildren(route.render(param));
+  // Every panel opens on its own place, drawn; Play, the fight and the network have theirs.
+  screenEl.replaceChildren(...[screenBand(route.path), route.render(param)].filter(Boolean));
   syncHeader(route.path);
   watchScreen(screenEl, route.path);
   // Cards arrive one after another, 30ms apart. Opacity only — see the action bar rule.

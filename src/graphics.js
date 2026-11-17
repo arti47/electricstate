@@ -52,6 +52,32 @@ export function shiftDial(names, current, day) {
     { role: "img", "aria-label": `${current}, day ${day}` });
 }
 
+/**
+ * The day as one arc over the horizon: four stations, the sun (or the moon on the Night
+ * Shift) sitting on the current one, the arc behind it already travelled.
+ */
+export function skyArc(names, current, day) {
+  const idx = Math.max(0, names.indexOf(current));
+  const night = idx === names.length - 1;
+  const cx = 100, cy = 92, r = 74;
+  // Morning low east, Day high, Evening low west; Night returns to the top as the moon.
+  const deg = night ? 0 : [-62, -12, 52][idx] ?? 0;
+  const [sx, sy] = polar(cx, cy, r, deg);
+  const stations = [-62, -12, 52].map((d, i) => {
+    const [x, y] = polar(cx, cy, r, d);
+    return `<circle class="arc-stop${i === idx ? " on" : i < idx || night ? " past" : ""}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"/>`;
+  }).join("");
+  const travelled = night ? arc(cx, cy, r, -90, 90) : arc(cx, cy, r, -90, deg);
+  const body = night
+    ? `<path class="arc-moon" d="M${sx - 4} ${sy - 12} A13 13 0 1 0 ${sx + 12} ${sy + 4} A10 10 0 1 1 ${sx - 4} ${sy - 12} Z"/>`
+    : `<circle class="arc-glow" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="20"/><circle class="arc-sun" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="10"/>`;
+  return html(`sky-arc${night ? " is-night" : ""}`, svg("0 0 200 100",
+    `<path class="arc-path" d="${arc(cx, cy, r, -90, 90)}"/><path class="arc-done" d="${travelled}"/>` +
+    `<line class="arc-horizon" x1="6" y1="92" x2="194" y2="92"/>${stations}${body}`,
+    'width="200" height="100" preserveAspectRatio="xMidYMax meet"'),
+    { role: "img", "aria-label": `${current}, day ${day}` });
+}
+
 // ---------------------------------------------------------------- tension
 /**
  * Everyone around a ring, an arrow from each Traveler to each other one. Thin and dashed
@@ -375,6 +401,16 @@ export function portraitMarkup(ch = {}) {
     <rect width="52" height="52" fill="url(#${uid})" opacity=".12"/>`;
 }
 
+/**
+ * One colour per archetype, carried on that Traveler's portrait ring and the lines the
+ * journal writes for them, so a glance tells you whose it is.
+ */
+export const ARCH_COLOR = {
+  artist: "#d47fb0", criminal: "#c9a24a", devotee: "#e6d08a", doctor: "#7fc7a6", dronePilot: "#7fb7e6",
+  investigator: "#b39ddb", outsider: "#9cbf6e", runawayKid: "#f0a35e", scientist: "#6fc3ce", veteran: "#c98a6b"
+};
+export const archColor = (ch) => ARCH_COLOR[ch?.archetype] || "var(--line-strong)";
+
 /** A polaroid of a Traveler: the photo in a worn white frame. */
 export function portrait(ch, { size = 64, frame = true } = {}) {
   const body = frame
@@ -382,7 +418,7 @@ export function portrait(ch, { size = 64, frame = true } = {}) {
     : portraitMarkup(ch);
   const vb = frame ? "0 0 60 70" : "0 0 52 52";
   const h = frame ? Math.round(size * 70 / 60) : size;
-  return html(`portrait${frame ? " is-polaroid" : " is-round"}`, svg(vb, body, `width="${size}" height="${h}"`), { "aria-hidden": "true" });
+  return html(`portrait${frame ? " is-polaroid" : " is-round"}`, svg(vb, body, `width="${size}" height="${h}"`), { "aria-hidden": "true", style: `--arch:${archColor(ch)}` });
 }
 
 // ---------------------------------------------------------------- driving

@@ -749,3 +749,21 @@ docs/app/ROADMAP.md                       Stage B checkpoint + ledger + phased r
   - Tests: six unit tests (roll hook only in solo and only for Travelers, chapters once, firsts
     once, consequences once, memory and candidates, the deck answer, the book). The run.js
     `failed` count must stay **after** every test — tests appended after it pass silently.
+- **Found-objects pass (UI only, no copy or rules changed).** Every screen is an object from
+  the car.
+  - `ui.odometer(value, key)` draws numbers as rolling drums (sheet vitals, attributes,
+    steppers); the real number stays in an `.sr-only` span, so `textContent` still reads it.
+  - `scene.screenBand(route)` puts a short original SVG scene (`ROUTE_BAND`: motel, map, cork,
+    cards, desk, tray, receipt, hazard, garage, library, glovebox, tent) above each panel; the
+    router prepends it. 92px on phones so primaries stay above the fold.
+  - `graphics.ARCH_COLOR` / `archColor(ch)`: one colour per archetype, on portrait rings and
+    journal roll snapshots (`--arch`).
+  - Dice look 3D; a result card carries a rubber stamp (Success / Failure / Pushed, aria-hidden
+    — the result sentence still says it). Journal: notebook paper, beats typed, your lines in
+    handwriting (system font stacks `--type` / `--hand`; no new font files).
+  - Route-scoped objects in `styles.css` ("round 4"): manila dossier sheet with file tabs,
+    wanted-poster Threats (combat `.is-enemy`, GM `.threat-art`), red string on cork (Tension),
+    receipt roll (log), index cards (rules), glovebox (Settings), chalk on asphalt (combat
+    zones), CRT scanlines (Neuroscape). Paper scopes redefine tokens with the `.manual` palette,
+    already AA-checked. Time's clock is `graphics.skyArc()` — sun along an arc, moon at Night.
+  - Splash: two headlights come on. ⓘ is a calm dot until opened.

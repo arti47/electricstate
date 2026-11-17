@@ -8,7 +8,7 @@ import { listCharacters, saveCharacter, getJourney, saveJourney, logRoll, noteEv
          clearSessionLog, snapshot, undoLast, canUndo } from "./store.js";
 import { talent as findTalent } from "./rules.js";
 import { activeStop, setActiveStop } from "./stops.js";
-import { shiftDial, portrait } from "./graphics.js";
+import { skyArc, portrait } from "./graphics.js";
 import { icon } from "./icons.js";
 import { subj } from "./pronouns.js";
 import { showToast, modal, confirmModal, explain, actionBar, haptic, related } from "./ui.js";
@@ -281,8 +281,8 @@ function build(rerender) {
   wrap.append(explain(`The app owns the clock. Tick what the group did, then end a Stretch, Shift or Day: healing, hunger, sleep, fuel and Bliss all happen at once, you see what changed, and you can undo it once. ${TIME_UNITS.map((u) => `${u.label}: ${u.duration}`).join(" · ")} · ${SHIFTS_PER_DAY} Shifts a day. Resting heals only if nobody is fighting or marching; a Nurse makes it 2 Health a Shift. Going without food means a Strength roll and no recovery. Out in the cold is a Strength roll each Shift (each Stretch if extreme) and no healing until warm. Bliss only fades on a day spent off-cast.`));
 
   // The clock, large: four Shifts round a dial, sun or moon at its heart.
-  wrap.append(el("div", { class: "clock-face" },
-    shiftDial(SHIFT_NAMES, j.shift || SHIFT_NAMES[0], j.day || 1),
+  wrap.append(el("div", { class: "clock-face is-arc" },
+    skyArc(SHIFT_NAMES, j.shift || SHIFT_NAMES[0], j.day || 1),
     el("div", {},
       el("strong", { class: "clock-shift" }, j.shift || SHIFT_NAMES[0]),
       el("div", { class: "faint" }, `Day ${j.day || 1}${j.vehicle ? ` · ${j.fuel ?? 0} gal` : ""}`))));

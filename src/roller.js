@@ -534,7 +534,10 @@ function resultCard(ch, pool, legality, rerender) {
   const total = successes(r);
   const rolling = !!pending.fresh;
   pending.fresh = false;
-  const card = el("div", { class: "card", "aria-live": "polite" },
+  const card = el("div", { class: "card result-card", "aria-live": "polite" },
+    // A rubber stamp across the result: the verdict before the numbers.
+    el("span", { class: `result-stamp ${total ? "is-success" : "is-failure"}${r.pushed ? " is-pushed" : ""}`, "aria-hidden": "true" },
+      r.pushed ? "Pushed" : total ? "Success" : "Failure"),
     el("div", { class: "result-head" },
       el("h3", { class: "result-word " + (total ? "is-success" : "is-failure") }, total ? `${total} success${total > 1 ? "es" : ""}` : "Failure"),
       // A success is stamped; a failure goes to static.
